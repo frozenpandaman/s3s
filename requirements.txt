@@ -1,0 +1,5 @@
+bs4
+requests
+msgpack-python
+pillow
+packaging
