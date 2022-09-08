@@ -48,7 +48,7 @@ Running `python s3s.py -M 900 -osr` monitors for new Salmon Run results, checkin
 
 5. Running the script for the first time will prompt you to enter your stat.ink API Token (available in [settings](https://stat.ink/profile)). If you're playing _Splatoon 3_ in a language other than English, you may enter your language code (locale) as well.
 
-**NOTE: Read the "Cookie generation" section below before proceeding. [→](#cookie-generation)**
+**NOTE: Read the "Cookie generation" section below before proceeding. [→](#cookie-generation-)**
 
 6. You will then be asked to navigate to a specific URL on Nintendo.com, log in, and follow simple instructions to obtain your `session_token`; this will be used to generate a `bulletToken`. If you are opting against automatic cookie generation, enter "skip" for this step, at which point you will be asked to manually input your `bulletToken` instead (see the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions)).
 
