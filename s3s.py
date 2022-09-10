@@ -201,6 +201,9 @@ def gen_new_tokens(reason, force=False):
 	if manual_entry: # no session_token ever gets stored
 		print("\nYou have opted against automatic token generation and must manually input your tokens.\n")
 		new_gtoken, new_bullettoken = iksm.enter_tokens()
+		acc_lang = "en-US"
+		acc_country = "US"
+		print("Using `en-US` for language and `US` for country by default. These can be changed in config.txt.")
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
