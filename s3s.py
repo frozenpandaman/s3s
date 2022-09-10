@@ -247,8 +247,11 @@ def fetch_json(which, separate=False, exportall=False):
 				for b in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"][0]["historyDetails"]["nodes"]:
 					battle_ids.append(b["id"])
 			except: # salmon run job
-				for j in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"][0]["historyDetails"]["nodes"]:
-					job_ids.append(j["id"])
+				try:
+					for j in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"][0]["historyDetails"]["nodes"]:
+						job_ids.append(j["id"])
+				except:
+					pass
 
 			for bid in battle_ids:
 				query2_b = requests.post(GRAPHQL_URL,
@@ -779,7 +782,12 @@ def main():
 	###########################
 	if outfile:
 		print("\nFetching your JSON files to export locally...")
-		parents, results, coop_results = fetch_json("both", True, True) # will do prefetch_checks()
+		prefetch_checks() # force gen tokens
+		try:
+			parents, results, coop_results = fetch_json("both", True, True)
+		except:
+			print("Could not fetch results. Please delete config.txt and try again.")
+			sys.exit(1)
 
 		cwd = os.getcwd()
 		export_dir = os.path.join(cwd, f'export-{int(time.time())}')
