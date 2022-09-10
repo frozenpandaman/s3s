@@ -39,8 +39,8 @@ except (IOError, ValueError):
 API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
 USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
 USER_COUNTRY  = CONFIG_DATA["acc_loc"][-2:]  # nintendo account info
-GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet
-BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet
+GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64
+BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64 JWT
 SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 # UNIQUE_ID     = CONFIG_DATA["app_unique_id"] # NPLN player ID
@@ -56,19 +56,6 @@ else:
 		'AppleWebKit/537.36 (KHTML, like Gecko) ' \
 		'Chrome/94.0.4606.61 Mobile Safari/537.36'
 
-graphql_head = {
-	'Authorization':    f'Bearer {BULLETTOKEN}',
-	'Accept-Language':  USER_LANG,
-	'User-Agent':       APP_USER_AGENT,
-	'X-Web-View-Ver':   WEB_VIEW_VER,
-	'Content-Type':     'application/json',
-	'Accept':           '*/*',
-	'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
-	'X-Requested-With': 'com.nintendo.znca',
-	'Referer':          f'https://api.lp1.av5ja.srv.nintendo.net/?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
-	'Accept-Encoding': 'gzip, deflate'
-}
-
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/blob/main/src/api/splatnet3-types.ts#L28-L98
 translate_rid = {
@@ -79,6 +66,22 @@ translate_rid = {
 	'HomeQuery':                       'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
 }
 
+def headbutt():
+	'''Return a (dynamic!) header used for GraphQL requests.'''
+
+	graphql_head = {
+		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
+		'Accept-Language':  USER_LANG,
+		'User-Agent':       APP_USER_AGENT,
+		'X-Web-View-Ver':   WEB_VIEW_VER,
+		'Content-Type':     'application/json',
+		'Accept':           '*/*',
+		'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
+		'X-Requested-With': 'com.nintendo.znca',
+		'Referer':          f'https://api.lp1.av5ja.srv.nintendo.net/?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
+		'Accept-Encoding': 'gzip, deflate'
+	}
+	return graphql_head
 
 def set_noun(which):
 	'''Returns the term to be used when referring to the type of results in question.'''
@@ -163,7 +166,7 @@ def prefetch_checks():
 		gen_new_tokens("blank")
 
 	sha = translate_rid["HomeQuery"]
-	test = requests.post(GRAPHQL_URL, data=gen_graphql_body(sha), headers=graphql_head, cookies=dict(_gtoken=GTOKEN))
+	test = requests.post(GRAPHQL_URL, data=gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 	if test.status_code != 200:
 		gen_new_tokens("expiry")
 
@@ -239,7 +242,7 @@ def fetch_json(which, separate=False, exportall=False):
 		if sha != None:
 			battle_ids, job_ids = [], []
 
-			query1 = requests.post(GRAPHQL_URL, data=gen_graphql_body(sha), headers=graphql_head, cookies=dict(_gtoken=GTOKEN))
+			query1 = requests.post(GRAPHQL_URL, data=gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 			query1_resp = json.loads(query1.text)
 
 			# prefetch_checks() ensures this exists
@@ -256,7 +259,7 @@ def fetch_json(which, separate=False, exportall=False):
 			for bid in battle_ids:
 				query2_b = requests.post(GRAPHQL_URL,
 					data=gen_graphql_body(translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
-					headers=graphql_head,
+					headers=headbutt(),
 					cookies=dict(_gtoken=GTOKEN))
 				query2_resp_b = json.loads(query2_b.text)
 				ink_list.append(query2_resp_b)
@@ -264,7 +267,7 @@ def fetch_json(which, separate=False, exportall=False):
 			for jid in job_ids:
 				query2_j = requests.post(GRAPHQL_URL,
 					data=gen_graphql_body(translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
-					headers=graphql_head,
+					headers=headbutt(),
 					cookies=dict(_gtoken=GTOKEN))
 				query2_resp_j = json.loads(query2_j.text)
 				salmon_list.append(query2_resp_j)
@@ -290,7 +293,7 @@ def update_salmon_profile():
 
 	# old code
 	# .../api/coop_results - need stat.ink s3 support
-	# results_list = requests.get(url, headers=graphql_head, cookies=dict(_gtoken=GTOKEN))
+	# results_list = requests.get(url, headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 	# data = json.loads(results_list.text)
 	# profile = data["summary"]
 
@@ -786,7 +789,7 @@ def main():
 		try:
 			parents, results, coop_results = fetch_json("both", True, True)
 		except:
-			print("Could not fetch results. Please delete config.txt and try again.")
+			print("Please run the script again.")
 			sys.exit(1)
 
 		cwd = os.getcwd()
