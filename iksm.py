@@ -350,11 +350,14 @@ def enter_tokens():
 	print("Go to the page below to find instructions to obtain your gtoken and bulletToken:\nhttps://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions\n")
 
 	new_gtoken = input("Enter your gtoken: ")
-	while len(new_gtoken) != 124:
-		new_gtoken = input("Invalid token - length should be 124 characters. Try again.\nEnter your gtoken: ")
+	while len(new_gtoken) != 926:
+		new_gtoken = input("Invalid token - length should be 926 characters. Try again.\nEnter your gtoken: ")
 
 	new_bullettoken = input("Enter your bulletToken: ")
-	while len(new_bullettoken) != 926:
-		new_bullettoken = input("Invalid token - length should be 926 characters. Try again.\nEnter your bulletToken: ")
+	while len(new_bullettoken) != 124:
+		if len(new_bullettoken) == 123 and new_bullettoken[-1] != "=":
+			new_bullettoken += "=" # add a = to the end, which was probably left off (even though it works without)
+		else:
+			new_bullettoken = input("Invalid token - length should be 124 characters. Try again.\nEnter your bulletToken: ")
 
 	return new_gtoken, new_bullettoken
