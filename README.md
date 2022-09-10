@@ -5,12 +5,15 @@ s3s 🦑
 
 Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://github.com/frozenpandaman/splatnet2statink)**. (日本語版セットアップ手順 & 中文版的安装说明)
 
+### Features
+ - [x] Full automation of SplatNet token generation via user log-in
+ - [x] Exporting battle & Salmon Run job stats locally to your computer
+ - [x] Support for all available game languages
+ - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
+
 ### What's coming?
- - [ ] Full automation of SplatNet cookie generation via user log-in
- - [ ] Ability to parse & upload complete battle stats
+ - [ ] Ability to parse & upload complete battle stats (as soon as stat.ink supports it!)
  - [ ] Monitoring for new battle & Salmon Run job results in real-time
- - [ ] Support for all available game languages
- - [ ] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
  - [ ] Downloadable, pre-packaged program executables
 
 ---
@@ -48,11 +51,11 @@ Running `python s3s.py -M 900 -osr` monitors for new Salmon Run results, checkin
 
 5. Running the script for the first time will prompt you to enter your stat.ink API Token (available in [settings](https://stat.ink/profile)). If you're playing _Splatoon 3_ in a language other than English, you may enter your language code (locale) as well.
 
-**NOTE: Read the "Cookie generation" section below before proceeding. [→](#cookie-generation-)**
+**NOTE: Read the "Token generation" section below before proceeding. [→](#token-generation-)**
 
-6. You will then be asked to navigate to a specific URL on Nintendo.com, log in, and follow simple instructions to obtain your `session_token`; this will be used to generate a `bulletToken`. If you are opting against automatic cookie generation, enter "skip" for this step, at which point you will be asked to manually input your `bulletToken` instead (see the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions)).
+6. You will then be asked to navigate to a specific URL on Nintendo.com, log in, and follow simple instructions to obtain your `session_token`; this will be used to generate a `gtoken` and `bulletToken`. If you are opting against automatic token generation, enter "skip" for this step, at which point you will be asked to manually input your two tokens instead (see the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions)).
 
-    This cookie (used to access your SplatNet battle results) along with your stat.ink API key and language will automatically be saved into `config.txt` for you. You're now ready to upload battles!
+    These tokens (used to access your SplatNet battle results) along with your stat.ink API key and language will automatically be saved into `config.txt` for you. You're now ready to upload battles!
 
 Have any questions, issues, or suggestions? Feel free to message me on [Twitter](https://twitter.com/frozenpandaman) or create an [issue](https://github.com/frozenpandaman/s3s/issues) here.
 
@@ -60,23 +63,32 @@ Have any questions, issues, or suggestions? Feel free to message me on [Twitter]
 
 ### Accessing SplatNet 3 from your browser
 
-coming soon
+If you wish to access SplatNet 3 from your computer rather than via the phone app, navigate to [https://api.lp1.av5ja.srv.nintendo.net/](https://api.lp1.av5ja.srv.nintendo.net/) (it should show server maintenance). Use your browser or a third-party extension to add a cookie (Chrome instructions [here](https://developer.chrome.com/docs/devtools/storage/cookies/)) named `_gtoken`. Set it to the value you obtained previously (automatically or via [mitmproxy](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions), stored as `gtoken` in `config.txt`) and refresh the page. If you only want to access SplatNet and don't have a stat.ink API key, simply enter "skip" for this step during setup.
 
-## Cookie generation 🍪
+To access SplatNet 3 in a language other than English, go to `https://api.lp1.av5ja.srv.nintendo.net/?lang=xx-XX` where `xx-XX` is one of the available [language codes](https://github.com/frozenpandaman/s3s/wiki/languages).
 
-For s3s to work, [cookies](https://en.wikipedia.org/wiki/HTTP_cookie) known as `GameWebToken` and `bulletToken` are required to access SplatNet. These tokens may be obtained automatically, using the script, or manually via the official Nintendo Switch Online app. Please read the following sections carefully to decide whether or not you want to use automatic cookie generation.
+You can even enter QR codes on the web version of SplatNet 3 via the list of available ones [here](https://github.com/frozenpandaman/s3s/wiki/list-of-qr-codes)!
+
+*Splatoon 3* stage rotation information and current SplatNet gear will soon be viewable at [splatoon3.ink](https://splatoon3.ink/).
+
+
+## Token generation 🍪
+
+For s3s to work, [tokens](https://en.wikipedia.org/wiki/Access_token) known as `gtoken` and `bulletToken` are required to access SplatNet. These tokens may be obtained automatically, using the script, or manually via the official Nintendo Switch Online app. Please read the following sections carefully to decide whether or not you want to use automatic token generation.
 
 ### Automatic
 
-Automatic cookie generation involves making a *secure request to a non-Nintendo server with minimal, non-identifying information*. We aim to be 100% transparent about this and provide in-depth information on security and privacy. Users who feel uncomfortable with this may opt to manually acquire their cookie instead.
+Automatic token generation involves making a *secure request to a non-Nintendo server with minimal, non-identifying information*. We aim to be 100% transparent about this and provide in-depth information on security and privacy. Users who feel uncomfortable with this may opt to manually acquire their tokens instead.
 
 **Privacy statement:** No identifying information is ever sent to the [imink API](https://status.imink.app/). Usernames and passwords are far removed from where the API comes into play and are never readable by anyone but you, and returned hash values do not contain meaningful information about your account. It is not possible to use either sent or stored data to identify which account/user performed a request, to view any identifying information about a user, or to gain access to an account. See the [imink API Privacy Policy](https://github.com/JoneWang/imink/wiki/Privacy-Policy) and [Documentation](https://github.com/JoneWang/imink/wiki/imink-API-Documentation) for more information.
 
+Alternatively, you can use [nsotokengen](https://github.com/clovervidia/nsotokengen) with an Android-x86 virtual machine as a drop-in replacement (customizable in `config.txt`) as a way to generate tokens locally without calls to a third-party API.
+
 ### Manual
 
-Users who decide against automatic cookie generation may instead generate/retrieve `bulletToken`s manually via the SplatNet 3 service.
+Users who decide against automatic token generation may instead generate/retrieve tokens manually via the SplatNet 3 service.
 
-In this case, users must obtain their cookie from their phone – or an emulator – by intercepting their device's web traffic and entering it into s3s when prompted (or manually adding it to `config.txt` later). Follow the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions) to obtain your token. To opt against automatic acquisition, type "skip" when prompted to enter the "Select this account" URL.
+In this case, users must obtain tokens from their phone – or an emulator – by intercepting their device's web traffic and entering the tokens into s3s when prompted (or manually adding them to `config.txt` later). Follow the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions) to obtain your tokens. To opt against automatic acquisition, type "skip" when prompted to enter the "Select this account" URL.
 
 ## License & copyleft statement 🏴
 
