@@ -295,9 +295,6 @@ def get_bullet(web_service_token, web_view_ver, app_user_agent, user_lang, user_
 	r = requests.post(url, headers=app_head, cookies=app_cookies)
 	bullet_resp = json.loads(r.text)
 
-	print("***")
-	print(r.text)
-
 	if r.status_code == 401:
 		print("Unauthorized error (ERROR_INVALID_GAME_WEB_TOKEN). Cannot fetch tokens at this time.")
 		sys.exit(1)
