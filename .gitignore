@@ -1,2 +1,4 @@
 config.txt
 *.pyc
+# Temporary
+export-*/
