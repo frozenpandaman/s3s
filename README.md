@@ -73,7 +73,7 @@ You can even enter QR codes on the web version of SplatNet 3 via the list of ava
 *Splatoon 3* stage rotation information and current SplatNet gear will soon be viewable at [splatoon3.ink](https://splatoon3.ink/).
 
 
-## Token generation 🍪
+## Token generation 🪙
 
 For s3s to work, [tokens](https://en.wikipedia.org/wiki/Access_token) known as `gtoken` and `bulletToken` are required to access SplatNet. These tokens may be obtained automatically, using the script, or manually via the official Nintendo Switch Online app. Please read the following sections carefully to decide whether or not you want to use automatic token generation.
 
