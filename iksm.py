@@ -150,7 +150,7 @@ def get_gtoken(f_gen_url, session_token, ver):
 		'Content-Length':  '436',
 		'Accept':          'application/json',
 		'Connection':      'Keep-Alive',
-		'User-Agent':      'OnlineLounge/' + nsoapp_version + ' NASDKAPI Android' # CHANGE
+		'User-Agent':      'Dalvik/2.1.0 (Linux; U; Android 7.1.2)'
 	}
 
 	body = {

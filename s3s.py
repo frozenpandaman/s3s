@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw
 from packaging import version
 import iksm
 
-A_VERSION = "0.0.1"
+A_VERSION = "0.0.2"
 
 print(f"s3s v{A_VERSION}")
 
@@ -785,9 +785,8 @@ def main():
 	###########################
 	if outfile:
 		print("\nFetching your JSON files to export locally...")
-		prefetch_checks() # force gen tokens
 		try:
-			parents, results, coop_results = fetch_json("both", True, True)
+			parents, results, coop_results = fetch_json("both", True, True) # calls prefetch_checks() to gen or check tokens
 		except:
 			print("Please run the script again.")
 			sys.exit(1)
