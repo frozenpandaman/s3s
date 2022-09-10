@@ -245,14 +245,16 @@ def fetch_json(which, separate=False, exportall=False):
 			query1 = requests.post(GRAPHQL_URL, data=gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 			query1_resp = json.loads(query1.text)
 
-			# prefetch_checks() ensures this exists
-			try: # ink battle
-				for b in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"][0]["historyDetails"]["nodes"]:
-					battle_ids.append(b["id"])
-			except: # salmon run job
+			# prefetch_checks() ensures these paths exist
+			try: # ink battles
+				for battle_group in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
+					for battle in battle_group["historyDetails"]["nodes"]:
+						battle_ids.append(battle["id"])
+			except: # salmon run jobs
 				try:
-					for j in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"][0]["historyDetails"]["nodes"]:
-						job_ids.append(j["id"])
+					for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
+						for job in shift["historyDetails"]["nodes"]:
+							job_ids.append(job["id"])
 				except:
 					pass
 
@@ -784,7 +786,8 @@ def main():
 	# exporting results to file
 	###########################
 	if outfile:
-		print("\nFetching your JSON files to export locally...")
+		prefetch_checks()
+		print("\nFetching your JSON files to export locally... this might take a while.")
 		try:
 			parents, results, coop_results = fetch_json("both", True, True) # calls prefetch_checks() to gen or check tokens
 		except:
