@@ -7,31 +7,32 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
 
 ### Features
  - [x] Full automation of SplatNet token generation via user log-in
- - [x] Exporting battle & Salmon Run job stats locally to your computer
+ - [x] Exporting battle & Salmon Run job stats (as JSON files) locally to your computer
  - [x] Support for all available game languages
  - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
 
 ### What's coming?
  - [ ] Ability to parse & upload complete battle stats (as soon as stat.ink supports it!)
  - [ ] Monitoring for new battle & Salmon Run job results in real-time
+ - [ ] Flag to black out other players' names from results
  - [ ] Downloadable, pre-packaged program executables
 
 ---
 
 ## Usage 🐙
 ```
-$ python s3s.py [-M [N]] [-r] [-nsr | -osr] [--blackout]
+$ python s3s.py [-M [N]] [-r] [-nsr | -osr]
 ```
 
 The `-M` flag runs the script in monitoring mode, uploading new battles/jobs as you play, checking for new results every `N` seconds; if no `N` is provided, it defaults to 300 (5 minutes).
 
 The `-r` flag checks for & uploads any battles/jobs present on SplatNet 3 that haven't yet been uploaded.
 
-The `-nsr` flag makes Salmon Run jobs **not** be monitored or uploaded. Use this if you're playing Turf War/Ranked modes only.
+The `-nsr` flag makes Salmon Run jobs **not** be monitored/uploaded. Use this if you're playing Lobby modes only.
 
-The `-osr` flag, conversely, makes **only** Salmon Run jobs be monitored or uploaded.
+The `-osr` flag, conversely, makes **only** Salmon Run jobs be monitored/uploaded. Use this if you're playing at Grizzco only.
 
-The `--blackout` flag blacks out other players' names on scoreboard result images and in uploaded data.
+<!-- The `--blackout` flag blacks out other players' names on scoreboard result images and in uploaded data. -->
 
 ### Example usage
 
