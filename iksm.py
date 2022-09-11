@@ -189,16 +189,6 @@ def get_gtoken(f_gen_url, session_token, ver):
 	user_country  = user_info["country"]
 
 	# get access token
-	app_head = {
-		'X-Platform':       'Android',
-		'X-ProductVersion': nsoapp_version,
-		'Content-Type':     'application/json; charset=utf-8',
-		'Content-Length':   '1074',
-		'Connection':       'Keep-Alive',
-		'Accept-Encoding':  'gzip',
-		'User-Agent':       'com.nintendo.znca/' + nsoapp_version + '(Android/7.1.2)',
-	}
-
 	body = {}
 	try:
 		idToken = id_response["id_token"]
@@ -221,6 +211,16 @@ def get_gtoken(f_gen_url, session_token, ver):
 		print(json.dumps(user_info, indent=2))
 		sys.exit(1)
 	body["parameter"] = parameter
+
+	app_head = {
+		'X-Platform':       'Android',
+		'X-ProductVersion': nsoapp_version,
+		'Content-Type':     'application/json; charset=utf-8',
+		'Content-Length':   str(990 + len(f)),
+		'Connection':       'Keep-Alive',
+		'Accept-Encoding':  'gzip',
+		'User-Agent':       'com.nintendo.znca/' + nsoapp_version + '(Android/7.1.2)',
+	}
 
 	url = "https://api-lp1.znc.srv.nintendo.net/v3/Account/Login"
 	r = requests.post(url, headers=app_head, json=body)
