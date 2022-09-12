@@ -222,7 +222,7 @@ def gen_new_tokens(reason, force=False):
 		print(f"Wrote tokens for {acc_name} to config.txt.")
 
 
-def fetch_json(which, separate=False, exportall=False):
+def fetch_json(which, separate=False, exportall=False, specific=False):
 	'''Returns results JSON from SplatNet 3, including a combined dict for ink battles + SR jobs if requested.'''
 
 	if exportall and not separate:
@@ -236,10 +236,12 @@ def fetch_json(which, separate=False, exportall=False):
 
 	sha_list = []
 	if which == "both" or which == "ink":
-		sha_list.append(translate_rid["LatestBattleHistoriesQuery"])
-		sha_list.append(translate_rid["RegularBattleHistoriesQuery"])
-		sha_list.append(translate_rid["BankaraBattleHistoriesQuery"])
-		sha_list.append(translate_rid["PrivateBattleHistoriesQuery"])
+		if specific:
+			sha_list.append(translate_rid["RegularBattleHistoriesQuery"])
+			sha_list.append(translate_rid["BankaraBattleHistoriesQuery"])
+			sha_list.append(translate_rid["PrivateBattleHistoriesQuery"])
+		else:
+			sha_list.append(translate_rid["LatestBattleHistoriesQuery"])
 	else:
 		sha_list.append(None)
 	if which == "both" or which == "salmon":
@@ -817,7 +819,7 @@ def main():
 		prefetch_checks()
 		print("\nFetching your JSON files to export locally... this might take a while.")
 		try:
-			parents, results, coop_results = fetch_json("both", True, True) # calls prefetch_checks() to gen or check tokens
+			parents, results, coop_results = fetch_json("both", True, True, True) # calls prefetch_checks() to gen or check tokens
 		except:
 			print("Please run the script again.")
 			sys.exit(1)
