@@ -70,7 +70,7 @@ To access SplatNet 3 in a language other than English, go to `https://api.lp1.av
 
 You can even enter QR codes on the web version of SplatNet 3 via the list of available ones [here](https://github.com/frozenpandaman/s3s/wiki/list-of-qr-codes)!
 
-*Splatoon 3* stage rotation information and current SplatNet gear will soon be viewable at [splatoon3.ink](https://splatoon3.ink/).
+*Splatoon 3* stage rotation information and current SplatNet gear are viewable at [splatoon3.ink](https://splatoon3.ink/).
 
 
 ## Token generation 🪙
