@@ -468,6 +468,10 @@ def prepare_battle_result(battle):
 	# 	payload["rank_before_exp"] = ...
 	# 	payload["rank_after_exp"] = ...
 
+		# payload["image_judge"] = ... # judd screen
+		# payload["image_result"] = ... # full scoreboard
+		# payload["image_gear"] = ... # gear
+
 	payload["automated"] = "yes" # data was not manually entered!
 	payload["splatnet_json"] = json.dumps(battle)
 
