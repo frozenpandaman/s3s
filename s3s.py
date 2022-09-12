@@ -46,7 +46,7 @@ F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink 
 # UNIQUE_ID     = CONFIG_DATA["app_unique_id"] # NPLN player ID
 
 GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
-WEB_VIEW_VER = '1.0.0-5e2bcdfb' # TODO - parse from js, don't hardcode
+WEB_VIEW_VER = '1.0.0-d3a90678' # TODO - parse from js, don't hardcode
 
 # SET HTTP HEADERS
 if "app_user_agent" in CONFIG_DATA:
@@ -57,7 +57,7 @@ else:
 		'Chrome/94.0.4606.61 Mobile Safari/537.36'
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
-# full list: https://github.com/samuelthomas2774/nxapi/blob/main/src/api/splatnet3-types.ts#L28-L98
+# full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
 translate_rid = {
 	'LatestBattleHistoriesQuery':      '7d8b560e31617e981cf7c8aa1ca13a00', # blank vars - query1
 	'VsHistoryDetailQuery':            'cd82f2ade8aca7687947c5f3210805a6', # req "vsResultId" - query2
@@ -327,6 +327,21 @@ def prepare_battle_result(battle):
 
 	payload = {}
 	battle = battle["data"]["vsHistoryDetail"]
+
+	## UUID ##
+	##########
+	# id_base64 = battle["id"]
+	# id_decoded = base64.b64decode(id_base64).decode('utf-8')
+	# payload["uuid"] = id_decoded[-36]
+
+	## SPLASHTAG ##
+	###############
+	# title = battle["player"]["byname"]
+	# username = battle["player"]["name"]
+	# name_id = battle["player"]["nameId"]
+	# username_color (dict of r, g, b, a) = battle["player"]["nameplate"]["background"]["textColor"]
+	# badge_urls = parse to data - battle["player"]["nameplate"]["badges"][i]["image"]["url"]
+	# background = parse to data - battle["player"]["nameplate"]["background"]["image"]["url"]
 
 	## MODE ##
 	##########
