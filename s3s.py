@@ -64,6 +64,9 @@ translate_rid = {
 	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # blank vars - query1
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # req "coopHistoryDetailId" - query2
 	'HomeQuery':                       'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
+	'RegularBattleHistoriesQuery':     '819b680b0c7962b6f7dc2a777cd8c5e4',
+	'BankaraBattleHistoriesQuery':     'c1553ac75de0a3ea497cdbafaa93e95b',
+	'PrivateBattleHistoriesQuery':     '51981299595060692440e0ca66c475a1',
 }
 
 def headbutt():
@@ -234,6 +237,9 @@ def fetch_json(which, separate=False, exportall=False):
 	sha_list = []
 	if which == "both" or which == "ink":
 		sha_list.append(translate_rid["LatestBattleHistoriesQuery"])
+		sha_list.append(translate_rid["RegularBattleHistoriesQuery"])
+		sha_list.append(translate_rid["BankaraBattleHistoriesQuery"])
+		sha_list.append(translate_rid["PrivateBattleHistoriesQuery"])
 	else:
 		sha_list.append(None)
 	if which == "both" or which == "salmon":
@@ -253,13 +259,28 @@ def fetch_json(which, separate=False, exportall=False):
 				for battle_group in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
-			except: # salmon run jobs
-				try:
-					for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
-						for job in shift["historyDetails"]["nodes"]:
-							job_ids.append(job["id"])
+			except:
+				try:  # Regular battles
+					for battle_group in query1_resp["data"]["regularBattleHistories"]["historyGroups"]["nodes"]:
+						for battle in battle_group["historyDetails"]["nodes"]:
+							battle_ids.append(battle["id"])
 				except:
-					pass
+					try:  # Bankara battles
+						for battle_group in query1_resp["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]:
+							for battle in battle_group["historyDetails"]["nodes"]:
+								battle_ids.append(battle["id"])
+					except:
+						try:  # Private battles
+							for battle_group in query1_resp["data"]["privateBattleHistories"]["historyGroups"]["nodes"]:
+								for battle in battle_group["historyDetails"]["nodes"]:
+									battle_ids.append(battle["id"])
+						except: # salmon run jobs
+							try:
+								for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
+									for job in shift["historyDetails"]["nodes"]:
+										job_ids.append(job["id"])
+							except:
+								pass
 
 			for bid in battle_ids:
 				query2_b = requests.post(GRAPHQL_URL,
