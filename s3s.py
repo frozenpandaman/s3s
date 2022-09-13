@@ -7,6 +7,7 @@
 import sys, os, requests, json, time, datetime, argparse, msgpack
 from PIL import Image, ImageDraw
 from packaging import version
+import semver
 import iksm
 
 A_VERSION = "0.0.3"
@@ -584,9 +585,16 @@ def post_result(data, isblackout, istestrun):
 
 def check_for_updates():
 	'''Checks the script version against the repo, reminding users to update if available.'''
-
-	print("Auto-update is not yet implemented. Please update the script regularly with `git pull`.")
-	# TODO
+	print("\nChecking for updates...")
+	response = requests.get("https://api.github.com/repos/frozenpandaman/s3s/releases/latest")
+	try:
+		repo_version = response.json()["tag_name"]
+		# Returns -1 if the repo has a newer version
+		if semver.compare(A_VERSION, repo_version) == -1:
+			print(f"\nThere is a new version ({repo_version}) available.")
+			print("\nGo to https://github.com/frozenpandaman/s3s/releases/latest to download it.")
+	except:
+		print(f"\nCould not get the latest version. (Status Code {response.status_code})")
 
 
 def check_statink_key():
