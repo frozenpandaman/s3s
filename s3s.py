@@ -259,6 +259,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False):
 	else:
 		sha_list.append(None)
 
+	battle_ids, job_ids = [], []
 	for sha in sha_list:
 		if sha != None:
 			battle_ids, job_ids = [], []
@@ -292,27 +293,27 @@ def fetch_json(which, separate=False, exportall=False, specific=False):
 					for job in shift["historyDetails"]["nodes"]:
 						job_ids.append(job["id"])
 
-			job_ids = list(dict.fromkeys(job_ids)) # remove duplicates. salmon run job list has no dupes
-
-			for bid in battle_ids:
-				query2_b = requests.post(GRAPHQL_URL,
-					data=gen_graphql_body(translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
-					headers=headbutt(),
-					cookies=dict(_gtoken=GTOKEN))
-				query2_resp_b = json.loads(query2_b.text)
-				ink_list.append(query2_resp_b)
-
-			for jid in job_ids:
-				query2_j = requests.post(GRAPHQL_URL,
-					data=gen_graphql_body(translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
-					headers=headbutt(),
-					cookies=dict(_gtoken=GTOKEN))
-				query2_resp_j = json.loads(query2_j.text)
-				salmon_list.append(query2_resp_j)
-
 			parent_files.append(query1_resp)
 		else: # sha = None (we don't want to get the specified result type)
 			pass
+
+	battle_ids = list(dict.fromkeys(battle_ids)) # remove duplicates. salmon run job list has no dupes
+
+	for bid in battle_ids:
+		query2_b = requests.post(GRAPHQL_URL,
+			data=gen_graphql_body(translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
+			headers=headbutt(),
+			cookies=dict(_gtoken=GTOKEN))
+		query2_resp_b = json.loads(query2_b.text)
+		ink_list.append(query2_resp_b)
+
+	for jid in job_ids:
+		query2_j = requests.post(GRAPHQL_URL,
+			data=gen_graphql_body(translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
+			headers=headbutt(),
+			cookies=dict(_gtoken=GTOKEN))
+		query2_resp_j = json.loads(query2_j.text)
+		salmon_list.append(query2_resp_j)
 
 	if exportall:
 		return parent_files, ink_list, salmon_list
