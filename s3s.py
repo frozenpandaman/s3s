@@ -109,7 +109,10 @@ def b64d(string):
 	thing_id = thing_id.replace("Weapon-", "")
 	thing_id = thing_id.replace("CoopStage-", "")
 	thing_id = thing_id.replace("CoopGrade-", "")
-	return int(thing_id)
+	if thing_id[:15] == "VsHistoryDetail" or thing_id[:17] == "CoopHistoryDetail":
+		return thing_id[-36:] # uuid
+	else:
+		return int(thing_id) # integer
 
 
 def gen_graphql_body(sha256hash, varname=None, varvalue=None):
@@ -359,9 +362,7 @@ def prepare_battle_result(battle):
 
 	## UUID ##
 	##########
-	# id_base64 = battle["id"]
-	# id_decoded = base64.b64decode(id_base64).decode('utf-8')
-	# payload["uuid"] = id_decoded[-36]
+	# payload["uuid"] = b64d(battle["id"])
 
 	## SPLASHTAG ##
 	###############
@@ -534,16 +535,16 @@ def post_result(data, isblackout, istestrun):
 	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message..'''
 
 	try:
-		results = data["results"] # list of dictionaries
+		results = data["results"] # list of dictionaries - TODO might be diff
 	except KeyError:
 		results = [data] # single battle/job
 
 	# filter down to one battle at a time
 	for i in range(len(results)):
-		if "battle_number" in results[i]: # ink battle
-			payload = prepare_battle_result(results[i])
-		elif "job_id" in results[i]: # salmon run job
-			payload = prepare_job_result(results[i])
+		if "vsHistoryDetail" in results[i]["data"]: # ink battle
+			payload = prepare_battle_result(results[i]["data"])
+		elif "coopHistoryDetail" in results[i]["data"]: # salmon run job
+			payload = prepare_job_result(results[i]["data"])
 		else: # shouldn't happen
 			print("Ill-formatted JSON while uploading. Exiting.")
 			sys.exit(1)
@@ -632,21 +633,22 @@ def check_if_missing(which, isblackout, istestrun):
 	print(f"Checking if there are previously-unuploaded {noun}...")
 
 	urls = []
+	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Get-UUID-List-(for-s3s)
 	if which == "both" or which == "ink":
-		urls.append("https://stat.ink/api/v2/user-battle?only=splatnet_number&count=100") # TODO - update for s3
+		urls.append("https://stat.ink/api/v3/s3s/uuid-list") # max 200 entries
 	else:
 		urls.append(None)
-	if which == "both" or which == "salmon":
-		urls.append("https://stat.ink/api/v2/user-salmon?only=splatnet_number&count=100") # TODO - update for s3
-	else:
-		urls.append(None)
+	# if which == "both" or which == "salmon":
+		# urls.append("...")
+	# else:
+		# urls.append(None)
 
 	noun = "battles" # first (and maybe only)
 	for url in urls:
 		if url != None:
 			printed = False
 			auth = {'Authorization': f'Bearer {API_KEY}'}
-			resp = requests.get(url, headers=auth)
+			resp = requests.get(url, headers=auth) # no params = all: regular, bankara, private
 			try:
 				statink_uploads = json.loads(resp.text)
 			except:
@@ -658,11 +660,11 @@ def check_if_missing(which, isblackout, istestrun):
 
 			splatnet_results = [] # 50 recent battles/jobs on splatnet
 			for i, result in reversed(list(enumerate(results))):
-				try:
-					num = int(result["battle_number"])
-				except KeyError:
+				try: # ink battle
+					num = b64d(result["VsHistoryDetail"]["id"])
+				except KeyError: # salmon run job
 					try:
-						num = int(result["job_id"])
+						num = b64d(result["CoopHistoryDetail"]["id"])
 					except:
 						print(f"Ill-formatted JSON while checking missing {noun}. Exiting.")
 						sys.exit(1)
