@@ -46,7 +46,6 @@ F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink 
 # UNIQUE_ID     = CONFIG_DATA["app_unique_id"] # NPLN player ID
 
 GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
-WEB_VIEW_VER = '1.0.0-d3a90678' # TODO - parse from js, don't hardcode
 
 # SET HTTP HEADERS
 if "app_user_agent" in CONFIG_DATA:
@@ -68,6 +67,12 @@ translate_rid = {
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
 }
 
+def get_web_view_ver():
+	'''Find & parse the SplatNet 3 main.js file for the current site version.'''
+
+	return "1.0.0-d3a90678" # TODO - parse from js, don't hardcode
+
+
 def headbutt():
 	'''Return a (dynamic!) header used for GraphQL requests.'''
 
@@ -75,7 +80,7 @@ def headbutt():
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
 		'Accept-Language':  USER_LANG,
 		'User-Agent':       APP_USER_AGENT,
-		'X-Web-View-Ver':   WEB_VIEW_VER,
+		'X-Web-View-Ver':   get_web_view_ver(),
 		'Content-Type':     'application/json',
 		'Accept':           '*/*',
 		'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
@@ -209,7 +214,7 @@ def gen_new_tokens(reason, force=False):
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
-		new_bullettoken = iksm.get_bullet(new_gtoken, WEB_VIEW_VER, APP_USER_AGENT, acc_lang, acc_country)
+		new_bullettoken = iksm.get_bullet(new_gtoken, get_web_view_ver(), APP_USER_AGENT, acc_lang, acc_country)
 	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
 	CONFIG_DATA["acc_loc"] = acc_lang + "|" + acc_country

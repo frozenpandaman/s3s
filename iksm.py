@@ -13,7 +13,6 @@ nsoapp_version = "2.2.0"
 
 # functions in this file & call stack:
 # get_nsoapp_version()
-# get_web_view_ver()
 # log_in() -> get_session_token()
 # get_gtoken() -> call_imink_api() -> f
 # get_bullet()
@@ -39,10 +38,6 @@ def get_nsoapp_version():
 	except:
 		global nsoapp_version
 		return nsoapp_version
-
-
-def get_web_view_ver(): # TODO
-	pass
 
 
 def log_in(ver):
