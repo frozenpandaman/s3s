@@ -60,6 +60,7 @@ else:
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
 translate_rid = {
 	'HomeQuery':                       'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
+	'LatestBattleHistoriesQuery':      '7d8b560e31617e981cf7c8aa1ca13a00', # INK / blank vars - query1
 	'RegularBattleHistoriesQuery':     '819b680b0c7962b6f7dc2a777cd8c5e4', # INK / blank vars - query1
 	'BankaraBattleHistoriesQuery':     'c1553ac75de0a3ea497cdbafaa93e95b', # INK / blank vars - query1
 	'PrivateBattleHistoriesQuery':     '51981299595060692440e0ca66c475a1', # INK / blank vars - query1
