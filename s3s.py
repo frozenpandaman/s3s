@@ -591,7 +591,7 @@ def check_for_updates():
 	try:
 		repo_version = response.json()["tag_name"]
 		# Returns -1 if the repo has a newer version
-		if semver.compare(A_VERSION, repo_version) == -1:
+		if semver.compare(A_VERSION, repo_version) < 0:
 			print(f"\nThere is a new version ({repo_version}) available.")
 			print("\nGo to https://github.com/frozenpandaman/s3s/releases/latest to download it.")
 	except:
