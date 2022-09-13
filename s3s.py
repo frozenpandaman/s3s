@@ -7,6 +7,7 @@
 import sys, os, requests, json, time, datetime, argparse, msgpack
 from PIL import Image, ImageDraw
 from packaging import version
+import updater
 import iksm
 
 A_VERSION = "0.0.2"
@@ -555,8 +556,8 @@ def post_result(data, isblackout, istestrun):
 def check_for_updates():
 	'''Checks the script version against the repo, reminding users to update if available.'''
 
-	print("Auto-update is not yet implemented. Please update the script regularly with `git pull`.")
-	# TODO
+	if updater.check_s3s(A_VERSION):
+		sys.exit(0)
 
 
 def check_statink_key():
