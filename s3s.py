@@ -9,7 +9,7 @@ from PIL import Image, ImageDraw
 from packaging import version
 import iksm
 
-A_VERSION = "0.0.2"
+A_VERSION = "0.0.3"
 
 print(f"s3s v{A_VERSION}")
 
@@ -59,14 +59,13 @@ else:
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
 translate_rid = {
-	'LatestBattleHistoriesQuery':      '7d8b560e31617e981cf7c8aa1ca13a00', # blank vars - query1
-	'VsHistoryDetailQuery':            'cd82f2ade8aca7687947c5f3210805a6', # req "vsResultId" - query2
-	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # blank vars - query1
-	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # req "coopHistoryDetailId" - query2
 	'HomeQuery':                       'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
-	'RegularBattleHistoriesQuery':     '819b680b0c7962b6f7dc2a777cd8c5e4',
-	'BankaraBattleHistoriesQuery':     'c1553ac75de0a3ea497cdbafaa93e95b',
-	'PrivateBattleHistoriesQuery':     '51981299595060692440e0ca66c475a1',
+	'RegularBattleHistoriesQuery':     '819b680b0c7962b6f7dc2a777cd8c5e4', # INK / blank vars - query1
+	'BankaraBattleHistoriesQuery':     'c1553ac75de0a3ea497cdbafaa93e95b', # INK / blank vars - query1
+	'PrivateBattleHistoriesQuery':     '51981299595060692440e0ca66c475a1', # INK / blank vars - query1
+	'VsHistoryDetailQuery':            'cd82f2ade8aca7687947c5f3210805a6', # INK / req "vsResultId" - query2
+	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # SR  / blank vars - query1
+	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
 }
 
 def headbutt():
@@ -236,9 +235,11 @@ def fetch_json(which, separate=False, exportall=False, specific=False):
 
 	sha_list = []
 	if which == "both" or which == "ink":
-		if specific:
+		if specific == True or specific == "regular":
 			sha_list.append(translate_rid["RegularBattleHistoriesQuery"])
+		if specific == True or specific == "anarchy":
 			sha_list.append(translate_rid["BankaraBattleHistoriesQuery"])
+		if specific == True or specific == "private":
 			sha_list.append(translate_rid["PrivateBattleHistoriesQuery"])
 		else:
 			sha_list.append(translate_rid["LatestBattleHistoriesQuery"])
@@ -256,33 +257,33 @@ def fetch_json(which, separate=False, exportall=False, specific=False):
 			query1 = requests.post(GRAPHQL_URL, data=gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 			query1_resp = json.loads(query1.text)
 
-			# prefetch_checks() ensures these paths exist
-			try: # ink battles
+			# ink battles - latest 50 of any type
+			if "latestBattleHistories" in query1_resp["data"]:
 				for battle_group in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
-			except:
-				try:  # Regular battles
-					for battle_group in query1_resp["data"]["regularBattleHistories"]["historyGroups"]["nodes"]:
-						for battle in battle_group["historyDetails"]["nodes"]:
-							battle_ids.append(battle["id"])
-				except:
-					try:  # Bankara battles
-						for battle_group in query1_resp["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]:
-							for battle in battle_group["historyDetails"]["nodes"]:
-								battle_ids.append(battle["id"])
-					except:
-						try:  # Private battles
-							for battle_group in query1_resp["data"]["privateBattleHistories"]["historyGroups"]["nodes"]:
-								for battle in battle_group["historyDetails"]["nodes"]:
-									battle_ids.append(battle["id"])
-						except: # salmon run jobs
-							try:
-								for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
-									for job in shift["historyDetails"]["nodes"]:
-										job_ids.append(job["id"])
-							except:
-								pass
+			# ink battles - latest 50 turf war
+			elif "regularBattleHistories" in query1_resp["data"]:
+				for battle_group in query1_resp["data"]["regularBattleHistories"]["historyGroups"]["nodes"]:
+					for battle in battle_group["historyDetails"]["nodes"]:
+						battle_ids.append(battle["id"])
+			# ink battles - latest 50 ranked battles
+			elif "bankaraBattleHistories" in query1_resp["data"]:
+				for battle_group in query1_resp["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]:
+					for battle in battle_group["historyDetails"]["nodes"]:
+						battle_ids.append(battle["id"])
+			# ink battles - latest 50 private battles
+			elif "privateBattleHistories" in query1_resp["data"]:
+				for battle_group in query1_resp["data"]["privateBattleHistories"]["historyGroups"]["nodes"]:
+					for battle in battle_group["historyDetails"]["nodes"]:
+						battle_ids.append(battle["id"])
+			# salmon run jobs - latest 50
+			elif "coopResult" in query1_resp["data"]:
+				for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
+					for job in shift["historyDetails"]["nodes"]:
+						job_ids.append(job["id"])
+
+			job_ids = list(dict.fromkeys(job_ids)) # remove duplicates. salmon run job list has no dupes
 
 			for bid in battle_ids:
 				query2_b = requests.post(GRAPHQL_URL,
@@ -534,9 +535,9 @@ def post_result(data, isblackout, istestrun):
 
 	# filter down to one battle at a time
 	for i in range(len(results)):
-		if results[i].has_key("battle_number"): # ink battle
+		if "battle_number" in results[i]: # ink battle
 			payload = prepare_battle_result(results[i])
-		elif results[i].has_key("job_id"): # salmon run job
+		elif "job_id" in results[i]: # salmon run job
 			payload = prepare_job_result(results[i])
 		else: # shouldn't happen
 			print("Ill-formatted JSON while uploading. Exiting.")
@@ -604,7 +605,7 @@ def get_num_results(which):
 	'''I/O for getting number of battles/jobs to upload.'''
 
 	noun = set_noun(which)
-	try:
+	try: # TODO - can be above 50 if combined tw/anarchy/private results. do stuff with 'specific=...'
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
 	except ValueError:
 		print("Please enter an integer between 0 and 50. Exiting.")
@@ -648,7 +649,7 @@ def check_if_missing(which, isblackout, istestrun):
 				sys.exit(1)
 
 			# ! fetch from online
-			results = fetch_json(which)
+			results = fetch_json(which) # don't need to set 'specific' - should all be within 'latest'
 
 			splatnet_results = [] # 50 recent battles/jobs on splatnet
 			for i, result in reversed(list(enumerate(results))):
@@ -677,7 +678,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 	'''Monitors JSON for changes/new battles and uploads them.'''
 
 	# ! fetch from online
-	battles_results, jobs_results = fetch_json(which, True) # separate the jsons
+	battles_results, jobs_results = fetch_json(which, separate=True) # don't need to set 'specific' - should all be within 'latest'
 
 	cached_battles = []
 	cached_jobs = []
@@ -703,7 +704,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 				sys.stdout.write("\r")
 
 			# ! fetch from online
-			ink_results, salmon_results = fetch_json(which, True)
+			ink_results, salmon_results = fetch_json(which, separate=True) # don't need to set 'specific' - should all be within 'latest'
 
 			if which == "both" or which == "ink":
 				for i, result in reversed(list(enumerate(battles_results))):
@@ -834,8 +835,11 @@ def main():
 		prefetch_checks()
 		print("\nFetching your JSON files to export locally... this might take a while.")
 		try:
-			parents, results, coop_results = fetch_json("both", True, True, True) # calls prefetch_checks() to gen or check tokens
-		except:
+			# fetch_json() calls prefetch_checks() to gen or check tokens
+			parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True)
+		except Exception as e:
+			print("Ran into an error:")
+			print(e)
 			print("Please run the script again.")
 			sys.exit(1)
 
@@ -852,7 +856,7 @@ def main():
 		if results != None:
 			with open(os.path.join(cwd, export_dir, "results.json"), "x") as fout:
 				json.dump(results, fout)
-				print("Created results.json with detailed recent battles stats (up to 50).")
+				print("Created results.json with detailed recent battle stats (up to 50 of each type).")
 
 		if coop_results != None:
 			with open(os.path.join(cwd, export_dir, "coop_results.json"), "x") as fout:
