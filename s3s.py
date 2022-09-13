@@ -550,7 +550,7 @@ def post_result(data, isblackout, istestrun):
 			print("Ill-formatted JSON while uploading. Exiting.")
 			sys.exit(1)
 
-		if payload["lobby"] == "private" and custom_key_exists("ignore_private"):
+		if payload["lobby"] == "private" and custom_key_exists("ignore_private"): # TODO - also check salmon run?
 			continue
 
 		# TODO - do stuff with isblackout - check for salmon run too??
@@ -586,8 +586,28 @@ def post_result(data, isblackout, istestrun):
 def check_for_updates():
 	'''Checks the script version against the repo, reminding users to update if available.'''
 
-	print("Auto-update is not yet implemented. Please update the script regularly with `git pull`.")
-	# TODO
+	print("While s3s is in alpha, please update the script regularly via `git pull`.")
+	# try:
+	# 	latest_script = requests.get("https://raw.githubusercontent.com/frozenpandaman/s3s/master/s3s.py")
+	# 	new_version = re.search(r'A_VERSION = "([\d.]*)"', latest_script.text).group(1)
+	# 	update_available = version.parse(new_version) > version.parse(A_VERSION)
+	# 	if update_available:
+	# 		print(f"\nThere is a new version (v{new_version}) available.", end='')
+	# 		if os.path.isdir(".git"):
+	# 			update_now = input("\nWould you like to update now? [Y/n] ")
+	# 			if update_now == "" or update_now[0].lower() == "y":
+	# 				FNULL = open(os.devnull, "w")
+	# 				call(["git", "checkout", "."], stdout=FNULL, stderr=FNULL)
+	# 				call(["git", "checkout", "master"], stdout=FNULL, stderr=FNULL)
+	# 				call(["git", "pull"], stdout=FNULL, stderr=FNULL)
+	# 				print(f"Successfully updated to v{new_version}. Please restart s3s.")
+	# 				return True
+	# 			else:
+	# 				print("Remember to update later with `git pull` to get the latest version.\n")
+	# 		else: # no git directory
+	# 			print(" Visit the site below to update:\nhttps://github.com/frozenpandaman/s3s\n")
+	# except: # if there's a problem connecting to github
+	# 	pass
 
 
 def check_statink_key():
