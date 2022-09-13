@@ -200,8 +200,8 @@ def gen_new_tokens(reason, force=False):
 			manual_entry = True
 		else:
 			print("\nWrote session_token to config.txt.")
-			CONFIG_DATA["session_token"] = new_token
-			write_config(CONFIG_DATA)
+		CONFIG_DATA["session_token"] = new_token
+		write_config(CONFIG_DATA)
 	elif SESSION_TOKEN == "skip":
 		manual_entry = True
 
