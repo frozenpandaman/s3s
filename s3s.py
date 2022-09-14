@@ -54,13 +54,16 @@ GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
 
 WEB_VIEW_VERSION = "1.0.0-d3a90678"
 
-# SET HTTP HEADERS
-if "app_user_agent" in CONFIG_DATA:
-	APP_USER_AGENT = str(CONFIG_DATA["app_user_agent"])
-else:
-	APP_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
-		'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-		'Chrome/94.0.4606.61 Mobile Safari/537.36'
+
+def get_app_user_agent():
+	# SET HTTP HEADERS
+	if "app_user_agent" in CONFIG_DATA:
+		APP_USER_AGENT = str(CONFIG_DATA["app_user_agent"])
+	else:
+		APP_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
+			'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+			'Chrome/94.0.4606.61 Mobile Safari/537.36'
+	return APP_USER_AGENT
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
@@ -101,7 +104,7 @@ def headbutt():
 	graphql_head = {
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
 		'Accept-Language':  USER_LANG,
-		'User-Agent':       APP_USER_AGENT,
+		'User-Agent':       get_app_user_agent(),
 		'X-Web-View-Ver':   get_web_view_ver(),
 		'Content-Type':     'application/json',
 		'Accept':           '*/*',
@@ -239,7 +242,7 @@ def gen_new_tokens(reason, force=False):
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
-		new_bullettoken = iksm.get_bullet(new_gtoken, get_web_view_ver(), APP_USER_AGENT, acc_lang, acc_country)
+		new_bullettoken = iksm.get_bullet(new_gtoken, get_web_view_ver(), get_app_user_agent(), acc_lang, acc_country)
 	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
 	CONFIG_DATA["acc_loc"] = acc_lang + "|" + acc_country
