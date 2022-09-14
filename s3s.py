@@ -1,15 +1,16 @@
 #!/usr/bin/env python
-# s3s (ↄ) 2022 eli fessler (frozenpandaman)
+# s3s (ↄ) 2022 eli fessler (frozenpandaman), clovervidia
 # Based on splatnet2statink (ↄ) 2017-2022 eli fessler (frozenpandaman), clovervidia
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import sys, os, requests, json, time, datetime, argparse, msgpack
+import sys, os, requests, json, time, datetime, argparse, msgpack, re
 from PIL import Image, ImageDraw
 from packaging import version
 import iksm
+from bs4 import BeautifulSoup
 
-A_VERSION = "0.0.3"
+A_VERSION = "0.0.4"
 
 print(f"s3s v{A_VERSION}")
 
@@ -45,7 +46,10 @@ SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 # UNIQUE_ID     = CONFIG_DATA["app_unique_id"] # NPLN player ID
 
+SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
+
+WEB_VIEW_VERSION = "1.0.0-d3a90678"
 
 # SET HTTP HEADERS
 if "app_user_agent" in CONFIG_DATA:
@@ -71,8 +75,22 @@ translate_rid = {
 def get_web_view_ver():
 	'''Find & parse the SplatNet 3 main.js file for the current site version.'''
 
-	return "1.0.0-d3a90678" # TODO - parse from js, don't hardcode
+	splatnet3_home = requests.get(SPLATNET3_URL)
+	soup = BeautifulSoup(splatnet3_home.text, "html.parser")
 
+	main_js = soup.select_one("script[src*='static']")
+	if not main_js:
+		return WEB_VIEW_VERSION
+
+	main_js_url = SPLATNET3_URL + main_js.attrs["src"]
+	main_js_body = requests.get(main_js_url)
+
+	match = re.search(r"\b(\d+\.\d+\.\d+)\b-\".concat.*?\b([0-9a-f]{40})\b", main_js_body.text)
+	if not match:
+		return WEB_VIEW_VERSION
+
+	version, revision = match.groups()
+	return f"{version}-{revision[:8]}"
 
 def headbutt():
 	'''Return a (dynamic!) header used for GraphQL requests.'''

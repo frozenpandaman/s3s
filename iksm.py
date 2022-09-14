@@ -332,11 +332,12 @@ def call_imink_api(id_token, step, f_gen_url):
 	except:
 		try: # if api_response never gets set
 			if api_response.text:
-				print(u"Error from the imink API:\n{}".format(json.dumps(json.loads(api_response.text), indent=2, ensure_ascii=False)))
+				print("Error during f generation:\n{}".format(json.dumps(json.loads(api_response.text), indent=2, ensure_ascii=False)))
 			else:
-				print(f"Error from the imink API: Error {api_response.status_code}.")
+				print(f"Error during f generation: Error {api_response.status_code}.")
 		except:
-			pass
+			print(f"Couldn't connect to f generation API ({f_gen_url}). Please try again.")
+
 		sys.exit(1)
 
 def enter_tokens():
