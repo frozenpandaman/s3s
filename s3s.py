@@ -4,11 +4,14 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import sys, os, requests, json, time, datetime, argparse, msgpack, re
-from PIL import Image, ImageDraw
-from packaging import version
-import iksm
+import argparse, datetime, json, os, requests, time, re, sys
+
+import msgpack
 from bs4 import BeautifulSoup
+from packaging import version
+
+import iksm
+
 
 A_VERSION = "0.0.4"
 
