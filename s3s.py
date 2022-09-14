@@ -15,55 +15,10 @@ import iksm
 
 A_VERSION = "0.0.4"
 
-print(f"s3s v{A_VERSION}")
-
-# CONFIG.TXT CREATION
-if getattr(sys, 'frozen', False): # place config.txt in same directory as script (bundled or not)
-	app_path = os.path.dirname(sys.executable)
-elif __file__:
-	app_path = os.path.dirname(__file__)
-config_path = os.path.join(app_path, "config.txt")
-
-try:
-	config_file = open(config_path, "r")
-	CONFIG_DATA = json.load(config_file)
-	config_file.close()
-except (IOError, ValueError):
-	print("Generating new config file.")
-	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://api.imink.app/f"}
-	config_file = open(config_path, "w")
-	config_file.seek(0)
-	config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=True, separators=(',', ': ')))
-	config_file.close()
-	config_file = open(config_path, "r")
-	CONFIG_DATA = json.load(config_file)
-	config_file.close()
-
-# SET GLOBALS
-API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
-USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
-USER_COUNTRY  = CONFIG_DATA["acc_loc"][-2:]  # nintendo account info
-GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64
-BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64 JWT
-SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
-F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
-# UNIQUE_ID     = CONFIG_DATA["app_unique_id"] # NPLN player ID
-
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
 
 WEB_VIEW_VERSION = "1.0.0-d3a90678"
-
-
-def get_app_user_agent():
-	# SET HTTP HEADERS
-	if "app_user_agent" in CONFIG_DATA:
-		APP_USER_AGENT = str(CONFIG_DATA["app_user_agent"])
-	else:
-		APP_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
-			'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-			'Chrome/94.0.4606.61 Mobile Safari/537.36'
-	return APP_USER_AGENT
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
@@ -77,6 +32,42 @@ translate_rid = {
 	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # SR  / blank vars - query1
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
 }
+
+# Configuration Variables
+CONFIG_DATA = {}
+API_KEY = None
+USER_LANG = None
+USER_COUNTRY = None
+GTOKEN = None
+BULLETTOKEN = None
+SESSION_TOKEN = None
+F_GEN_URL = None
+
+
+def get_app_path():
+	''' Return application directory path '''
+	if getattr(sys, 'frozen', False): # place config.txt in same directory as script (bundled or not)
+		app_path = os.path.dirname(sys.executable)
+	elif __file__:
+		app_path = os.path.dirname(__file__)
+	return app_path
+
+
+def get_config_path():
+	''' Return full path of config.txt '''
+	app_path = get_app_path()
+	config_path = os.path.join(app_path, "config.txt")
+	return config_path
+
+
+def get_app_user_agent():
+	''' Return User-Agent string '''
+	DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
+			'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+			'Chrome/94.0.4606.61 Mobile Safari/537.36'
+
+	return CONFIG_DATA.get("app_user_agent", DEFAULT_USER_AGENT)
+
 
 def get_web_view_ver():
 	'''Find & parse the SplatNet 3 main.js file for the current site version.'''
@@ -963,4 +954,34 @@ def main():
 
 
 if __name__ == "__main__":
+	print(f"s3s v{A_VERSION}")
+
+	# CONFIG.TXT CREATION
+	config_path = get_config_path()
+
+	try:
+		config_file = open(config_path, "r")
+		CONFIG_DATA = json.load(config_file)
+		config_file.close()
+	except (IOError, ValueError):
+		print("Generating new config file.")
+		CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://api.imink.app/f"}
+		config_file = open(config_path, "w")
+		config_file.seek(0)
+		config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=True, separators=(',', ': ')))
+		config_file.close()
+		config_file = open(config_path, "r")
+		CONFIG_DATA = json.load(config_file)
+		config_file.close()
+
+	# SET GLOBALS
+	API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
+	USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
+	USER_COUNTRY  = CONFIG_DATA["acc_loc"][-2:]  # nintendo account info
+	GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64
+	BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64 JWT
+	SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
+	F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
+	# UNIQUE_ID     = CONFIG_DATA["app_unique_id"] # NPLN player ID
+
 	main()
