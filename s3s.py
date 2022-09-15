@@ -4,11 +4,11 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import sys, os, requests, json, time, datetime, argparse, msgpack, re
-from PIL import Image, ImageDraw
+import argparse, datetime, json, re, os, requests, sys, time
+import msgpack
+from bs4 import BeautifulSoup
 from packaging import version
 import iksm
-from bs4 import BeautifulSoup
 
 A_VERSION = "0.0.4"
 
@@ -30,7 +30,7 @@ except (IOError, ValueError):
 	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://api.imink.app/f"}
 	config_file = open(config_path, "w")
 	config_file.seek(0)
-	config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=True, separators=(',', ': ')))
+	config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=False, separators=(',', ': ')))
 	config_file.close()
 	config_file = open(config_path, "r")
 	CONFIG_DATA = json.load(config_file)
@@ -48,7 +48,6 @@ F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink 
 
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
-
 WEB_VIEW_VERSION = "1.0.0-d3a90678"
 
 # SET HTTP HEADERS
@@ -92,6 +91,7 @@ def get_web_view_ver():
 	version, revision = match.groups()
 	return f"{version}-{revision[:8]}"
 
+
 def headbutt():
 	'''Return a (dynamic!) header used for GraphQL requests.'''
 
@@ -108,6 +108,7 @@ def headbutt():
 		'Accept-Encoding': 'gzip, deflate'
 	}
 	return graphql_head
+
 
 def set_noun(which):
 	'''Returns the term to be used when referring to the type of results in question.'''
@@ -157,7 +158,7 @@ def write_config(tokens):
 
 	config_file = open(config_path, "w")
 	config_file.seek(0)
-	config_file.write(json.dumps(tokens, indent=4, sort_keys=True, separators=(',', ': ')))
+	config_file.write(json.dumps(tokens, indent=4, sort_keys=False, separators=(',', ': ')))
 	config_file.close()
 
 	config_file = open(config_path, "r")
@@ -262,11 +263,11 @@ def fetch_json(which, separate=False, exportall=False, specific=False):
 
 	sha_list = []
 	if which == "both" or which == "ink":
-		if specific == True or specific == "regular":
+		if specific in (True, "regular"):
 			sha_list.append(translate_rid["RegularBattleHistoriesQuery"])
-		if specific == True or specific == "anarchy":
+		if specific in (True, "anarchy"):
 			sha_list.append(translate_rid["BankaraBattleHistoriesQuery"])
-		if specific == True or specific == "private":
+		if specific in (True, "private"):
 			sha_list.append(translate_rid["PrivateBattleHistoriesQuery"])
 		else:
 			sha_list.append(translate_rid["LatestBattleHistoriesQuery"])
@@ -376,6 +377,7 @@ def update_salmon_profile():
 def prepare_battle_result(battle):
 	'''Converts the Nintendo JSON format for a Turf War/Ranked battle to the stat.ink one.'''
 
+	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle
 	payload = {}
 	battle = battle["data"]["vsHistoryDetail"]
 
@@ -449,9 +451,9 @@ def prepare_battle_result(battle):
 	elif stage_id == 16:
 		payload["stage"] = "world" # sumeshi
 
-	## WEAPON, K/D, TURF INKED ##
-	############
-	for teammate in battle["myTeam"]["players"]:
+	## WEAPON, K/D/A/S, TURF INKED ##
+	#################################
+	for teammate in battle["myTeam"]["players"]: # specified again in set_scoreboard()
 		if player["isMyself"] == True:
 			payload["weapon"]         = b64d(player["weapon"]["id"])
 			payload["kill"]           = player["result"]["kill"]
@@ -459,9 +461,10 @@ def prepare_battle_result(battle):
 			payload["kill_or_assist"] = payload["kill"] + payload["assist"]
 			payload["death"]          = player["result"]["death"]
 			payload["special"]        = player["result"]["special"]
-			# payload["inked"]          = player["paint"] # TODO - check how bonus works?? two diff values?
-			# player["result"]["noroshiTry"] = ultra signal attempts
-			payload["species"]        = player["species"].lower() # not supported for now
+			payload["inked"]          = player["paint"] # TODO - check how bonus works?
+			# payload["noroshi"]        = player["result"]["noroshiTry"] = ultra signal attempts
+			# payload["species"]        = player["species"].lower() # not supported for now
+			break
 
 
 	## RESULT ##
@@ -516,25 +519,25 @@ def prepare_battle_result(battle):
 		payload["knockout"] = "yes" if battle["knockout"] != "NEITHER" else "no" # or check if either == 100
 
 	# TODO old code - have to get from parent request
-	# 	try:  # not present in all modes
-	# 		rank_after             = battle["udemae"]["name"].lower()
-	# 		rank_before            = battle["player_result"]["player"]["udemae"]["name"].lower()
-	# 		rank_s_plus_num_after  = battle["udemae"]["s_plus_number"]
-	# 		rank_s_plus_num_before = battle["player_result"]["player"]["udemae"]["s_plus_number"]
-	# 	except:
-	# 		rank_after, rank_before, rank_s_plus_num_after, rank_s_plus_num_before = None, None, None, None
+		# try:  # not present in all modes
+		# 	rank_after             = battle["udemae"]["name"].lower()
+		# 	rank_before            = battle["player_result"]["player"]["udemae"]["name"].lower()
+		# 	rank_s_plus_num_after  = battle["udemae"]["s_plus_number"]
+		# 	rank_s_plus_num_before = battle["player_result"]["player"]["udemae"]["s_plus_number"]
+		# except:
+		# 	rank_after, rank_before, rank_s_plus_num_after, rank_s_plus_num_before = None, None, None, None
 
-	# 	payload["rank_after"]         = rank_after
-	# 	payload["rank_before"]        = rank_before
-	# 	payload["rank_after_s_plus"]  = rank_s_plus_num_after
-	# 	payload["rank_before_s_plus"] = rank_s_plus_num_before
+		# payload["rank_after"]         = rank_after
+		# payload["rank_before"]        = rank_before
+		# payload["rank_after_s_plus"]  = rank_s_plus_num_after
+		# payload["rank_before_s_plus"] = rank_s_plus_num_before
 
-	# 	payload["rank_before_exp"] = ...
-	# 	payload["rank_after_exp"] = ...
+		# payload["rank_before_exp"] = ...
+		# payload["rank_after_exp"] = ...
 
-		# payload["image_judge"] = ... # judd screen
-		# payload["image_result"] = ... # full scoreboard
-		# payload["image_gear"] = ... # gear
+	# payload["image_judge"] = ... # judd screen
+	# payload["image_result"] = ... # full scoreboard
+	# payload["image_gear"] = ... # gear
 
 	payload["automated"] = "yes" # data was not manually entered!
 	payload["splatnet_json"] = json.dumps(battle)

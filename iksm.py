@@ -8,8 +8,8 @@ import uuid, time, random, string
 from bs4 import BeautifulSoup
 
 session = requests.Session()
-s3s_version = "unknown"
-nsoapp_version = "2.2.0"
+S3S_VERSION = "unknown"
+NSOAPP_VERSION = "2.2.0"
 
 # functions in this file & call stack:
 # get_nsoapp_version()
@@ -25,7 +25,6 @@ elif __file__:
 	app_path = os.path.dirname(__file__)
 config_path = os.path.join(app_path, "config.txt")
 
-
 def get_nsoapp_version():
 	'''Fetches the current Nintendo Switch Online app version from the Apple App Store.'''
 
@@ -36,15 +35,14 @@ def get_nsoapp_version():
 		ver = elt.get_text().replace("Version ","").strip()
 		return ver
 	except:
-		global nsoapp_version
-		return nsoapp_version
+		return NSOAPP_VERSION
 
 
 def log_in(ver):
 	'''Logs in to a Nintendo Account and returns a session_token.'''
 
-	global s3s_version
-	s3s_version = ver
+	global S3S_VERSION
+	S3S_VERSION = ver
 
 	auth_state = base64.urlsafe_b64encode(os.urandom(36))
 
@@ -135,8 +133,8 @@ def get_gtoken(f_gen_url, session_token, ver):
 
 	nsoapp_version = get_nsoapp_version()
 
-	global s3s_version
-	s3s_version = ver
+	global S3S_VERSION
+	S3S_VERSION = ver
 
 	app_head = {
 		'Host':            'accounts.nintendo.com',
@@ -315,7 +313,7 @@ def call_imink_api(id_token, step, f_gen_url):
 
 	try:
 		api_head = {
-			'User-Agent':   f's3s/{s3s_version}',
+			'User-Agent':   f's3s/{S3S_VERSION}',
 			'Content-Type': 'application/json; charset=utf-8'
 		}
 		api_body = {
@@ -332,13 +330,14 @@ def call_imink_api(id_token, step, f_gen_url):
 	except:
 		try: # if api_response never gets set
 			if api_response.text:
-				print("Error during f generation:\n{}".format(json.dumps(json.loads(api_response.text), indent=2, ensure_ascii=False)))
+				print(f"Error during f generation:\n{json.dumps(json.loads(api_response.text), indent=2, ensure_ascii=False)}")
 			else:
 				print(f"Error during f generation: Error {api_response.status_code}.")
 		except:
 			print(f"Couldn't connect to f generation API ({f_gen_url}). Please try again.")
 
 		sys.exit(1)
+
 
 def enter_tokens():
 	'''Prompts the user to enter a gtoken and bulletToken.'''
