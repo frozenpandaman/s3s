@@ -311,8 +311,6 @@ def fetch_json(which, separate=False, exportall=False, specific=False):
 					for job in shift["historyDetails"]["nodes"]:
 						job_ids.append(job["id"])
 
-			job_ids = list(dict.fromkeys(job_ids)) # remove duplicates. salmon run job list has no dupes
-
 			for bid in battle_ids:
 				query2_b = requests.post(GRAPHQL_URL,
 					data=gen_graphql_body(translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
