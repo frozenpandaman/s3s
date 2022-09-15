@@ -374,6 +374,55 @@ def update_salmon_profile():
 	# 	print(updateprofile.text)
 
 
+def set_scoreboard(battle):
+	'''Returns a two lists of player dictionaries, for our_team_players and their_team_players.'''
+
+	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle#player-structure
+	our_team_players, their_team_players = [], []
+
+	for player in battle["myTeam"]["players"]:
+		p_dict = {}
+		p_dict["me"]              = "yes" if player["isMyself"] else "no"
+		p_dict["name"]            = player["name"]
+		p_dict["number"]          = player["nameId"] # splashtag number
+		p_dict["splashtag_title"] = battle["player"]["byname"] # splashtag title
+		p_dict["weapon"]          = b64d(player["weapon"]["id"])
+		p_dict["inked"]           = player["paint"] # TODO - check how bonus works?
+		# p_dict["rank_in_team"]    = ...
+		if "result" in player and player["result"] != None:
+			p_dict["kill"]           = player["result"]["kill"]
+			p_dict["assist"]         = player["result"]["assist"]
+			p_dict["kill_or_assist"] = p_dict["kill"] + p_dict["assist"]
+			p_dict["death"]          = player["result"]["death"]
+			p_dict["special"]        = player["result"]["special"]
+			p_dict["disconnected"]   = "no"
+		else:
+			p_dict["disconnected"]   = "yes"
+		our_team_players.append(p_dict)
+
+	for player in battle["otherTeams"][0]["players"]: # no support for tricolor TW yet
+		p_dict = {}
+		p_dict["me"]              = "no"
+		p_dict["name"]            = player["name"]
+		p_dict["number"]          = player["nameId"]
+		p_dict["splashtag_title"] = battle["player"]["byname"]
+		p_dict["weapon"]          = b64d(player["weapon"]["id"])
+		p_dict["inked"]           = player["paint"] # TODO - check how bonus works?
+		# p_dict["rank_in_team"]    = ...
+		if "result" in player and player["result"] != None:
+			p_dict["kill"]           = player["result"]["kill"]
+			p_dict["assist"]         = player["result"]["assist"]
+			p_dict["kill_or_assist"] = p_dict["kill"] + p_dict["assist"]
+			p_dict["death"]          = player["result"]["death"]
+			p_dict["special"]        = player["result"]["special"]
+			p_dict["disconnected"]   = "no"
+		else:
+			p_dict["disconnected"]   = "yes"
+		their_team_players.append(p_dict)
+
+	return our_team_players, their_team_players
+
+
 def prepare_battle_result(battle):
 	'''Converts the Nintendo JSON format for a Turf War/Ranked battle to the stat.ink one.'''
 
@@ -383,16 +432,7 @@ def prepare_battle_result(battle):
 
 	## UUID ##
 	##########
-	# payload["uuid"] = b64d(battle["id"])
-
-	## SPLASHTAG ##
-	###############
-	# title = battle["player"]["byname"]
-	# username = battle["player"]["name"]
-	# name_id = battle["player"]["nameId"]
-	# username_color (dict of r, g, b, a) = battle["player"]["nameplate"]["background"]["textColor"]
-	# badge_urls = parse to data - battle["player"]["nameplate"]["badges"][i]["image"]["url"]
-	# background = parse to data - battle["player"]["nameplate"]["background"]["image"]["url"]
+	payload["uuid"] = b64d(battle["id"])
 
 	## MODE ##
 	##########
@@ -498,6 +538,10 @@ def prepare_battle_result(battle):
 	## RANK IN TEAM ## TODO
 	##################
 	# payload["rank_in_team"] = 1, 2, 3, 4
+
+	## SCOREBOARD ##
+	################
+	payload["our_team_players"], payload["their_team_players"] = set_scoreboard(battle)
 
 	# Turf War only (NOT TRICOLOR)
 	if mode == "REGULAR":
