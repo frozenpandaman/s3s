@@ -221,27 +221,35 @@ def get_gtoken(f_gen_url, session_token, ver):
 
 	try:
 		idToken = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
-		f, uuid, timestamp = call_imink_api(idToken, 2, f_gen_url)
 	except:
-		print("Error from Nintendo (in Account/Login step):")
-		print(json.dumps(splatoon_token, indent=2))
-		sys.exit(1)
+		# retry once if 9403/9599 error from nintendo
+		try:
+			f, uuid, timestamp = call_imink_api(idToken, 1, f_gen_url)
+			body["parameter"]["f"]         = f
+			body["parameter"]["requestId"] = uuid
+			body["parameter"]["timestamp"] = timestamp
+			app_head["Content-Length"]     = str(990 + len(f))
+			url = "https://api-lp1.znc.srv.nintendo.net/v3/Account/Login"
+			r = requests.post(url, headers=app_head, json=body)
+			splatoon_token = json.loads(r.text)
+			idToken = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+		except:
+			print("Error from Nintendo (in Account/Login step):")
+			print(json.dumps(splatoon_token, indent=2))
+			sys.exit(1)
+
+		f, uuid, timestamp = call_imink_api(idToken, 2, f_gen_url)
 
 	# get web service token
-	try:
-		app_head = {
-			'X-Platform':       'Android',
-			'X-ProductVersion': nsoapp_version,
-			'Authorization':    f'Bearer {splatoon_token["result"]["webApiServerCredential"]["accessToken"]}',
-			'Content-Type':     'application/json; charset=utf-8',
-			'Content-Length':   '391',
-			'Accept-Encoding':  'gzip',
-			'User-Agent':       'com.nintendo.znca/' + nsoapp_version + '(Android/7.1.2)'
-		}
-	except:
-		print("Error from Nintendo (in Account/Login step):")
-		print(json.dumps(splatoon_token, indent=2))
-		sys.exit(1)
+	app_head = {
+		'X-Platform':       'Android',
+		'X-ProductVersion': nsoapp_version,
+		'Authorization':    f'Bearer {idToken}',
+		'Content-Type':     'application/json; charset=utf-8',
+		'Content-Length':   '391',
+		'Accept-Encoding':  'gzip',
+		'User-Agent':       'com.nintendo.znca/' + nsoapp_version + '(Android/7.1.2)'
+	}
 
 	body = {}
 	parameter = {
@@ -260,9 +268,20 @@ def get_gtoken(f_gen_url, session_token, ver):
 	try:
 		web_service_token = web_service_resp["result"]["accessToken"]
 	except:
-		print("Error from Nintendo (in Game/GetWebServiceToken step):")
-		print(json.dumps(web_service_resp, indent=2))
-		sys.exit(1)
+		# retry once if 9403/9599 error from nintendo
+		try:
+			f, uuid, timestamp = call_imink_api(idToken, 2, f_gen_url)
+			body["parameter"]["f"]         = f
+			body["parameter"]["requestId"] = uuid
+			body["parameter"]["timestamp"] = timestamp
+			url = "https://api-lp1.znc.srv.nintendo.net/v2/Game/GetWebServiceToken"
+			r = requests.post(url, headers=app_head, json=body)
+			web_service_resp = json.loads(r.text)
+			web_service_token = web_service_resp["result"]["accessToken"]
+		except:
+			print("Error from Nintendo (in Game/GetWebServiceToken step):")
+			print(json.dumps(web_service_resp, indent=2))
+			sys.exit(1)
 
 	return web_service_token, user_nickname, user_lang, user_country
 
