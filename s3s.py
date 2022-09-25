@@ -15,6 +15,9 @@ A_VERSION = "0.1.0"
 
 DEBUG = False
 
+# ANSI ESCAPE SETUP
+os.system("")
+
 # CONFIG.TXT CREATION
 if getattr(sys, 'frozen', False): # place config.txt in same directory as script (bundled or not)
 	app_path = os.path.dirname(sys.executable)
