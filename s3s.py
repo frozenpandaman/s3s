@@ -4,15 +4,16 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import argparse, datetime, json, re, os, requests, sys, time
+import argparse, datetime, json, os, re, requests, sys, time
 import msgpack
-from bs4 import BeautifulSoup
 from packaging import version
-import iksm
+from PIL import Image
+from io import BytesIO
+import iksm, utils#, utils_ss
 
-A_VERSION = "0.0.4"
+A_VERSION = "0.1.0"
 
-print(f"s3s v{A_VERSION}")
+DEBUG = False
 
 # CONFIG.TXT CREATION
 if getattr(sys, 'frozen', False): # place config.txt in same directory as script (bundled or not)
@@ -41,14 +42,9 @@ API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
 USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
 USER_COUNTRY  = CONFIG_DATA["acc_loc"][-2:]  # nintendo account info
 GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64
-BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64 JWT
+BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64 json web token
 SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
-# UNIQUE_ID     = CONFIG_DATA["app_unique_id"] # NPLN player ID
-
-SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
-GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
-WEB_VIEW_VERSION = "1.0.0-d3a90678"
 
 # SET HTTP HEADERS
 if "app_user_agent" in CONFIG_DATA:
@@ -57,101 +53,6 @@ else:
 	APP_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
 		'AppleWebKit/537.36 (KHTML, like Gecko) ' \
 		'Chrome/94.0.4606.61 Mobile Safari/537.36'
-
-# SHA256 hash database for SplatNet 3 GraphQL queries
-# full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
-translate_rid = {
-	'HomeQuery':                       'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
-	'LatestBattleHistoriesQuery':      '7d8b560e31617e981cf7c8aa1ca13a00', # INK / blank vars - query1
-	'RegularBattleHistoriesQuery':     '819b680b0c7962b6f7dc2a777cd8c5e4', # INK / blank vars - query1
-	'BankaraBattleHistoriesQuery':     'c1553ac75de0a3ea497cdbafaa93e95b', # INK / blank vars - query1
-	'PrivateBattleHistoriesQuery':     '51981299595060692440e0ca66c475a1', # INK / blank vars - query1
-	'VsHistoryDetailQuery':            'cd82f2ade8aca7687947c5f3210805a6', # INK / req "vsResultId" - query2
-	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # SR  / blank vars - query1
-	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
-}
-
-def get_web_view_ver():
-	'''Find & parse the SplatNet 3 main.js file for the current site version.'''
-
-	splatnet3_home = requests.get(SPLATNET3_URL)
-	soup = BeautifulSoup(splatnet3_home.text, "html.parser")
-
-	main_js = soup.select_one("script[src*='static']")
-	if not main_js:
-		return WEB_VIEW_VERSION
-
-	main_js_url = SPLATNET3_URL + main_js.attrs["src"]
-	main_js_body = requests.get(main_js_url)
-
-	match = re.search(r"\b(\d+\.\d+\.\d+)\b-\".concat.*?\b([0-9a-f]{40})\b", main_js_body.text)
-	if not match:
-		return WEB_VIEW_VERSION
-
-	version, revision = match.groups()
-	return f"{version}-{revision[:8]}"
-
-
-def headbutt():
-	'''Return a (dynamic!) header used for GraphQL requests.'''
-
-	graphql_head = {
-		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
-		'Accept-Language':  USER_LANG,
-		'User-Agent':       APP_USER_AGENT,
-		'X-Web-View-Ver':   get_web_view_ver(),
-		'Content-Type':     'application/json',
-		'Accept':           '*/*',
-		'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
-		'X-Requested-With': 'com.nintendo.znca',
-		'Referer':          f'https://api.lp1.av5ja.srv.nintendo.net/?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
-		'Accept-Encoding': 'gzip, deflate'
-	}
-	return graphql_head
-
-
-def set_noun(which):
-	'''Returns the term to be used when referring to the type of results in question.'''
-
-	if which == "both":
-		return "battles/jobs"
-	elif which == "salmon":
-		return "jobs"
-	else: # "ink"
-		return "battles"
-
-
-def b64d(string):
-	'''Base64 decode a string and cut off the SplatNet prefix.'''
-
-	thing_id = base64.b64decode(string).decode('utf-8')
-	thing_id = thing_id.replace("VsStage-", "")
-	thing_id = thing_id.replace("Weapon-", "")
-	thing_id = thing_id.replace("CoopStage-", "")
-	thing_id = thing_id.replace("CoopGrade-", "")
-	if thing_id[:15] == "VsHistoryDetail" or thing_id[:17] == "CoopHistoryDetail":
-		return thing_id[-36:] # uuid
-	else:
-		return int(thing_id) # integer
-
-
-def gen_graphql_body(sha256hash, varname=None, varvalue=None):
-	'''Generates a JSON dictionary, specifying information to retrieve, to send with GraphQL requests.'''
-	great_passage = {
-		"extensions": {
-			"persistedQuery": {
-				"sha256Hash": sha256hash,
-				"version": 1
-			}
-		},
-		"variables": {}
-	}
-
-	if varname != None and varvalue != None:
-		great_passage["variables"][varname] = varvalue
-
-	return json.dumps(great_passage)
-
 
 def write_config(tokens):
 	'''Writes config file and updates the global variables.'''
@@ -180,25 +81,41 @@ def write_config(tokens):
 	config_file.close()
 
 
-def custom_key_exists(key, value=True):
-	'''Checks if a given custom key exists in config.txt and is set to the specified value (true by default).'''
+def headbutt():
+	'''Return a (dynamic!) header used for GraphQL requests.'''
 
-	# https://github.com/frozenpandaman/s3s/wiki/config-keys
-	if key not in ["ignore_private", "app_user_agent"]:
-		print("(!) checking unexpected custom key")
-	return True if key in config_data and config_data[key].lower() == str(value).lower() else False
+	graphql_head = {
+		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
+		'Accept-Language':  USER_LANG,
+		'User-Agent':       APP_USER_AGENT,
+		'X-Web-View-Ver':   utils.get_web_view_ver(),
+		'Content-Type':     'application/json',
+		'Accept':           '*/*',
+		'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
+		'X-Requested-With': 'com.nintendo.znca',
+		'Referer':          f'https://api.lp1.av5ja.srv.nintendo.net/?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
+		'Accept-Encoding': 'gzip, deflate'
+	}
+	return graphql_head
 
 
-def prefetch_checks():
+def prefetch_checks(printout=False):
 	'''Queries the SplatNet 3 homepage to check if our gtoken cookie and bulletToken are still valid, otherwise regenerate.'''
 
+	if printout:
+		print("Validating your tokens...", end='\r')
 	if SESSION_TOKEN == "" or GTOKEN == "" or BULLETTOKEN == "":
 		gen_new_tokens("blank")
 
-	sha = translate_rid["HomeQuery"]
-	test = requests.post(GRAPHQL_URL, data=gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+	sha = utils.translate_rid["HomeQuery"]
+	test = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 	if test.status_code != 200:
+		if printout:
+			print("\n")
 		gen_new_tokens("expiry")
+	else:
+		if printout:
+			print("Validating your tokens... done.\n")
 
 
 def gen_new_tokens(reason, force=False):
@@ -237,71 +154,88 @@ def gen_new_tokens(reason, force=False):
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
-		new_bullettoken = iksm.get_bullet(new_gtoken, get_web_view_ver(), APP_USER_AGENT, acc_lang, acc_country)
+		new_bullettoken = iksm.get_bullet(new_gtoken, utils.get_web_view_ver(), APP_USER_AGENT, acc_lang, acc_country)
 	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
 	CONFIG_DATA["acc_loc"] = acc_lang + "|" + acc_country
 	write_config(CONFIG_DATA)
 
 	if manual_entry:
-		print("Wrote tokens to config.txt.")
+		print("Wrote tokens to config.txt.\n")
 	else:
-		print(f"Wrote tokens for {acc_name} to config.txt.")
+		print(f"Wrote tokens for {acc_name} to config.txt.\n")
 
 
-def fetch_json(which, separate=False, exportall=False, specific=False):
+def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False):
 	'''Returns results JSON from SplatNet 3, including a combined dict for ink battles + SR jobs if requested.'''
+
+	if DEBUG:
+		print(f"* fetch_json() called with which={which}, separate={separate}, " \
+			f"exportall={exportall}, specific={specific}, numbers_only={numbers_only}")
 
 	if exportall and not separate:
 		print("fetch_json() must be called with separate=True if using exportall.")
 		sys.exit(1)
 
-	prefetch_checks()
+	prefetch_checks(printout)
+	if DEBUG:
+		print("* prefetch_checks() succeeded")
 
 	ink_list, salmon_list = [], []
 	parent_files = []
 
-	sha_list = []
+	queries = []
 	if which == "both" or which == "ink":
 		if specific in (True, "regular"):
-			sha_list.append(translate_rid["RegularBattleHistoriesQuery"])
+			queries.append("RegularBattleHistoriesQuery")
 		if specific in (True, "anarchy"):
-			sha_list.append(translate_rid["BankaraBattleHistoriesQuery"])
-		if specific in (True, "private"):
-			sha_list.append(translate_rid["PrivateBattleHistoriesQuery"])
+			queries.append("BankaraBattleHistoriesQuery")
+		if specific in (True, "private") and not utils.custom_key_exists("ignore_private", CONFIG_DATA):
+			queries.append("PrivateBattleHistoriesQuery")
 		else:
-			sha_list.append(translate_rid["LatestBattleHistoriesQuery"])
+			if DEBUG:
+				print("* not specific, just looking at latest")
+			queries.append("LatestBattleHistoriesQuery")
 	else:
-		sha_list.append(None)
+		queries.append(None)
 	if which == "both" or which == "salmon":
-		sha_list.append(translate_rid["CoopHistoryQuery"])
+		queries.append("CoopHistoryQuery")
 	else:
-		sha_list.append(None)
+		queries.append(None)
 
-	for sha in sha_list:
+	needs_sorted = False # https://ygdp.yale.edu/phenomena/needs-washed :D
+	for sha in queries:
 		if sha != None:
+			if DEBUG:
+				print(f"* making query1 to {sha}")
+			sha = utils.translate_rid[sha]
 			battle_ids, job_ids = [], []
 
-			query1 = requests.post(GRAPHQL_URL, data=gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+			query1 = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 			query1_resp = json.loads(query1.text)
 
 			# ink battles - latest 50 of any type
 			if "latestBattleHistories" in query1_resp["data"]:
 				for battle_group in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
-						battle_ids.append(battle["id"])
+						battle_ids.append(battle["id"]) # don't filter out private battles here - do that in post_result()
+
 			# ink battles - latest 50 turf war
 			elif "regularBattleHistories" in query1_resp["data"]:
+				needs_sorted = True
 				for battle_group in query1_resp["data"]["regularBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
-			# ink battles - latest 50 ranked battles
+			# ink battles - latest 50 anarchy battles
 			elif "bankaraBattleHistories" in query1_resp["data"]:
+				needs_sorted = True
 				for battle_group in query1_resp["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
 			# ink battles - latest 50 private battles
-			elif "privateBattleHistories" in query1_resp["data"]:
+			elif "privateBattleHistories" in query1_resp["data"] \
+			and not utils.custom_key_exists("ignore_private", CONFIG_DATA):
+				needs_sorted = True
 				for battle_group in query1_resp["data"]["privateBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
@@ -311,43 +245,60 @@ def fetch_json(which, separate=False, exportall=False, specific=False):
 					for job in shift["historyDetails"]["nodes"]:
 						job_ids.append(job["id"])
 
-			for bid in battle_ids:
-				query2_b = requests.post(GRAPHQL_URL,
-					data=gen_graphql_body(translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
-					headers=headbutt(),
-					cookies=dict(_gtoken=GTOKEN))
-				query2_resp_b = json.loads(query2_b.text)
-				ink_list.append(query2_resp_b)
+			if numbers_only:
+				ink_list.extend(battle_ids)
+				salmon_list.extend(job_ids)
+			else: # ALL DATA - TAKES A LONG TIME
+				for bid in battle_ids:
+					query2_b = requests.post(utils.GRAPHQL_URL,
+						data=utils.gen_graphql_body(utils.translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
+						headers=headbutt(),
+						cookies=dict(_gtoken=GTOKEN))
+					query2_resp_b = json.loads(query2_b.text)
+					ink_list.append(query2_resp_b)
 
-			for jid in job_ids:
-				query2_j = requests.post(GRAPHQL_URL,
-					data=gen_graphql_body(translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
-					headers=headbutt(),
-					cookies=dict(_gtoken=GTOKEN))
-				query2_resp_j = json.loads(query2_j.text)
-				salmon_list.append(query2_resp_j)
+				for jid in job_ids:
+					query2_j = requests.post(utils.GRAPHQL_URL,
+						data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
+						headers=headbutt(),
+						cookies=dict(_gtoken=GTOKEN))
+					query2_resp_j = json.loads(query2_j.text)
+					salmon_list.append(query2_resp_j)
 
+				if needs_sorted: # put regular, bankara, and private in order, since they were exported in sequential chunks
+					try:
+						ink_list = [x for x in ink_list if x['data']['vsHistoryDetail'] != None] # just in case
+						ink_list = sorted(ink_list, key=lambda d: d['data']['vsHistoryDetail']['playedTime'])
+					except:
+						print("(!) Exporting without sorting results.json")
+					try:
+						salmon_list = [x for x in salmon_list if x['data']['vsHistoryDetail'] != None]
+						salmon_list = sorted(salmon_list, key=lambda d: d['data']['coopHistoryDetail']['playedTime'])
+					except:
+						print("(!) Exporting without sorting coop_results.json")
 			parent_files.append(query1_resp)
 		else: # sha = None (we don't want to get the specified result type)
 			pass
 
 	if exportall:
 		return parent_files, ink_list, salmon_list
-	elif separate:
-		return ink_list, salmon_list
 	else:
-		return ink_list + salmon_list
+		if separate:
+			return ink_list, salmon_list
+		else:
+			combined = ink_list + salmon_list
+			return combined
 
 
 def update_salmon_profile():
 	''' Updates stat.ink Salmon Run stats/profile.'''
 
-	pass # TODO
+	pass
 
 	# prefetch_checks()
 
-	# old code
-	# .../api/coop_results - need stat.ink s3 support
+	# old code - need stat.ink s3 support - TODO
+	# url = nintendo's api/coop_results...
 	# results_list = requests.get(url, headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 	# data = json.loads(results_list.text)
 	# profile = data["summary"]
@@ -361,7 +312,7 @@ def update_salmon_profile():
 	# 	# TODO - other new things - fish scales, xtrawave stuff?, etc.
 	# }
 
-	# url  = "https://stat.ink/api/v2/salmon-stats" # TODO - need stat.ink s3 support
+	# url = "https://stat.ink/api/v2/salmon-stats" # TODO - need stat.ink s3 support
 	# auth = {'Authorization': f'Bearer {API_KEY}'}
 	# updateprofile = requests.post(url, headers=auth, data=payload)
 
@@ -373,20 +324,23 @@ def update_salmon_profile():
 
 
 def set_scoreboard(battle):
-	'''Returns a two lists of player dictionaries, for our_team_players and their_team_players.'''
+	'''Returns two lists of player dictionaries, for our_team_players and their_team_players.'''
 
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle#player-structure
 	our_team_players, their_team_players = [], []
 
-	for player in battle["myTeam"]["players"]:
+	for i, player in list(enumerate(battle["myTeam"]["players"])):
 		p_dict = {}
 		p_dict["me"]              = "yes" if player["isMyself"] else "no"
 		p_dict["name"]            = player["name"]
-		p_dict["number"]          = player["nameId"] # splashtag number
-		p_dict["splashtag_title"] = battle["player"]["byname"] # splashtag title
-		p_dict["weapon"]          = b64d(player["weapon"]["id"])
-		p_dict["inked"]           = player["paint"] # TODO - check how bonus works?
-		# p_dict["rank_in_team"]    = ...
+		try:
+			p_dict["number"]      = player["nameId"] # splashtag number
+		except KeyError: # may not be present if first battle as "Player"
+			pass
+		p_dict["splashtag_title"] = player["byname"] # splashtag title
+		p_dict["weapon"]          = utils.b64d(player["weapon"]["id"])
+		p_dict["inked"]           = player["paint"]
+		p_dict["rank_in_team"]    = i+1
 		if "result" in player and player["result"] != None:
 			p_dict["kill"]           = player["result"]["kill"]
 			p_dict["assist"]         = player["result"]["assist"]
@@ -398,15 +352,18 @@ def set_scoreboard(battle):
 			p_dict["disconnected"]   = "yes"
 		our_team_players.append(p_dict)
 
-	for player in battle["otherTeams"][0]["players"]: # no support for tricolor TW yet
+	for i, player in list(enumerate(battle["otherTeams"][0]["players"])): # no support for tricolor TW yet
 		p_dict = {}
 		p_dict["me"]              = "no"
 		p_dict["name"]            = player["name"]
-		p_dict["number"]          = player["nameId"]
-		p_dict["splashtag_title"] = battle["player"]["byname"]
-		p_dict["weapon"]          = b64d(player["weapon"]["id"])
-		p_dict["inked"]           = player["paint"] # TODO - check how bonus works?
-		# p_dict["rank_in_team"]    = ...
+		try:
+			p_dict["number"]      = player["nameId"]
+		except:
+			pass
+		p_dict["splashtag_title"] = player["byname"]
+		p_dict["weapon"]          = utils.b64d(player["weapon"]["id"])
+		p_dict["inked"]           = player["paint"]
+		p_dict["rank_in_team"]    = i+1
 		if "result" in player and player["result"] != None:
 			p_dict["kill"]           = player["result"]["kill"]
 			p_dict["assist"]         = player["result"]["assist"]
@@ -421,16 +378,16 @@ def set_scoreboard(battle):
 	return our_team_players, their_team_players
 
 
-def prepare_battle_result(battle):
+def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	'''Converts the Nintendo JSON format for a Turf War/Ranked battle to the stat.ink one.'''
 
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle
 	payload = {}
-	battle = battle["data"]["vsHistoryDetail"]
+	battle = battle["vsHistoryDetail"]
 
 	## UUID ##
 	##########
-	payload["uuid"] = b64d(battle["id"])
+	payload["uuid"] = utils.b64d(battle["id"])
 
 	## MODE ##
 	##########
@@ -444,13 +401,19 @@ def prepare_battle_result(battle):
 			payload["lobby"] = "bankara_challenge"
 	elif mode == "PRIVATE":
 		payload["lobby"] = "private"
-	# TODO - splatfest stuff
+	elif mode == "FEST":
+		if utils.b64d(battle["vsMode"]["id"]) == 6:
+			payload["lobby"] = "fest_open"
+		elif  utils.b64d(battle["vsMode"]["id"]) == 7:
+			payload["lobby"] = "fest_pro"
+		print("Splatfest battles are not yet supported. ")
+		return payload
 
 	## RULE ##
 	##########
 	rule = battle["vsRule"]["rule"]
 	if rule == "TURF_WAR":
-		payload["rule"] = "nawabari"
+		payload["rule"] = "nawabari" # could be splatfest too
 	elif rule == "AREA":
 		payload["rule"] = "area"
 	elif rule == "LOFT":
@@ -459,11 +422,13 @@ def prepare_battle_result(battle):
 		payload["rule"] = "hoko"
 	elif rule == "CLAM":
 		payload["rule"] = "asari"
+	# elif rule == "TRI_COLOR":
+		# payload["rule"] = "..."
 
 	## STAGE ##
 	###########
-	# hardcoded in alpha
-	stage_id = b64d(battle["vsStage"]["id"])
+	# hardcoded before first major game update
+	stage_id = utils.b64d(battle["vsStage"]["id"])
 	if stage_id == 1:
 		payload["stage"] = "gorge" # yunohana
 	elif stage_id == 2:
@@ -491,60 +456,56 @@ def prepare_battle_result(battle):
 
 	## WEAPON, K/D/A/S, TURF INKED ##
 	#################################
-	for teammate in battle["myTeam"]["players"]: # specified again in set_scoreboard()
+	for i, player in list(enumerate(battle["myTeam"]["players"])): # specified again in set_scoreboard()
 		if player["isMyself"] == True:
-			payload["weapon"]         = b64d(player["weapon"]["id"])
-			payload["kill"]           = player["result"]["kill"]
-			payload["assist"]         = player["result"]["assist"]
-			payload["kill_or_assist"] = payload["kill"] + payload["assist"]
-			payload["death"]          = player["result"]["death"]
-			payload["special"]        = player["result"]["special"]
-			payload["inked"]          = player["paint"] # TODO - check how bonus works?
-			# payload["noroshi"]        = player["result"]["noroshiTry"] = ultra signal attempts
-			# payload["species"]        = player["species"].lower() # not supported for now
-			break
-
+			payload["weapon"]         = utils.b64d(player["weapon"]["id"])
+			payload["inked"]          = player["paint"]
+			payload["species"]        = player["species"].lower() # not supported for now
+			payload["rank_in_team"]   = i+1
+			# ...        = player["result"]["festDragonCert"] NONE, DRAGON, or DOUBLE_DRAGON - splatfest
+			if player["result"] != None: # null if player disconnect
+				payload["kill"]           = player["result"]["kill"]
+				payload["assist"]         = player["result"]["assist"]
+				payload["kill_or_assist"] = payload["kill"] + payload["assist"]
+				payload["death"]          = player["result"]["death"]
+				payload["special"]        = player["result"]["special"]
+				# ...        = player["result"]["noroshiTry"] = ultra signal attempts - splatfest
+				break
 
 	## RESULT ##
 	############
-	result = battle["myTeam"]["judgement"]
+	result = battle["judgement"][-4:]
 	if result == "WIN":
 		payload["result"] = "win"
-	elif result == "LOSE":
+	elif result == "LOSE": # gets EXEMPTED_LOSE and DEEMED_LOSE too
 		payload["result"] = "lose"
 	elif result == "DRAW":
 		payload["result"] = "draw"
 
-	## LEVEL ## TODO
-	###########
-	# payload["level_before"] = ...
-	# payload["level_after"]  = ...
-
-	## CASH ## TODO
-	##########
-	# payload["cash_before"] = ...
-	# payload["cash_after"] = ...
-
 	## START/END TIMES ##
 	#####################
-	time_string         = battle["playedTime"] # UTC
-	utc_time            = datetime.datetime.strptime(time_string, "%Y-%m-%dT%H:%M:%SZ")
-	epoch_time          = int((utc_time - datetime.datetime(1970, 1, 1)).total_seconds())
-	payload["start_at"] = epoch_time
-	payload["end_at"]   = epoch_time + battle["duration"]
-
-	## RANK IN TEAM ## TODO
-	##################
-	# payload["rank_in_team"] = 1, 2, 3, 4
+	payload["start_at"] = utils.epoch_time(battle["playedTime"])
+	payload["end_at"]   = payload["start_at"] + battle["duration"]
 
 	## SCOREBOARD ##
 	################
 	payload["our_team_players"], payload["their_team_players"] = set_scoreboard(battle)
 
+	## SPLATFEST ##
+	###############
+	# if mode == "FEST":
+		# battle["festMatch"]["dragonMatchType"] - 10x, 100x, 333x
+		# battle["festMatch"]["contribution"] # clout
+		# battle["festMatch"]["jewel"]
+		# battle["festMatch"]["myFestPower"]
+
 	# Turf War only (NOT TRICOLOR)
 	if mode == "REGULAR":
-		payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
-		payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
+		try:
+			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
+			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
+		except TypeError: # draw - 'result' is null
+			pass
 
 		our_team_inked, their_team_inked = 0, 0
 		for player in battle["myTeam"]["players"]:
@@ -556,30 +517,106 @@ def prepare_battle_result(battle):
 
 	# Anarchy Battles only
 	if mode == "BANKARA":
-		payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
-		payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
-		payload["knockout"] = "yes" if battle["knockout"] != "NEITHER" else "no" # or check if either == 100
 
-	# TODO old code - have to get from parent request
-		# try:  # not present in all modes
-		# 	rank_after             = battle["udemae"]["name"].lower()
-		# 	rank_before            = battle["player_result"]["player"]["udemae"]["name"].lower()
-		# 	rank_s_plus_num_after  = battle["udemae"]["s_plus_number"]
-		# 	rank_s_plus_num_before = battle["player_result"]["player"]["udemae"]["s_plus_number"]
-		# except:
-		# 	rank_after, rank_before, rank_s_plus_num_after, rank_s_plus_num_before = None, None, None, None
+		try:
+			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
+			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
+		except TypeError: # draw - 'result' is null
+			pass
 
-		# payload["rank_after"]         = rank_after
-		# payload["rank_before"]        = rank_before
-		# payload["rank_after_s_plus"]  = rank_s_plus_num_after
-		# payload["rank_before_s_plus"] = rank_s_plus_num_before
+		payload["knockout"] = "no" if battle["knockout"] == None or battle["knockout"] == "NEITHER" else "yes"
+		payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"]
 
-		# payload["rank_before_exp"] = ...
-		# payload["rank_after_exp"] = ...
+		if overview_data or ismonitoring: # if we're passing in the overview.json file with -i, or monitoring mode
+			if overview_data == None:
+				overview_post = requests.post(utils.GRAPHQL_URL,
+					data=utils.gen_graphql_body(utils.translate_rid["BankaraBattleHistoriesQuery"]),
+					headers=headbutt(),
+					cookies=dict(_gtoken=GTOKEN))
+				overview_data = [json.loads(overview_post.text)] # make the request in real-time when monitoring to get rank, etc.
+			for screen in overview_data:
+				if "bankaraBattleHistories" in screen["data"]:
+					ranked_list = screen["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]
+					break
+				elif "latestBattleHistories" in screen["data"]: # early exports used this, and no bankaraMatchChallenge below
+					ranked_list = screen["data"]["latestBattleHistories"]["historyGroups"]["nodes"]
+					break
+			for parent in ranked_list: # groups in overview (ranked) JSON/screen
+				for idx, child in list(enumerate(parent["historyDetails"]["nodes"])):
 
-	# payload["image_judge"] = ... # judd screen
-	# payload["image_result"] = ... # full scoreboard
-	# payload["image_gear"] = ... # gear
+					if child["id"] == battle["id"]: # found the battle ID in the other file
+
+						full_rank = re.split('([0-9]+)', child["udemae"].lower())
+						payload["rank_before"] = full_rank[0]
+						if len(full_rank) > 1:
+							payload["rank_before_s_plus"] = int(full_rank[1])
+
+						# anarchy battle (series) - not open
+						if "bankaraMatchChallenge" in parent and parent["bankaraMatchChallenge"] != None:
+
+							# rankedup = parent["bankaraMatchChallenge"]["isUdemaeUp"]
+							ranks = ["c-", "c", "c+", "b-", "b", "b+", "a-", "a", "a+", "s"] # s+ handled separately
+
+							# rank-up battle
+							if parent["bankaraMatchChallenge"]["isPromo"] == True:
+								payload["rank_up_battle"] = "yes"
+							else:
+								payload["rank_up_battle"] = "no"
+
+
+							if parent["bankaraMatchChallenge"]["udemaeAfter"] == None:
+								payload["rank_after"] = payload["rank_before"]
+							else:
+								if idx != 0:
+									payload["rank_after"] = payload["rank_before"]
+								else: # the battle where we actually ranked up
+									full_rank_after = re.split('([0-9]+)', parent["bankaraMatchChallenge"]["udemaeAfter"].lower())
+									payload["rank_after"] = full_rank_after[0]
+									if len(full_rank_after) > 1:
+										payload["rank_after_s_plus"] = int(full_rank_after[1])
+
+							if idx == 0: # for the last battle in the series only
+								# send overall win/lose count
+								payload["challenge_win"] = parent["bankaraMatchChallenge"]["winCount"]
+								payload["challenge_lose"] = parent["bankaraMatchChallenge"]["loseCount"]
+
+								# send exp change (gain)
+								if payload["rank_exp_change"] == None:
+									payload["rank_exp_change"] = parent["bankaraMatchChallenge"]["earnedUdemaePoint"]
+
+							if DEBUG:
+								print(f'* {battle["myTeam"]["judgement"]} {idx}')
+								print(f'* rank_before: {payload["rank_before"]}')
+								print(f'* rank_after: {payload["rank_after"]}')
+								print(f'* rank up battle: {parent["bankaraMatchChallenge"]["isPromo"]}')
+								print(f'* is ranked up: {parent["bankaraMatchChallenge"]["isUdemaeUp"]}')
+								if idx == 0:
+									print(f'* rank_exp_change: {parent["bankaraMatchChallenge"]["earnedUdemaePoint"]}')
+								else:
+									print(f'* rank_exp_change: 0')
+
+						break # found the child ID, no need to continue
+
+	## MEDALS ##
+	############
+	medals = []
+	for medal in battle["awards"]:
+		medals.append(medal["name"])
+	payload["medals"] = medals
+
+	## SCREENSHOTS ##
+	#################
+
+	# TODO - change to require -ss option?
+	# im = utils_ss.screenshot(battle["id"])
+
+	# scoreboard
+	# payload["image_result"] = BytesIO(im.content).getvalue()
+
+	# gear
+	# payload["image_gear"] = ...
+
+	# no way to get: level_beforea/after, cash_before/after, rank_after_exp
 
 	payload["automated"] = "yes" # data was not manually entered!
 	payload["splatnet_json"] = json.dumps(battle)
@@ -587,39 +624,54 @@ def prepare_battle_result(battle):
 	return payload
 
 
-def prepare_job_result(battle):
+def prepare_job_result(battle, ismonitoring, overview_data=None):
 	'''Converts the Nintendo JSON format for a Salmon Run job to the stat.ink one.'''
 
-	pass # TODO
+	pass # stat.ink doesn't support SR yet
 	# combo of set_teammates() + salmon_post_shift()
 	# set payload["splatnet_json"]
 
 
-def post_result(data, isblackout, istestrun):
+def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message..'''
 
-	try:
-		results = data["results"] # list of dictionaries - TODO might be diff
-	except KeyError:
-		results = [data] # single battle/job
+	if isinstance(data, list): # -o export format
+		try:
+			data = [x for x in data if x['data']['vsHistoryDetail'] != None] # avoid {'data': {'vsHistoryDetail': None}} error
+			results = sorted(data, key=lambda d: d['data']['vsHistoryDetail']['playedTime'])
+		except KeyError:
+			try:
+				data = [x for x in data if x['coopHistoryDetail'] != None]
+				results = sorted(data, key=lambda d: d['data']['coopHistoryDetail']['playedTime'])
+			except KeyError: # unsorted - shouldn't happen
+				print("(!) Uploading without chronologically sorting results")
+				results = data
+	elif isinstance(data, dict):
+		try:
+			results = data["results"]
+		except KeyError:
+			results = [data] # single battle/job - make into a list
 
 	# filter down to one battle at a time
 	for i in range(len(results)):
 		if "vsHistoryDetail" in results[i]["data"]: # ink battle
-			payload = prepare_battle_result(results[i]["data"])
+			payload = prepare_battle_result(results[i]["data"], ismonitoring, overview_data)
 		elif "coopHistoryDetail" in results[i]["data"]: # salmon run job
-			payload = prepare_job_result(results[i]["data"])
+			payload = prepare_job_result(results[i]["data"], ismonitoring, overview_data)
 		else: # shouldn't happen
 			print("Ill-formatted JSON while uploading. Exiting.")
+			print('results[i]["data"]:')
+			print(results[i]["data"])
 			sys.exit(1)
 
-		if payload["lobby"] == "private" and custom_key_exists("ignore_private"): # TODO - also check salmon run?
+		# should have been taken care of in fetch_json() but just in case...
+		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA): # TODO - also check SR?
 			continue
 
-		# TODO - do stuff with isblackout - check for salmon run too??
+		# TODO - isblackout stuff... for SR too
 
-		s3s_values = {'agent': '\u0073\u0033\u0073', 'agent_version': A_VERSION} # lol
-		s3s_values["agent_variables"] = {} # TODO - monitoring mode or not
+		s3s_values = {'agent': '\u0073\u0033\u0073', 'agent_version': f'v{A_VERSION}'} # lol
+		s3s_values["agent_variables"] = {'Upload Mode': "Monitoring" if ismonitoring else "Manual"}
 		payload.update(s3s_values)
 
 		if payload["agent"][0:3] != os.path.basename(__file__)[:-3]:
@@ -630,26 +682,43 @@ def post_result(data, isblackout, istestrun):
 			payload["test"] = "yes"
 
 		# post
-		url  = "https://stat.ink/api/v3/battle"
+		url = "https://stat.ink/api/v3/battle"
 		auth = {'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/x-msgpack'}
 		postbattle = requests.post(url, headers=auth, data=msgpack.packb(payload), allow_redirects=False)
 
 		# response
 		headerloc = postbattle.headers.get('location')
-		if headerloc != None:
-			if postbattle.status_code == 302: # redirect
-				print(f"Battle already uploaded - {headerloc}")
-			else: # 200 OK
-				print(f"Battle uploaded to {headerloc}")
-		else: # error
+		time_now = int(time.time())
+		try:
+			time_uploaded = json.loads(postbattle.text)["created_at"]["time"]
+		except KeyError:
+			time_uploaded = None
+		except json.decoder.JSONDecodeError: # retry once
+			postbattle = requests.post(url, headers=auth, data=msgpack.packb(payload), allow_redirects=False)
+			headerloc = postbattle.headers.get('location')
+			time_now = int(time.time())
+			try:
+				time_uploaded = json.loads(postbattle.text)["created_at"]["time"]
+			except:
+				print("Error with stat.ink. Please try again.")
+
+		if DEBUG:
+			print(f"* time uploaded: {time_uploaded}; time now: {time_now}")
+
+		if postbattle.status_code != 201: # Created (or already exists)
 			print("Error uploading battle. Message from server:")
 			print(postbattle.content.decode('utf-8'))
+		elif time_uploaded <= time_now - 5: # give some leeway
+				print(f"Battle already uploaded - {headerloc}")
+		else: # 200 OK
+			print(f"Battle uploaded to {headerloc}")
 
 
 def check_for_updates():
 	'''Checks the script version against the repo, reminding users to update if available.'''
 
-	print("While s3s is in alpha, please update the script regularly via `git pull`.")
+	print('\033[3m' + "» While s3s is in beta, please update the script regularly via " \
+		'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
 	# try:
 	# 	latest_script = requests.get("https://raw.githubusercontent.com/frozenpandaman/s3s/master/s3s.py")
 	# 	new_version = re.search(r'A_VERSION = "([\d.]*)"', latest_script.text).group(1)
@@ -694,8 +763,11 @@ def check_statink_key():
 def get_num_results(which):
 	'''I/O for getting number of battles/jobs to upload.'''
 
-	noun = set_noun(which)
-	try: # TODO - can be above 50 if combined tw/anarchy/private results. do stuff with 'specific=...'
+	noun = utils.set_noun(which)
+	try:
+		if which == "ink":
+			print("Note: 50 recent battles of each type (up to 150 total) may be uploaded by instead manually exporting data with " \
+				'\033[91m' + "-o" + '\033[0m' + ".\n")
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
 	except ValueError:
 		print("Please enter an integer between 0 and 50. Exiting.")
@@ -704,16 +776,41 @@ def get_num_results(which):
 		print("Exiting without uploading anything.")
 		sys.exit(0)
 	elif n > 50:
-		print(f"SplatNet 3 only stores the 50 most recent {noun}. Exiting.")
+		if which == "salmon":
+			print("SplatNet 3 only stores the 50 most recent jobs. Exiting.")
+		elif which == "ink":
+			print("\nIn this mode, s3s can only fetch the 50 most recent battles (of any type) at once. " \
+				"To export & upload the 50 most recent battles of each type " \
+				"(Regular, Anarchy, and Private) for up to 150 results total, run the script with " \
+				'\033[91m' + "-o" + '\033[0m' + " and then " \
+				'\033[91m' + "-i results.json overview.json" + '\033[0m' + ".")
 		sys.exit(1)
 	else:
 		return n
 
 
-def check_if_missing(which, isblackout, istestrun):
+def fetch_and_upload_single_result(hash, noun, ismonitoring, isblackout, istestrun):
+	'''Perform a GraphQL request for a single vsResultId/coopResultId and call post_result().'''
+
+	if noun == "battles" or noun == "battle":
+		dict_key  = "VsHistoryDetailQuery"
+		dict_key2 = "vsResultId"
+	else: # noun == "jobs" or "job"
+		dict_key  = "CoopHistoryQuery"
+		dict_key2 = "coopResultId"
+
+	result_post = requests.post(utils.GRAPHQL_URL,
+			data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
+			headers=headbutt(),
+			cookies=dict(_gtoken=GTOKEN))
+	result = json.loads(result_post.text)
+	post_result(result, ismonitoring, isblackout, istestrun)
+
+
+def check_if_missing(which, ismonitoring, isblackout, istestrun):
 	'''Checks for unuploaded battles, and uploads any that are found.'''
 
-	noun = set_noun(which)
+	noun = utils.set_noun(which)
 	print(f"Checking if there are previously-unuploaded {noun}...")
 
 	urls = []
@@ -740,24 +837,16 @@ def check_if_missing(which, isblackout, istestrun):
 				sys.exit(1)
 
 			# ! fetch from online
-			results = fetch_json(which) # don't need to set 'specific' - should all be within 'latest'
+			splatnet_hashes = fetch_json(which, specific=True, numbers_only=True) # 'specific' - check ALL possible battles
 
-			splatnet_results = [] # 50 recent battles/jobs on splatnet
-			for i, result in reversed(list(enumerate(results))):
-				try: # ink battle
-					num = b64d(result["VsHistoryDetail"]["id"])
-				except KeyError: # salmon run job
-					try:
-						num = b64d(result["CoopHistoryDetail"]["id"])
-					except:
-						print(f"Ill-formatted JSON while checking missing {noun}. Exiting.")
-						sys.exit(1)
-				splatnet_results.append(num)
-				if num not in statink_uploads: # one of the splatnet entries isn't on stat.ink (unuploaded)
+			for hash in reversed(splatnet_hashes): # earliest to most recent
+				uuid = utils.b64d(hash)
+				if uuid not in statink_uploads: # one of the splatnet entries isn't on stat.ink (unuploaded)
 					if not printed:
 						printed = True
 						print(f"Previously-unuploaded {noun} detected. Uploading now...")
-					post_result(results[i], isblackout, istestrun)
+
+					fetch_and_upload_single_result(hash, noun, ismonitoring, isblackout, istestrun)
 
 			if not printed:
 				print(f"No previously-unuploaded {noun} found.")
@@ -768,23 +857,24 @@ def check_if_missing(which, isblackout, istestrun):
 def monitor_battles(which, secs, isblackout, istestrun):
 	'''Monitors JSON for changes/new battles and uploads them.'''
 
-	# ! fetch from online
-	battles_results, jobs_results = fetch_json(which, separate=True) # don't need to set 'specific' - should all be within 'latest'
+	if DEBUG:
+		print(f"* monitoring mode start - calling fetch_json() w/ which={which}")
+	# ! fetch from online - no 'specific' = should all be within 'latest'
+	cached_battles, cached_jobs = fetch_json(which, separate=True, numbers_only=True, printout=True)
+	if DEBUG:
+		print("* got battle numbers")
 
-	cached_battles = []
-	cached_jobs = []
-	for result in reversed(battles_results):
-		cached_battles.append(int(result["battle_number"]))
-	for result in reversed(jobs_results):
-		cached_jobs.append(int(result["job_id"]))
+	cached_battles.reverse()
+	cached_jobs.reverse()
 
 	# counters
-	battle_wins, battle_losses, splatfest_wins, splatfest_losses, mirror_matches = [0]*5 # init all to 0
+	battle_wins, battle_losses, battle_draws = [0]*3 # init all to 0
+	splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches = [0]*4
 	job_successes, job_failures = [0]*2
 
 	mins = str(round(float(secs)/60.0, 2))
 	mins = mins[:-2] if mins[-2:] == ".0" else mins
-	print(f"Waiting for new {set_noun(which)}... (checking every {mins} minutes)")
+	print(f"Waiting for new {utils.set_noun(which)}... (checking every {mins} minutes)")
 
 	try:
 		while True:
@@ -794,42 +884,72 @@ def monitor_battles(which, secs, isblackout, istestrun):
 				time.sleep(1)
 				sys.stdout.write("\r")
 
+			print("Checking for new results...", end='\r')
 			# ! fetch from online
-			ink_results, salmon_results = fetch_json(which, separate=True) # don't need to set 'specific' - should all be within 'latest'
+			ink_results, salmon_results = fetch_json(which, separate=True, numbers_only=True) # only numbers or it'd take a long time
 
 			if which == "both" or which == "ink":
-				for i, result in reversed(list(enumerate(battles_results))):
-					if int(result["battle_number"]) not in cached_battles:
-						if result["game_mode"]["key"] == "private" and custom_key_exists("ignore_private"):
+				for i, num in reversed(list(enumerate(ink_results))):
+					if num not in cached_battles:
+						# get the full battle data
+						result_post = requests.post(utils.GRAPHQL_URL,
+							data=utils.gen_graphql_body(utils.translate_rid["VsHistoryDetailQuery"], "vsResultId", num),
+							headers=headbutt(),
+							cookies=dict(_gtoken=GTOKEN))
+						result = json.loads(result_post.text)
+
+						if result["data"]["vsHistoryDetail"]["vsMode"]["mode"] == "PRIVATE" \
+						and utils.custom_key_exists("ignore_private", CONFIG_DATA):
 							pass
 						else:
-							outcome = "Won" if result["my_team_result"]["key"] == "victory" else "Lost"
-							splatfest_match = True if result["game_mode"]["key"] in ["fes_solo", "fes_team"] else False
+							if result["data"]["vsHistoryDetail"]["myTeam"]["judgement"] == "WIN":
+								outcome = "Victory"
+							elif result["data"]["vsHistoryDetail"]["myTeam"]["judgement"] == "LOSE":
+								outcome = "Defeat"
+							else:
+								outcome = "Draw"
+							# OLD CODE
+							splatfest_match = True if result["vsMode"]["mode"] == "FEST" else False
 							if splatfest_match: # keys will exist
-								our_key = result["my_team_fes_theme"]["key"]
-								their_key = result["other_team_fes_theme"]["key"]
-								mirror_match = True if our_key == their_key else False
-							if outcome == "Won":
+								our_team_name = result["myTeam"]["festTeamName"]
+								their_team_name = result["otherTeams"][0]["festTeamName"] # no tricolor support
+								mirror_match = True if our_team_name == their_team_name else False
+							if outcome == "Victory":
 								battle_wins += 1
 								if splatfest_match and not mirror_match:
 									splatfest_wins += 1
-							else: # Lost
+							elif outcome == "Defeat":
 								battle_losses += 1
 								if splatfest_match and not mirror_match:
 									splatfest_losses += 1
+							else:
+								battle_draws += 1
+								if splatfest_match and not mirror_match:
+									splatfest_draws += 1
 							if splatfest_match and mirror_match:
 								mirror_matches += 1
-							# stagename = "..." # TODO - get short name??
-							dt = datetime.datetime.fromtimestamp(int(result["start_time"])).strftime('%I:%M:%S %p').lstrip("0")
-							# print(f"New battle result detected at {dt}! ({stagename}, {outcome})")
-							print(f"New battle result detected at {dt}! ({outcome})") # TODO - temp workaround
-						cached_battles.append(int(result["battle_number"]))
-						post_result(result, isblackout, istestrun)
+
+							stagename = result["data"]["vsHistoryDetail"]["vsStage"]["name"]
+							shortname = stagename.split(" ")[-1]
+							endtime = utils.epoch_time(result["data"]["vsHistoryDetail"]["playedTime"]) + \
+								result["data"]["vsHistoryDetail"]["duration"]
+							dt = datetime.datetime.fromtimestamp(endtime).strftime('%I:%M:%S %p').lstrip("0")
+
+							print(f"New battle result detected at {dt}! ({shortname}, {outcome})")
+						cached_battles.append(num)
+						post_result(result, True, isblackout, istestrun) # True = is monitoring mode
 
 			if which == "both" or which == "salmon":
-				for i, result in reversed(list(enumerate(jobs_results))):
-					if int(result["job_id"]) not in cached_jobs:
-						if result["game_mode"]["key"] == "private" and custom_key_exists("ignore_private"):
+				for i, num in reversed(list(enumerate(salmon_results))):
+					if num not in cached_jobs:
+						# get the full job data
+						result_post = requests.post(utils.GRAPHQL_URL,
+							data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopResultId", num),
+							headers=headbutt(),
+							cookies=dict(_gtoken=GTOKEN))
+						result = json.loads(result_post.text)
+
+						if False and utils.custom_key_exists("ignore_private"): # TODO - how to check for SR private battles?
 							pass
 						else:
 							outcome = "Success" if result["job_result"]["is_clear"] == True else "Failure"
@@ -837,48 +957,56 @@ def monitor_battles(which, secs, isblackout, istestrun):
 								job_successes += 1
 							else: # Failure
 								job_failures += 1
-							# stagename = "..." # TODO - get short name??
-							dt = datetime.datetime.fromtimestamp(int(result["start_time"])).strftime('%I:%M:%S %p').lstrip("0")
-							# print(f"New job result detected at {dt}! ({stagename}, {outcome})")
-							print(f"New job result detected at {dt}! ({outcome})") # TODO - temp workaround
-							cached_jobs.append(int(result["job_id"]))
-							post_result(result, isblackout, istestrun)
+
+							stagename = result["data"]["coopHistoryDetail"]["coopStage"]["name"]
+							shortname = stagename.split(" ")[-1] # fine for salmon run stage names too
+							endtime = utils.epoch_time(result["data"]["coopHistoryDetail"]["playedTime"]) + \
+								result["data"]["coopHistoryDetail"]["duration"]
+
+							dt = datetime.datetime.fromtimestamp(endtime).strftime('%I:%M:%S %p').lstrip("0")
+							print(f"New job result detected at {dt}! ({shortname}, {outcome})")
+							cached_jobs.append(num)
+							post_result(result, True, isblackout, istestrun) # True = is monitoring mode
 
 	except KeyboardInterrupt:
-		# print(f"\nChecking to see if there are unuploaded {set_noun(which)} before exiting...")
-		# TODO
-		# do update_salmon_profile() at end if salmon run
-		print("Checking for unuploaded results before exiting is not yet implemented.")
+		# print(f"\nChecking to see if there are unuploaded {utils.set_noun(which)} before exiting...") # TODO
+
+		# TODO - do update_salmon_profile() at end if salmon run
+		print("\n\nChecking for unuploaded results before exiting is not yet implemented.")
+		print("Please run s3s again with " + '\033[91m' + "-r" + '\033[0m' + " to get these battles.")
 		print("Bye!")
 
 
 def main():
 	'''Main process, including I/O and setup.'''
 
+	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
+
 	# setup
 	#######
 	check_for_updates()
-	# check_statink_key() # TODO - temp. disabled
+	check_statink_key()
 
 	# argparse stuff
 	################
 	parser = argparse.ArgumentParser()
+	srgroup = parser.add_mutually_exclusive_group()
 	parser.add_argument("-M", dest="N", required=False, nargs="?", action="store",
 		help="monitoring mode; pull data every N secs (default: 300)", const=300)
 	parser.add_argument("-r", required=False, action="store_true",
 		help="retroactively post unuploaded battles/jobs")
-	parser.add_argument("-nsr", required=False, action="store_true",
+	srgroup.add_argument("-nsr", required=False, action="store_true",
 						help="do not check for Salmon Run jobs")
-	parser.add_argument("-osr", required=False, action="store_true",
+	srgroup.add_argument("-osr", required=False, action="store_true",
 						help="only check for Salmon Run jobs")
-	parser.add_argument("--blackout", required=False, action="store_true",
-		help="black out names on scoreboard result images")
-
+	# parser.add_argument("--blackout", required=False, action="store_true",
+		# help="black out names on scoreboard result images")
+	parser.add_argument("-o", required=False, action="store_true",
+		help="export all possible results to local files")
+	parser.add_argument("-i", dest="file", nargs=2, required=False,
+		help="upload local results. use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
-	parser.add_argument("-i", dest="filename", required=False, help=argparse.SUPPRESS)
-	parser.add_argument("-o", required=False, action="store_true", help=argparse.SUPPRESS)
-
 	parser_result = parser.parse_args()
 
 	# regular args
@@ -886,12 +1014,13 @@ def main():
 	check_old   = parser_result.r
 	only_ink    = parser_result.nsr # ink battles ONLY
 	only_salmon = parser_result.osr # salmon run ONLY
-	blackout    = parser_result.blackout
+	# blackout    = parser_result.blackout
+	blackout = False
 
 	# testing/dev stuff
-	test_run = parser_result.t
-	filename = parser_result.filename # intended for results json or battle files
-	outfile  = parser_result.o # output to local files
+	test_run  = parser_result.t
+	filenames = parser_result.file # intended for results.json AND overview.json
+	outfile   = parser_result.o # output to local files
 
 	# i/o checks
 	############
@@ -899,9 +1028,6 @@ def main():
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(1)
 
-	if filename and len(sys.argv) > 2:
-		print("Cannot use -i with other arguments. Exiting.")
-		sys.exit(1)
 	elif outfile and len(sys.argv) > 2:
 		print("Cannot use -o with other arguments. Exiting.")
 		sys.exit(1)
@@ -920,25 +1046,20 @@ def main():
 				print("Minimum number of seconds in monitoring mode is 60. Exiting.")
 				sys.exit(1)
 
-	# exporting results to file
-	###########################
+	# export results to file: -o
+	############################
 	if outfile:
-		prefetch_checks()
-		print("\nFetching your JSON files to export locally... this might take a while.")
-		try:
-			# fetch_json() calls prefetch_checks() to gen or check tokens
-			parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True)
-		except Exception as e:
-			print("Ran into an error:")
-			print(e)
-			print("Please run the script again.")
-			sys.exit(1)
+		prefetch_checks(printout=True)
+		print("Fetching your JSON files to export locally. This might take a while...")
+		# fetch_json() calls prefetch_checks() to gen or check tokens
+		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True)
 
 		cwd = os.getcwd()
 		export_dir = os.path.join(cwd, f'export-{int(time.time())}')
 		if not os.path.exists(export_dir):
 			os.makedirs(export_dir)
 
+		print()
 		if parents != None:
 			with open(os.path.join(cwd, export_dir, "overview.json"), "x") as fout:
 				json.dump(parents, fout)
@@ -957,18 +1078,44 @@ def main():
 		print("\nHave fun playing Splatoon 3! :) Bye!")
 		sys.exit(0)
 
-	# manual json upload
-	####################
-	if filename:
-		if not os.path.exists(filename):
-			argparse.ArgumentParser().error(f"File {filename} does not exist!") # exit
-		with open(filename) as data_file:
+	# manual json upload: -i
+	########################
+	if filenames:
+		for filename in filenames:
+			if not os.path.exists(filename):
+				argparse.ArgumentParser().error(f"File {filename} does not exist!") # exit
+		with open(filenames[0]) as data_file:
 			try:
 				data = json.load(data_file)
 			except ValueError:
-				print("Could not decode JSON object in this file.")
+				print("Could not decode JSON object in results.json.")
 				sys.exit(1)
-		post_result(data, blackout, test_run) # one or multiple
+		with open(filenames[1]) as data_file:
+			try:
+				overview_file = json.load(data_file)
+			except ValueError:
+				print("Could not decode JSON object in overview.json.")
+				sys.exit(1)
+		data.reverse()
+
+		# only upload unuploaded results
+		auth = {'Authorization': f'Bearer {API_KEY}'}
+		resp = requests.get("https://stat.ink/api/v3/s3s/uuid-list", headers=auth)
+		try:
+			statink_uploads = json.loads(resp.text)
+		except:
+			print(f"Encountered an error while checking recently-uploaded {noun}. Is stat.ink down?")
+			sys.exit(1)
+
+		data_new = []
+		for battle in data:
+			if battle["data"]["vsHistoryDetail"] != None:
+				battle_uuid = utils.b64d(battle["data"]["vsHistoryDetail"]["id"])
+
+				if battle_uuid not in statink_uploads:
+					data_new.append(battle)
+
+		post_result(data_new, False, blackout, test_run, overview_data=overview_file) # one or multiple; monitoring mode = False
 		sys.exit(0)
 
 	# regular run
@@ -976,29 +1123,43 @@ def main():
 	which = "ink" if only_ink else "salmon" if only_salmon else "both"
 
 	# ---
-	# TEMP. UNTIL STAT.INK SUPPORTS S3
-	print("\nNOTE: stat.ink does not yet support Splatoon 3. Re-run the script with the -o flag " \
-		"to save your current SplatNet 3 results (up to most recent 50 battles & jobs) to JSON files, " \
-		"which can later be manually uploaded with -i file.json. This message will be removed when support is added.")
-	sys.exit(0)
+	# TEMP.
+	if only_salmon:
+		print("stat.ink does not support uploading Salmon Run data at this time. Exiting.")
+		sys.exit(1)
+
+	print('\033[96m' + "Uploading battles to stat.ink is now supported!" + '\033[0m' \
+		" To save your battle & job data to local files, run the script with the " \
+		'\033[91m' + "-o" + '\033[0m' + " flag; to upload your previously exported results, use " \
+		'\033[91m' + "-i results.json overview.json" + '\033[0m' + ". " \
+		"Or, run the script in monitoring mode (with " + '\033[91m' + "-M" + '\033[0m' \
+		") to capture & upload new results as you play. " \
+		"stat.ink does not support Salmon Run data (coop_results.json) or Splatfest battles at this time.\n")
 	# ---
 
 	if which != "ink":
 		update_salmon_profile()
 
 	if check_old:
-		check_if_missing(which, blackout, test_run)
+		check_if_missing(which, True if secs != -1 else False, blackout, test_run)
 	if secs != -1: # monitoring mode
 		monitor_battles(which, secs, blackout, test_run)
 	else: # regular mode (no -M)
+		if which == "both":
+			print("Please specify whether you want to upload battle results (-nsr) or Salmon Run jobs (-osr). Exiting.")
+			sys.exit(1)
+
 		n = get_num_results(which)
 		print("Pulling data from online...")
 
 		# ! fetch from online
-		results = fetch_json(which)
+		results = fetch_json(which, numbers_only=True, printout=True)
 
-		for i in reversed(range(n)):
-			post_result(results[i], blackout, test_run)
+		results = results[:n] # limit to n uploads
+		results.reverse() # sort from oldest to newest
+		noun = utils.set_noun(which)
+		for hash in results:
+			fetch_and_upload_single_result(hash, noun, False, blackout, test_run) # monitoring mode = False
 
 
 if __name__ == "__main__":
