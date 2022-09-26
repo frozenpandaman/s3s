@@ -7,17 +7,17 @@ from bs4 import BeautifulSoup
 
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
-WEB_VIEW_VERSION = "1.0.0-11450f30" # fallback
+WEB_VIEW_VERSION = "1.0.0-63bad6e1" # fallback
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
-# full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
+# full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3737698
 translate_rid = {
 	'HomeQuery':                       'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
 	'LatestBattleHistoriesQuery':      '7d8b560e31617e981cf7c8aa1ca13a00', # INK / blank vars - query1
 	'RegularBattleHistoriesQuery':     '819b680b0c7962b6f7dc2a777cd8c5e4', # INK / blank vars - query1
 	'BankaraBattleHistoriesQuery':     'c1553ac75de0a3ea497cdbafaa93e95b', # INK / blank vars - query1
 	'PrivateBattleHistoriesQuery':     '51981299595060692440e0ca66c475a1', # INK / blank vars - query1
-	'VsHistoryDetailQuery':            'cd82f2ade8aca7687947c5f3210805a6', # INK / req "vsResultId" - query2
+	'VsHistoryDetailQuery':            '2b085984f729cd51938fc069ceef784a', # INK / req "vsResultId" - query2
 	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # SR  / blank vars - query1
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
 }
