@@ -1087,10 +1087,15 @@ def main():
 
 	# manual json upload: -i
 	########################
-	if filenames:
+	if filenames: # 2 files in list
+		if os.path.basename(filenames[0]) != "results.json" or os.path.basename(filenames[1]) != "overview.json":
+			print("Must use the format " \
+				'\033[91m' + "-i path/to/results.json path/to/overview.json" + '\033[0m' + ".")
+			sys.exit(1)
 		for filename in filenames:
 			if not os.path.exists(filename):
-				argparse.ArgumentParser().error(f"File {filename} does not exist!") # exit
+				print(f"File {filename} does not exist!") # exit
+				sys.exit(1)
 		with open(filenames[0]) as data_file:
 			try:
 				data = json.load(data_file)
