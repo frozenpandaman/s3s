@@ -11,7 +11,7 @@ from PIL import Image
 from io import BytesIO
 import iksm, utils#, utils_ss
 
-A_VERSION = "0.1.1"
+A_VERSION = "0.1.2"
 
 DEBUG = False
 
@@ -497,7 +497,7 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	## SPLATFEST ##
 	###############
 	# if mode == "FEST":
-		# battle["festMatch"]["dragonMatchType"] - NORMAL (1x), DECUPLE (10x), DRAGON (100x), probably DOUBLE_DRAGON (333x)
+		# battle["festMatch"]["dragonMatchType"] - NORMAL (1x), DECUPLE (10x), DRAGON (100x), DOUBLE_DRAGON (333x)
 		# battle["festMatch"]["contribution"] # clout
 		# battle["festMatch"]["jewel"]
 		# battle["festMatch"]["myFestPower"] # pro only
@@ -916,10 +916,10 @@ def monitor_battles(which, secs, isblackout, istestrun):
 								outcome = "Defeat"
 							else:
 								outcome = "Draw"
-							splatfest_match = True if result["vsMode"]["mode"] == "FEST" else False
+							splatfest_match = True if result["data"]["vsHistoryDetail"]["vsMode"]["mode"] == "FEST" else False
 							if splatfest_match: # keys will exist
-								our_team_name = result["myTeam"]["festTeamName"]
-								their_team_name = result["otherTeams"][0]["festTeamName"] # no tricolor support
+								our_team_name = result["data"]["vsHistoryDetail"]["myTeam"]["festTeamName"]
+								their_team_name = result["data"]["vsHistoryDetail"]["otherTeams"][0]["festTeamName"] # no tricolor support
 								mirror_match = True if our_team_name == their_team_name else False
 							if outcome == "Victory":
 								battle_wins += 1
