@@ -275,7 +275,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 					except:
 						print("(!) Exporting without sorting results.json")
 					try:
-						salmon_list = [x for x in salmon_list if x['data']['vsHistoryDetail'] != None]
+						salmon_list = [x for x in salmon_list if x['data']['coopHistoryDetail'] != None]
 						salmon_list = sorted(salmon_list, key=lambda d: d['data']['coopHistoryDetail']['playedTime'])
 					except:
 						print("(!) Exporting without sorting coop_results.json")
