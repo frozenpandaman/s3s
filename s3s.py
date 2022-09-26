@@ -828,6 +828,7 @@ def check_if_missing(which, ismonitoring, isblackout, istestrun):
 		# urls.append(None)
 
 	noun = "battles" # first (and maybe only)
+	which = "ink"
 	for url in urls:
 		if url != None:
 			printed = False
@@ -855,6 +856,7 @@ def check_if_missing(which, ismonitoring, isblackout, istestrun):
 				print(f"No previously-unuploaded {noun} found.")
 
 		noun = "jobs" # for second run through the loop
+		which = "salmon"
 
 
 def monitor_battles(which, secs, isblackout, istestrun):
