@@ -11,7 +11,7 @@ from PIL import Image
 from io import BytesIO
 import iksm, utils#, utils_ss
 
-A_VERSION = "0.1.0"
+A_VERSION = "0.1.1"
 
 DEBUG = False
 
@@ -405,12 +405,12 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	elif mode == "PRIVATE":
 		payload["lobby"] = "private"
 	elif mode == "FEST":
-		if utils.b64d(battle["vsMode"]["id"]) == 6:
-			payload["lobby"] = "fest_open"
-		elif  utils.b64d(battle["vsMode"]["id"]) == 7:
-			payload["lobby"] = "fest_pro"
-		print("Splatfest battles are not yet supported. ")
-		return payload
+		# if utils.b64d(battle["vsMode"]["id"]) == 6:
+			# payload["lobby"] = "fest_open"
+		# elif  utils.b64d(battle["vsMode"]["id"]) == 7:
+			# payload["lobby"] = "fest_pro"
+		print("Splatfest battles are not yet supported - skipping. ")
+		return {}
 
 	## RULE ##
 	##########
@@ -497,10 +497,12 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	## SPLATFEST ##
 	###############
 	# if mode == "FEST":
-		# battle["festMatch"]["dragonMatchType"] - 10x, 100x, 333x
+		# battle["festMatch"]["dragonMatchType"] - NORMAL (1x), DECUPLE (10x), DRAGON (100x), probably DOUBLE_DRAGON (333x)
 		# battle["festMatch"]["contribution"] # clout
 		# battle["festMatch"]["jewel"]
-		# battle["festMatch"]["myFestPower"]
+		# battle["festMatch"]["myFestPower"] # pro only
+		# if rule == "TRI_COLOR":
+			# ...
 
 	# Turf War only (NOT TRICOLOR)
 	if mode == "REGULAR":
@@ -566,7 +568,6 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 							else:
 								payload["rank_up_battle"] = "no"
 
-
 							if parent["bankaraMatchChallenge"]["udemaeAfter"] == None:
 								payload["rank_after"] = payload["rank_before"]
 							else:
@@ -609,7 +610,6 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 	## SCREENSHOTS ##
 	#################
-
 	# TODO - change to require -ss option?
 	# im = utils_ss.screenshot(battle["id"])
 
@@ -666,6 +666,9 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			print('results[i]["data"]:')
 			print(results[i]["data"])
 			sys.exit(1)
+
+		if len(payload) == 0: # received blank payload from prepare_job_result() - skip unsupported battle
+			continue
 
 		# should have been taken care of in fetch_json() but just in case...
 		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA): # TODO - also check SR?
@@ -913,7 +916,6 @@ def monitor_battles(which, secs, isblackout, istestrun):
 								outcome = "Defeat"
 							else:
 								outcome = "Draw"
-							# OLD CODE
 							splatfest_match = True if result["vsMode"]["mode"] == "FEST" else False
 							if splatfest_match: # keys will exist
 								our_team_name = result["myTeam"]["festTeamName"]
