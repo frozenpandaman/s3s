@@ -11,7 +11,7 @@ from PIL import Image
 from io import BytesIO
 import iksm, utils#, utils_ss
 
-A_VERSION = "0.1.2"
+A_VERSION = "0.1.3"
 
 DEBUG = False
 
@@ -345,9 +345,9 @@ def set_scoreboard(battle):
 		p_dict["inked"]           = player["paint"]
 		p_dict["rank_in_team"]    = i+1
 		if "result" in player and player["result"] != None:
-			p_dict["kill"]           = player["result"]["kill"]
+			p_dict["kill_or_assist"] = player["result"]["kill"]
 			p_dict["assist"]         = player["result"]["assist"]
-			p_dict["kill_or_assist"] = p_dict["kill"] + p_dict["assist"]
+			p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
 			p_dict["disconnected"]   = "no"
@@ -368,9 +368,9 @@ def set_scoreboard(battle):
 		p_dict["inked"]           = player["paint"]
 		p_dict["rank_in_team"]    = i+1
 		if "result" in player and player["result"] != None:
-			p_dict["kill"]           = player["result"]["kill"]
+			p_dict["kill_or_assist"] = player["result"]["kill"]
 			p_dict["assist"]         = player["result"]["assist"]
-			p_dict["kill_or_assist"] = p_dict["kill"] + p_dict["assist"]
+			p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
 			p_dict["disconnected"]   = "no"
@@ -467,9 +467,9 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 			payload["rank_in_team"]   = i+1
 			# ...        = player["result"]["festDragonCert"] NONE, DRAGON, or DOUBLE_DRAGON - splatfest
 			if player["result"] != None: # null if player disconnect
-				payload["kill"]           = player["result"]["kill"]
+				payload["kill_or_assist"] = player["result"]["kill"]
 				payload["assist"]         = player["result"]["assist"]
-				payload["kill_or_assist"] = payload["kill"] + payload["assist"]
+				payload["kill"]           = payload["kill_or_assist"] - payload["assist"]
 				payload["death"]          = player["result"]["death"]
 				payload["special"]        = player["result"]["special"]
 				# ...        = player["result"]["noroshiTry"] = ultra signal attempts - splatfest
