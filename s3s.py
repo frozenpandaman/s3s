@@ -4,14 +4,14 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import argparse, datetime, json, os, re, requests, sys, time
+import argparse, datetime, json, os, re, requests, sys, time, uuid
 import msgpack
 from packaging import version
 from PIL import Image
 from io import BytesIO
 import iksm, utils#, utils_ss
 
-A_VERSION = "0.1.3"
+A_VERSION = "0.1.4"
 
 DEBUG = False
 
@@ -390,7 +390,9 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 	## UUID ##
 	##########
-	payload["uuid"] = utils.b64d(battle["id"])
+	full_id = utils.b64d(battle["id"])
+	s3s_namespace = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
+	payload["uuid"] = str(uuid.uuid5(s3s_namespace, full_id[-52:])) # input format: <YYYYMMDD>T<HHMMSS>_<uuid>
 
 	## MODE ##
 	##########
@@ -1119,15 +1121,24 @@ def main():
 			print(f"Encountered an error while checking recently-uploaded {noun}. Is stat.ink down?")
 			sys.exit(1)
 
-		data_new = []
+		to_upload = []
 		for battle in data:
 			if battle["data"]["vsHistoryDetail"] != None:
-				battle_uuid = utils.b64d(battle["data"]["vsHistoryDetail"]["id"])
+				full_id = utils.b64d(battle["data"]["vsHistoryDetail"]["id"])
+				old_uuid = full_id[-36:] # not unique because nintendo hates us
+				s3s_namespace = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
+				new_uuid = str(uuid.uuid5(s3s_namespace, full_id[-52:]))
 
-				if battle_uuid not in statink_uploads:
-					data_new.append(battle)
+				if new_uuid in statink_uploads:
+					print("Skipping already-uploaded battle.")
+					continue
+				if old_uuid in statink_uploads:
+					if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
+						print("Skipping already-uploaded battle.")
+						continue
+				to_upload.append(battle)
 
-		post_result(data_new, False, blackout, test_run, overview_data=overview_file) # one or multiple; monitoring mode = False
+		post_result(to_upload, False, blackout, test_run, overview_data=overview_file) # one or multiple; monitoring mode = False
 		sys.exit(0)
 
 	# regular run

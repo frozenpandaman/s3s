@@ -64,7 +64,7 @@ def b64d(string):
 	thing_id = thing_id.replace("CoopStage-", "")
 	thing_id = thing_id.replace("CoopGrade-", "")
 	if thing_id[:15] == "VsHistoryDetail" or thing_id[:17] == "CoopHistoryDetail":
-		return thing_id[-36:] # uuid
+		return thing_id # string
 	else:
 		return int(thing_id) # integer
 
@@ -99,6 +99,6 @@ def custom_key_exists(key, config_data, value=True):
 	'''Checks if a given custom key exists in config.txt and is set to the specified value (true by default).'''
 
 	# https://github.com/frozenpandaman/s3s/wiki/config-keys
-	if key not in ["ignore_private", "app_user_agent"]:
-		print("(!) checking unexpected custom key")
+	if key not in ["ignore_private", "app_user_agent", "force_uploads"]:
+		print("(!) Checking unexpected custom key")
 	return True if key in config_data and config_data[key].lower() == str(value).lower() else False
