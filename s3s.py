@@ -15,8 +15,8 @@ A_VERSION = "0.1.2"
 
 DEBUG = False
 
-# ANSI ESCAPE SETUP
-os.system("")
+os.system("") # ANSI escape setup
+sys.stdout.reconfigure(encoding='utf-8') # note: please stop using git bash
 
 # CONFIG.TXT CREATION
 if getattr(sys, 'frozen', False): # place config.txt in same directory as script (bundled or not)
