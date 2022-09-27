@@ -236,6 +236,7 @@ def get_gtoken(f_gen_url, session_token, ver):
 		except:
 			print("Error from Nintendo (in Account/Login step):")
 			print(json.dumps(splatoon_token, indent=2))
+			print("Re-running the script usually fixes this.")
 			sys.exit(1)
 
 		f, uuid, timestamp = call_imink_api(idToken, 2, f_gen_url)
