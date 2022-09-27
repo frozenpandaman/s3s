@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup
 
 session = requests.Session()
 S3S_VERSION = "unknown"
-NSOAPP_VERSION = "2.2.0"
+NSOAPP_VERSION = "2.3.0"
 
 # functions in this file & call stack:
 # get_nsoapp_version()
