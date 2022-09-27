@@ -1,13 +1,13 @@
 # (ↄ) 2017-2022 eli fessler (frozenpandaman), clovervidia
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
-import base64, datetime, json, re, requests
+import base64, datetime, json, re, requests, uuid
 from bs4 import BeautifulSoup
-
 
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
 WEB_VIEW_VERSION = "1.0.0-63bad6e1" # fallback
+S3S_NAMESPACE = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3737698

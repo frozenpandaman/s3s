@@ -391,8 +391,7 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	## UUID ##
 	##########
 	full_id = utils.b64d(battle["id"])
-	s3s_namespace = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
-	payload["uuid"] = str(uuid.uuid5(s3s_namespace, full_id[-52:])) # input format: <YYYYMMDD>T<HHMMSS>_<uuid>
+	payload["uuid"] = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:])) # input format: <YYYYMMDD>T<HHMMSS>_<uuid>
 
 	## MODE ##
 	##########
@@ -846,16 +845,24 @@ def check_if_missing(which, ismonitoring, isblackout, istestrun):
 				sys.exit(1)
 
 			# ! fetch from online
-			splatnet_hashes = fetch_json(which, specific=True, numbers_only=True) # 'specific' - check ALL possible battles
+			splatnet_ids = fetch_json(which, specific=True, numbers_only=True) # 'specific' - check ALL possible battles
 
-			for hash in reversed(splatnet_hashes): # earliest to most recent
-				uuid = utils.b64d(hash)
-				if uuid not in statink_uploads: # one of the splatnet entries isn't on stat.ink (unuploaded)
-					if not printed:
-						printed = True
-						print(f"Previously-unuploaded {noun} detected. Uploading now...")
+			# same as code in -i section below...
+			for id in reversed(splatnet_ids):
+				full_id = utils.b64d(id)
+				old_uuid = full_id[-36:]
+				new_uuid = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:]))
 
-					fetch_and_upload_single_result(hash, noun, ismonitoring, isblackout, istestrun)
+				if new_uuid in statink_uploads:
+					continue
+				if old_uuid in statink_uploads:
+					if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
+						continue
+				if not printed:
+					printed = True
+					print(f"Previously-unuploaded {noun} detected. Uploading now...")
+
+				fetch_and_upload_single_result(id, noun, ismonitoring, isblackout, istestrun)
 
 			if not printed:
 				print(f"No previously-unuploaded {noun} found.")
@@ -1126,8 +1133,7 @@ def main():
 			if battle["data"]["vsHistoryDetail"] != None:
 				full_id = utils.b64d(battle["data"]["vsHistoryDetail"]["id"])
 				old_uuid = full_id[-36:] # not unique because nintendo hates us
-				s3s_namespace = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
-				new_uuid = str(uuid.uuid5(s3s_namespace, full_id[-52:]))
+				new_uuid = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:]))
 
 				if new_uuid in statink_uploads:
 					print("Skipping already-uploaded battle.")
