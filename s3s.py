@@ -1022,9 +1022,6 @@ class SquidProgress:
 		sys.stdout.write(f"\r{' '*(os.get_terminal_size()[0] - 1)}\r")
 		sys.stdout.flush()
 
-	def __del__(self):
-		sys.stdout.write(f"\r{' '*(os.get_terminal_size()[0] - 1)}\r")
-		sys.stdout.flush()
 
 def main():
 	'''Main process, including I/O and setup.'''
