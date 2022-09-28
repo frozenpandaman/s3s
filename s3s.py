@@ -170,7 +170,7 @@ def gen_new_tokens(reason, force=False):
 		print(f"Wrote tokens for {acc_name} to config.txt.\n")
 
 
-def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False):
+def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False, skipprefetch=False):
 	'''Returns results JSON from SplatNet 3, including a combined dict for ink battles + SR jobs if requested.'''
 
 	if DEBUG:
@@ -181,9 +181,10 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		print("fetch_json() must be called with separate=True if using exportall.")
 		sys.exit(1)
 
-	prefetch_checks(printout)
-	if DEBUG:
-		print("* prefetch_checks() succeeded")
+	if not skipprefetch:
+		prefetch_checks(printout)
+		if DEBUG:
+			print("* prefetch_checks() succeeded")
 
 	ink_list, salmon_list = [], []
 	parent_files = []
@@ -1087,7 +1088,7 @@ def main():
 		prefetch_checks(printout=True)
 		print("Fetching your JSON files to export locally. This might take a while...")
 		# fetch_json() calls prefetch_checks() to gen or check tokens
-		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True)
+		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True, skipprefetch=True)
 
 		cwd = os.getcwd()
 		export_dir = os.path.join(cwd, f'export-{int(time.time())}')
