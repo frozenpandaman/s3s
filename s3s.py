@@ -4,7 +4,7 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import argparse, datetime, json, os, re, requests, sys, time, uuid
+import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 from packaging import version
 from PIL import Image
@@ -1008,7 +1008,7 @@ class SquidProgress:
         self.count = 0
 
     def __call__(self):
-        lineend = os.get_terminal_size()[0] - 4
+        lineend = shutil.get_terminal_size()[0] - 4
         ika = '>=> ' if self.count % 2 == 0 else '===>'
         sys.stdout.write(f"\r{' '*self.count}{ika}{' '*(lineend - self.count)}")
         sys.stdout.flush()
