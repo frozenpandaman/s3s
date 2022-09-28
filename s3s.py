@@ -173,6 +173,8 @@ def gen_new_tokens(reason, force=False):
 def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False, skipprefetch=False):
 	'''Returns results JSON from SplatNet 3, including a combined dict for ink battles + SR jobs if requested.'''
 
+	swim = SquidProgress()
+
 	if DEBUG:
 		print(f"* fetch_json() called with which={which}, separate={separate}, " \
 			f"exportall={exportall}, specific={specific}, numbers_only={numbers_only}")
@@ -185,6 +187,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		prefetch_checks(printout)
 		if DEBUG:
 			print("* prefetch_checks() succeeded")
+	swim()
 
 	ink_list, salmon_list = [], []
 	parent_files = []
@@ -209,10 +212,8 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		queries.append(None)
 
 	needs_sorted = False # https://ygdp.yale.edu/phenomena/needs-washed :D
-	swim = SquidProgress()
 
 	for sha in queries:
-		swim()
 		if sha != None:
 			if DEBUG:
 				print(f"* making query1 to {sha}")
