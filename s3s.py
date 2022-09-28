@@ -1004,17 +1004,22 @@ def monitor_battles(which, secs, isblackout, istestrun):
 		print("Bye!")
 
 class SquidProgress:
+    '''Display animation while waiting.'''
     def __init__(self):
         self.count = 0
 
     def __call__(self):
-        lineend = os.get_terminal_size()[0] - 4
+        lineend = os.get_terminal_size()[0] - 5 # 5 = ('>=> ' or '===>') + blank 1
         ika = '>=> ' if self.count % 2 == 0 else '===>'
         sys.stdout.write(f"\r{' '*self.count}{ika}{' '*(lineend - self.count)}")
         sys.stdout.flush()
         self.count += 1
         if self.count > lineend:
             self.count = 0
+
+    def __del__(self):
+        sys.stdout.write(f"\r{' '*(os.get_terminal_size()[0] - 1)}\r")
+        sys.stdout.flush()
 
 def main():
 	'''Main process, including I/O and setup.'''
