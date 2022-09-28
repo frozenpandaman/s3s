@@ -11,7 +11,7 @@ from PIL import Image
 from io import BytesIO
 import iksm, utils#, utils_ss
 
-A_VERSION = "0.1.4"
+A_VERSION = "0.1.5"
 
 DEBUG = False
 
@@ -487,11 +487,13 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 	## RESULT ##
 	############
-	result = battle["judgement"][-4:]
+	result = battle["judgement"]
 	if result == "WIN":
 		payload["result"] = "win"
-	elif result == "LOSE": # gets EXEMPTED_LOSE and DEEMED_LOSE too
+	elif result == "LOSE" or result == "DEEMED_LOSE":
 		payload["result"] = "lose"
+	elif result == "EXEMPTED_LOSE":
+		payload["result"] = "exempted_lose" # doesn't count toward stats
 	elif result == "DRAW":
 		payload["result"] = "draw"
 
