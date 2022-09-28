@@ -207,10 +207,10 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		queries.append(None)
 
 	needs_sorted = False # https://ygdp.yale.edu/phenomena/needs-washed :D
-	progress = Progress()
+	swim = SquidProgress()
 
 	for sha in queries:
-		progress()
+		swim()
 		if sha != None:
 			if DEBUG:
 				print(f"* making query1 to {sha}")
@@ -219,13 +219,13 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 
 			query1 = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 			query1_resp = json.loads(query1.text)
+			swim()
 
 			# ink battles - latest 50 of any type
 			if "latestBattleHistories" in query1_resp["data"]:
 				for battle_group in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"]) # don't filter out private battles here - do that in post_result()
-						progress()
 
 			# ink battles - latest 50 turf war
 			elif "regularBattleHistories" in query1_resp["data"]:
@@ -233,14 +233,12 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				for battle_group in query1_resp["data"]["regularBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
-						progress()
 			# ink battles - latest 50 anarchy battles
 			elif "bankaraBattleHistories" in query1_resp["data"]:
 				needs_sorted = True
 				for battle_group in query1_resp["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
-						progress()
 			# ink battles - latest 50 private battles
 			elif "privateBattleHistories" in query1_resp["data"] \
 			and not utils.custom_key_exists("ignore_private", CONFIG_DATA):
@@ -248,13 +246,11 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				for battle_group in query1_resp["data"]["privateBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
-						progress()
 			# salmon run jobs - latest 50
 			elif "coopResult" in query1_resp["data"]:
 				for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
 					for job in shift["historyDetails"]["nodes"]:
 						job_ids.append(job["id"])
-						progress()
 
 			if numbers_only:
 				ink_list.extend(battle_ids)
@@ -267,7 +263,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 						cookies=dict(_gtoken=GTOKEN))
 					query2_resp_b = json.loads(query2_b.text)
 					ink_list.append(query2_resp_b)
-					progress()
+					swim()
 
 				for jid in job_ids:
 					query2_j = requests.post(utils.GRAPHQL_URL,
@@ -276,7 +272,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 						cookies=dict(_gtoken=GTOKEN))
 					query2_resp_j = json.loads(query2_j.text)
 					salmon_list.append(query2_resp_j)
-					progress()
+					swim()
 
 				if needs_sorted: # put regular, bankara, and private in order, since they were exported in sequential chunks
 					try:
@@ -1002,17 +998,17 @@ def monitor_battles(which, secs, isblackout, istestrun):
 		print("Please run s3s again with " + '\033[91m' + "-r" + '\033[0m' + " to get these battles.")
 		print("Bye!")
 
-class Progress:
+class SquidProgress:
     def __init__(self):
         self.count = 0
 
     def __call__(self):
-        lineend = 31
+        lineend = os.get_terminal_size()[0] - 4
         ika = '>=> ' if self.count % 2 == 0 else '===>'
-        sys.stdout.write("\r%s%s%s" % (' ' * self.count, ika, ' ' * (lineend - self.count)))
+        sys.stdout.write(f"\r{' '*self.count}{ika}{' '*(lineend - self.count)}")
         sys.stdout.flush()
         self.count += 1
-        if(self.count > lineend):
+        if self.count > lineend:
             self.count = 0
 
 def main():
