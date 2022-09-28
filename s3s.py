@@ -208,7 +208,10 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		queries.append(None)
 
 	needs_sorted = False # https://ygdp.yale.edu/phenomena/needs-washed :D
+	swim = SquidProgress()
+
 	for sha in queries:
+		swim()
 		if sha != None:
 			if DEBUG:
 				print(f"* making query1 to {sha}")
@@ -217,6 +220,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 
 			query1 = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 			query1_resp = json.loads(query1.text)
+			swim()
 
 			# ink battles - latest 50 of any type
 			if "latestBattleHistories" in query1_resp["data"]:
@@ -260,6 +264,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 						cookies=dict(_gtoken=GTOKEN))
 					query2_resp_b = json.loads(query2_b.text)
 					ink_list.append(query2_resp_b)
+					swim()
 
 				for jid in job_ids:
 					query2_j = requests.post(utils.GRAPHQL_URL,
@@ -268,6 +273,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 						cookies=dict(_gtoken=GTOKEN))
 					query2_resp_j = json.loads(query2_j.text)
 					salmon_list.append(query2_resp_j)
+					swim()
 
 				if needs_sorted: # put regular, bankara, and private in order, since they were exported in sequential chunks
 					try:
@@ -993,6 +999,18 @@ def monitor_battles(which, secs, isblackout, istestrun):
 		print("Please run s3s again with " + '\033[91m' + "-r" + '\033[0m' + " to get these battles.")
 		print("Bye!")
 
+class SquidProgress:
+    def __init__(self):
+        self.count = 0
+
+    def __call__(self):
+        lineend = os.get_terminal_size()[0] - 4
+        ika = '>=> ' if self.count % 2 == 0 else '===>'
+        sys.stdout.write(f"\r{' '*self.count}{ika}{' '*(lineend - self.count)}")
+        sys.stdout.flush()
+        self.count += 1
+        if self.count > lineend:
+            self.count = 0
 
 def main():
 	'''Main process, including I/O and setup.'''
