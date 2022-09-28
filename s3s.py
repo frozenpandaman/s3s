@@ -16,7 +16,8 @@ A_VERSION = "0.1.4"
 DEBUG = False
 
 os.system("") # ANSI escape setup
-sys.stdout.reconfigure(encoding='utf-8') # note: please stop using git bash
+if sys.version_info[1] >= 7: # only works on python 3.7+
+	sys.stdout.reconfigure(encoding='utf-8') # note: please stop using git bash
 
 # CONFIG.TXT CREATION
 if getattr(sys, 'frozen', False): # place config.txt in same directory as script (bundled or not)
