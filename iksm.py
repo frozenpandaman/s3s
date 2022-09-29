@@ -2,14 +2,15 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import requests, json, re, sys
-import os, base64, hashlib
-import uuid, time, random, string
-from bs4 import BeautifulSoup
-
+import sys
 if __name__ == "__main__":
 	print("How to use : github.com/frozenpandaman/s3s")
 	sys.exit(0)
+
+import requests, json, re
+import os, base64, hashlib
+import uuid, time, random, string
+from bs4 import BeautifulSoup
 
 session = requests.Session()
 S3S_VERSION = "unknown"
