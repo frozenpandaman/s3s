@@ -1,8 +1,12 @@
 # (ↄ) 2017-2022 eli fessler (frozenpandaman), clovervidia
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
-import base64, datetime, json, re, requests, uuid
+import base64, datetime, json, re, requests, uuid, sys
 from bs4 import BeautifulSoup
+
+if __name__ == "__main__":
+	print("How to use : github.com/frozenpandaman/s3s")
+	sys.exit(0)
 
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"

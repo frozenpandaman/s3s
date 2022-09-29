@@ -7,6 +7,10 @@ import os, base64, hashlib
 import uuid, time, random, string
 from bs4 import BeautifulSoup
 
+if __name__ == "__main__":
+	print("How to use : github.com/frozenpandaman/s3s")
+	sys.exit(0)
+
 session = requests.Session()
 S3S_VERSION = "unknown"
 NSOAPP_VERSION = "2.3.0"
