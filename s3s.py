@@ -12,6 +12,7 @@ from io import BytesIO
 import iksm, utils#, utils_ss
 
 A_VERSION = "0.1.5"
+WEB_VIEW_VERSION = "1.0.0-63bad6e1" # NSO Webview-app version fallback
 
 DEBUG = False
 
@@ -92,7 +93,7 @@ def headbutt():
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
 		'Accept-Language':  USER_LANG,
 		'User-Agent':       APP_USER_AGENT,
-		'X-Web-View-Ver':   utils.get_web_view_ver(),
+		'X-Web-View-Ver':   WEB_VIEW_VERSION,
 		'Content-Type':     'application/json',
 		'Accept':           '*/*',
 		'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
@@ -108,6 +109,10 @@ def prefetch_checks(printout=False):
 
 	if printout:
 		print("Validating your tokens...", end='\r')
+
+	global WEB_VIEW_VERSION
+	WEB_VIEW_VERSION = utils.get_web_view_ver(WEB_VIEW_VERSION, headbutt(), GTOKEN)
+
 	if SESSION_TOKEN == "" or GTOKEN == "" or BULLETTOKEN == "":
 		gen_new_tokens("blank")
 
@@ -137,7 +142,7 @@ def gen_new_tokens(reason, force=False):
 
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
-		new_token = iksm.log_in(A_VERSION)
+		new_token = iksm.log_in(A_VERSION, APP_USER_AGENT)
 		if new_token == None:
 			print("There was a problem logging you in. Please try again later.")
 		elif new_token == "skip":
@@ -158,7 +163,7 @@ def gen_new_tokens(reason, force=False):
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
-		new_bullettoken = iksm.get_bullet(new_gtoken, utils.get_web_view_ver(), APP_USER_AGENT, acc_lang, acc_country)
+		new_bullettoken = iksm.get_bullet(new_gtoken, WEB_VIEW_VERSION, APP_USER_AGENT, acc_lang, acc_country)
 	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
 	CONFIG_DATA["acc_loc"] = acc_lang + "|" + acc_country

@@ -5,8 +5,7 @@ import base64, datetime, json, re, requests, uuid
 from bs4 import BeautifulSoup
 
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
-GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
-WEB_VIEW_VERSION = "1.0.0-63bad6e1" # fallback
+GRAPHQL_URL   = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
 S3S_NAMESPACE = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
@@ -22,22 +21,54 @@ translate_rid = {
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
 }
 
-def get_web_view_ver():
+def get_web_view_ver(fallback_version, bhead, gtoken):
 	'''Find & parse the SplatNet 3 main.js file for the current site version.'''
 
-	splatnet3_home = requests.get(SPLATNET3_URL)
+	app_head = {
+		'User-Agent':       bhead["User-Agent"],
+		'Accept':           '*/*',
+		'dnt':              '1',
+		'X-Appcolorscheme': 'DARK',
+		'X-Gamewebtoken':   gtoken,
+		'X-Requested-With': 'com.nintendo.znca',
+		'Sec-Fetch-Site':   'none',
+		'Sec-Fetch-Mode':   'navigate',
+		'Sec-Fetch-User':   '?1',
+		'Sec-Fetch-Dest':   'document',
+		'Accept-Encoding':  bhead["Accept-Encoding"],
+		'Accept-Language':  bhead["Accept-Language"]
+	}
+	app_cookies = {
+		'_gtoken':          gtoken, # X-GameWebToken
+		'_dnt':             '1'     # Do Not Track
+	}
+
+	splatnet3_home = requests.get(SPLATNET3_URL, headers=app_head, cookies=app_cookies)
 	soup = BeautifulSoup(splatnet3_home.text, "html.parser")
 
 	main_js = soup.select_one("script[src*='static']")
 	if not main_js:
-		return WEB_VIEW_VERSION
+		return fallback_version
 
 	main_js_url = SPLATNET3_URL + main_js.attrs["src"]
-	main_js_body = requests.get(main_js_url)
+
+	app_head = {
+		'User-Agent':       bhead["User-Agent"],
+		'Accept':           '*/*',
+		'X-Requested-With': 'com.nintendo.znca',
+		'Sec-Fetch-Site':   'same-origin',
+		'Sec-Fetch-Mode':   'no-cors',
+		'Sec-Fetch-Dest':   'script',
+		'Referer':          bhead["Referer"],
+		'Accept-Encoding':  bhead["Accept-Encoding"],
+		'Accept-Language':  bhead["Accept-Language"]
+	}
+
+	main_js_body = requests.get(main_js_url, headers=app_head, cookies=app_cookies)
 
 	match = re.search(r"\b(\d+\.\d+\.\d+)\b-\".concat.*?\b([0-9a-f]{40})\b", main_js_body.text)
 	if not match:
-		return WEB_VIEW_VERSION
+		return fallback_version
 
 	version, revision = match.groups()
 	return f"{version}-{revision[:8]}"
