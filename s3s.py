@@ -11,6 +11,8 @@ from PIL import Image
 from io import BytesIO
 import iksm, utils#, utils_ss
 
+from concurrent.futures import ThreadPoolExecutor
+
 A_VERSION = "0.1.5"
 
 DEBUG = False
@@ -49,6 +51,8 @@ GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64
 BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64 json web token
 SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
+
+thread_pool = ThreadPoolExecutor(max_workers=10)
 
 # SET HTTP HEADERS
 if "app_user_agent" in CONFIG_DATA:
@@ -259,23 +263,10 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				ink_list.extend(battle_ids)
 				salmon_list.extend(job_ids)
 			else: # ALL DATA - TAKES A LONG TIME
-				for bid in battle_ids:
-					query2_b = requests.post(utils.GRAPHQL_URL,
-						data=utils.gen_graphql_body(utils.translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
-						headers=headbutt(),
-						cookies=dict(_gtoken=GTOKEN))
-					query2_resp_b = json.loads(query2_b.text)
-					ink_list.append(query2_resp_b)
-					swim()
 
-				for jid in job_ids:
-					query2_j = requests.post(utils.GRAPHQL_URL,
-						data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
-						headers=headbutt(),
-						cookies=dict(_gtoken=GTOKEN))
-					query2_resp_j = json.loads(query2_j.text)
-					salmon_list.append(query2_resp_j)
-					swim()
+				ink_list.extend(thread_pool.map(fetch_detailed_result, [True]*len(battle_ids), battle_ids, [swim]*len(battle_ids)))
+
+				salmon_list.extend(thread_pool.map(fetch_detailed_result, [False]*len(job_ids), job_ids, [swim]*len(job_ids)))
 
 				if needs_sorted: # put regular, bankara, and private in order, since they were exported in sequential chunks
 					try:
@@ -301,6 +292,16 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			combined = ink_list + salmon_list
 			return combined
 
+def fetch_detailed_result(is_vs_history, history_id, swim):
+	sha = "VsHistoryDetailQuery" if is_vs_history else "CoopHistoryDetailQuery"
+	varname = "vsResultId" if is_vs_history else "coopHistoryDetailId"
+	query2 = requests.post(utils.GRAPHQL_URL,
+		data=utils.gen_graphql_body(utils.translate_rid[sha], varname, history_id),
+		headers=headbutt(),
+		cookies=dict(_gtoken=GTOKEN))
+	query2_resp = json.loads(query2.text)
+	swim()
+	return query2_resp
 
 def update_salmon_profile():
 	''' Updates stat.ink Salmon Run stats/profile.'''
@@ -1219,6 +1220,8 @@ def main():
 		noun = utils.set_noun(which)
 		for hash in results:
 			fetch_and_upload_single_result(hash, noun, False, blackout, test_run) # monitoring mode = False
+
+	thread_pool.shutdown(wait=True)
 
 
 if __name__ == "__main__":
