@@ -768,12 +768,16 @@ def check_statink_key():
 	elif len(API_KEY) != 43:
 		new_api_key = ""
 		while len(new_api_key.strip()) != 43 and new_api_key.strip() != "skip":
-			if new_api_key.strip() == "" and API_KEY.strip() == "":
-				new_api_key = input("stat.ink API key: ")
-			else:
-				print("Invalid stat.ink API key. Please re-enter it below.")
-				new_api_key = input("stat.ink API key: ")
-			CONFIG_DATA["api_key"] = new_api_key
+			try:
+				if new_api_key.strip() == "" and API_KEY.strip() == "":
+					new_api_key = input("stat.ink API key: ")
+				else:
+					print("Invalid stat.ink API key. Please re-enter it below.")
+					new_api_key = input("stat.ink API key: ")
+				CONFIG_DATA["api_key"] = new_api_key
+			except KeyboardInterrupt:
+				print("Cancelled API key input.")
+				sys.exit(0)
 		write_config(CONFIG_DATA)
 	return
 
