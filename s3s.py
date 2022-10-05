@@ -1019,7 +1019,7 @@ class SquidProgress:
 			self.count = 0
 
 	def __del__(self):
-		sys.stdout.write(f"\r{' '*(os.get_terminal_size()[0] - 1)}\r")
+		sys.stdout.write(f"\r{' '*(shutil.get_terminal_size()[0] - 1)}\r")
 		sys.stdout.flush()
 
 
