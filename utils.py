@@ -14,9 +14,9 @@ S3S_NAMESPACE = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
 translate_rid = {
 	'HomeQuery':                       'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
 	'LatestBattleHistoriesQuery':      '7d8b560e31617e981cf7c8aa1ca13a00', # INK / blank vars - query1
-	'RegularBattleHistoriesQuery':     '819b680b0c7962b6f7dc2a777cd8c5e4', # INK / blank vars - query1
+	'RegularBattleHistoriesQuery':     'f6e7e0277e03ff14edfef3b41f70cd33', # INK / blank vars - query1
 	'BankaraBattleHistoriesQuery':     'c1553ac75de0a3ea497cdbafaa93e95b', # INK / blank vars - query1
-	'PrivateBattleHistoriesQuery':     '51981299595060692440e0ca66c475a1', # INK / blank vars - query1
+	'PrivateBattleHistoriesQuery':     '38e0529de8bc77189504d26c7a14e0b8', # INK / blank vars - query1
 	'VsHistoryDetailQuery':            '2b085984f729cd51938fc069ceef784a', # INK / req "vsResultId" - query2
 	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # SR  / blank vars - query1
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
@@ -67,11 +67,11 @@ def get_web_view_ver(fallback_version, bhead, gtoken):
 
 	main_js_body = requests.get(main_js_url, headers=app_head, cookies=app_cookies)
 
-	match = re.search(r"\b(\d+\.\d+\.\d+)\b-\".concat.*?\b([0-9a-f]{40})\b", main_js_body.text)
+	match = re.search(r"\b(?P<revision>[0-9a-f]{40})\b.*revision_info_not_set\"\),.*?=\"(?P<version>\d+\.\d+\.\d+)", main_js_body.text)
 	if not match:
 		return fallback_version
 
-	version, revision = match.groups()
+	version, revision = match.group("version"), match.group("revision")
 	return f"{version}-{revision[:8]}"
 
 
