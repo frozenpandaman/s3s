@@ -12,7 +12,7 @@ from io import BytesIO
 import iksm, utils#, utils_ss
 
 A_VERSION = "0.1.5"
-WEB_VIEW_VERSION = "1.0.0-63bad6e1" # NSO Webview-app version fallback
+WEB_VIEW_VERSION = "" # value is determined during the prefetch_checks() process.
 
 DEBUG = False
 
