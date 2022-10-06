@@ -4,7 +4,7 @@
 
 import sys
 if __name__ == "__main__":
-	print("How to use : github.com/frozenpandaman/s3s")
+	print("This program cannot be run alone. How to use: github.com/frozenpandaman/s3s")
 	sys.exit(0)
 
 import requests, json, re
