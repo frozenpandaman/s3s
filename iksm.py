@@ -317,10 +317,13 @@ def get_bullet(web_service_token, web_view_ver, app_user_agent, user_lang, user_
 		print("Cannot access SplatNet 3 without having played online.")
 		sys.exit(1)
 
-	bullet_resp = json.loads(r.text)
 	try:
+		bullet_resp = json.loads(r.text)
 		bullet_token = bullet_resp["bulletToken"]
-	except:
+	except (json.decoder.JSONDecodeError, TypeError):
+		print("Got non-JSON response from Nintendo.")
+		sys.exit(1)
+	except KeyError:
 		print("Error from Nintendo (in api/bullet_tokens step):")
 		print(json.dumps(bullet_resp, indent=2))
 		sys.exit(1)
