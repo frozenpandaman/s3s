@@ -1,6 +1,7 @@
 # (ↄ) 2017-2022 eli fessler (frozenpandaman), clovervidia
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
+
 import base64, datetime, json, re, requests, uuid
 from bs4 import BeautifulSoup
 
@@ -89,7 +90,7 @@ def gen_graphql_body(sha256hash, varname=None, varvalue=None):
 		"variables": {}
 	}
 
-	if varname != None and varvalue != None:
+	if varname is not None and varvalue is not None:
 		great_passage["variables"][varname] = varvalue
 
 	return json.dumps(great_passage)
