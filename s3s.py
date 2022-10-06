@@ -110,11 +110,11 @@ def prefetch_checks(printout=False):
 	if printout:
 		print("Validating your tokens...", end='\r')
 
-	global WEB_VIEW_VERSION
-	WEB_VIEW_VERSION = utils.get_web_view_ver(WEB_VIEW_VERSION, headbutt(), GTOKEN)
-
 	if SESSION_TOKEN == "" or GTOKEN == "" or BULLETTOKEN == "":
 		gen_new_tokens("blank")
+
+	global WEB_VIEW_VERSION
+	WEB_VIEW_VERSION = utils.get_web_view_ver(headbutt(), GTOKEN)
 
 	sha = utils.translate_rid["HomeQuery"]
 	test = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))

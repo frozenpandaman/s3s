@@ -5,8 +5,9 @@ import base64, datetime, json, re, requests, uuid
 from bs4 import BeautifulSoup
 
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
-GRAPHQL_URL  = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
-WEB_VIEW_VERSION = "1.0.0-216d0219" # NSO Webview-app version fallback
+GRAPHQL_URL   = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
+FALLBACK_WEB_VIEW_VERSION = "1.0.0-216d0219" # NSO Webview-app version fallback
+CURRENT_WEB_VIEW_VERSION = "" # get_web_view_ver()
 S3S_NAMESPACE = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
@@ -22,8 +23,12 @@ translate_rid = {
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
 }
 
-def get_web_view_ver(fallback_version, bhead, gtoken):
+def get_web_view_ver(bhead, gtoken):
 	'''Find & parse the SplatNet 3 main.js file for the current site version.'''
+
+	global CURRENT_WEB_VIEW_VERSION
+	if CURRENT_WEB_VIEW_VERSION != "":
+		return CURRENT_WEB_VIEW_VERSION
 
 	app_head = {
 		'User-Agent':       bhead["User-Agent"],
@@ -49,7 +54,7 @@ def get_web_view_ver(fallback_version, bhead, gtoken):
 
 	main_js = soup.select_one("script[src*='static']")
 	if not main_js:
-		return fallback_version
+		return FALLBACK_WEB_VIEW_VERSION
 
 	main_js_url = SPLATNET3_URL + main_js.attrs["src"]
 
@@ -69,10 +74,11 @@ def get_web_view_ver(fallback_version, bhead, gtoken):
 
 	match = re.search(r"\b(?P<revision>[0-9a-f]{40})\b.*revision_info_not_set\"\),.*?=\"(?P<version>\d+\.\d+\.\d+)", main_js_body.text)
 	if not match:
-		return fallback_version
+		return FALLBACK_WEB_VIEW_VERSION
 
 	version, revision = match.group("version"), match.group("revision")
-	return f"{version}-{revision[:8]}"
+	CURRENT_WEB_VIEW_VERSION = f"{version}-{revision[:8]}"
+	return CURRENT_WEB_VIEW_VERSION
 
 
 def set_noun(which):
