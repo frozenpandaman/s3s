@@ -4,7 +4,6 @@
 
 import requests, json, re, sys
 import os, base64, hashlib
-import uuid, time, random, string
 from bs4 import BeautifulSoup
 
 session = requests.Session()
@@ -32,7 +31,7 @@ def get_nsoapp_version():
 		page = requests.get("https://apps.apple.com/us/app/nintendo-switch-online/id1234806557")
 		soup = BeautifulSoup(page.text, 'html.parser')
 		elt = soup.find("p", {"class": "whats-new__latest__version"})
-		ver = elt.get_text().replace("Version ","").strip()
+		ver = elt.get_text().replace("Version ", "").strip()
 		return ver
 	except:
 		return NSOAPP_VERSION
@@ -106,7 +105,7 @@ def get_session_token(session_token_code, auth_code_verifier):
 	nsoapp_version = get_nsoapp_version()
 
 	app_head = {
-		'User-Agent':      'OnlineLounge/' + nsoapp_version + ' NASDKAPI Android',
+		'User-Agent':      f'OnlineLounge/{nsoapp_version} NASDKAPI Android',
 		'Accept-Language': 'en-US',
 		'Accept':          'application/json',
 		'Content-Type':    'application/x-www-form-urlencoded',
@@ -184,15 +183,15 @@ def get_gtoken(f_gen_url, session_token, ver):
 	# get access token
 	body = {}
 	try:
-		idToken = id_response["id_token"]
-		f, uuid, timestamp = call_imink_api(idToken, 1, f_gen_url)
+		id_token = id_response["id_token"]
+		f, uuid, timestamp = call_imink_api(id_token, 1, f_gen_url)
 
 		parameter = {
 			'f':          f,
 			'language':   user_lang,
 			'naBirthday': user_info["birthday"],
 			'naCountry':  user_country,
-			'naIdToken':  idToken,
+			'naIdToken':  id_token,
 			'requestId':  uuid,
 			'timestamp':  timestamp
 		}
@@ -212,7 +211,7 @@ def get_gtoken(f_gen_url, session_token, ver):
 		'Content-Length':   str(990 + len(f)),
 		'Connection':       'Keep-Alive',
 		'Accept-Encoding':  'gzip',
-		'User-Agent':       'com.nintendo.znca/' + nsoapp_version + '(Android/7.1.2)',
+		'User-Agent':       f'com.nintendo.znca/{nsoapp_version}(Android/7.1.2)',
 	}
 
 	url = "https://api-lp1.znc.srv.nintendo.net/v3/Account/Login"
@@ -220,11 +219,11 @@ def get_gtoken(f_gen_url, session_token, ver):
 	splatoon_token = json.loads(r.text)
 
 	try:
-		idToken = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+		id_token = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
 	except:
 		# retry once if 9403/9599 error from nintendo
 		try:
-			f, uuid, timestamp = call_imink_api(idToken, 1, f_gen_url)
+			f, uuid, timestamp = call_imink_api(id_token, 1, f_gen_url)
 			body["parameter"]["f"]         = f
 			body["parameter"]["requestId"] = uuid
 			body["parameter"]["timestamp"] = timestamp
@@ -232,31 +231,31 @@ def get_gtoken(f_gen_url, session_token, ver):
 			url = "https://api-lp1.znc.srv.nintendo.net/v3/Account/Login"
 			r = requests.post(url, headers=app_head, json=body)
 			splatoon_token = json.loads(r.text)
-			idToken = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+			id_token = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
 		except:
 			print("Error from Nintendo (in Account/Login step):")
 			print(json.dumps(splatoon_token, indent=2))
 			print("Re-running the script usually fixes this.")
 			sys.exit(1)
 
-		f, uuid, timestamp = call_imink_api(idToken, 2, f_gen_url)
+		f, uuid, timestamp = call_imink_api(id_token, 2, f_gen_url)
 
 	# get web service token
 	app_head = {
 		'X-Platform':       'Android',
 		'X-ProductVersion': nsoapp_version,
-		'Authorization':    f'Bearer {idToken}',
+		'Authorization':    f'Bearer {id_token}',
 		'Content-Type':     'application/json; charset=utf-8',
 		'Content-Length':   '391',
 		'Accept-Encoding':  'gzip',
-		'User-Agent':       'com.nintendo.znca/' + nsoapp_version + '(Android/7.1.2)'
+		'User-Agent':       f'com.nintendo.znca/{nsoapp_version}(Android/7.1.2)'
 	}
 
 	body = {}
 	parameter = {
 		'f':                 f,
 		'id':                4834290508791808,
-		'registrationToken': idToken,
+		'registrationToken': id_token,
 		'requestId':         uuid,
 		'timestamp':         timestamp
 	}
@@ -271,7 +270,7 @@ def get_gtoken(f_gen_url, session_token, ver):
 	except:
 		# retry once if 9403/9599 error from nintendo
 		try:
-			f, uuid, timestamp = call_imink_api(idToken, 2, f_gen_url)
+			f, uuid, timestamp = call_imink_api(id_token, 2, f_gen_url)
 			body["parameter"]["f"]         = f
 			body["parameter"]["requestId"] = uuid
 			body["parameter"]["timestamp"] = timestamp
@@ -306,7 +305,6 @@ def get_bullet(web_service_token, web_view_ver, app_user_agent, user_lang, user_
 	}
 	url = "https://api.lp1.av5ja.srv.nintendo.net/api/bullet_tokens"
 	r = requests.post(url, headers=app_head, cookies=app_cookies)
-	bullet_resp = json.loads(r.text)
 
 	if r.status_code == 401:
 		print("Unauthorized error (ERROR_INVALID_GAME_WEB_TOKEN). Cannot fetch tokens at this time.")
@@ -317,13 +315,17 @@ def get_bullet(web_service_token, web_view_ver, app_user_agent, user_lang, user_
 	elif r.status_code == 204: # No Content, USER_NOT_REGISTERED
 		print("Cannot access SplatNet 3 without having played online.")
 		sys.exit(1)
-	else:
-		try:
-			bullet_token = bullet_resp["bulletToken"]
-		except:
-			print("Error from Nintendo (in api/bullet_tokens step):")
-			print(json.dumps(bullet_resp, indent=2))
-			sys.exit(1)
+
+	try:
+		bullet_resp = json.loads(r.text)
+		bullet_token = bullet_resp["bulletToken"]
+	except (json.decoder.JSONDecodeError, TypeError):
+		print("Got non-JSON response from Nintendo.")
+		sys.exit(1)
+	except:
+		print("Error from Nintendo (in api/bullet_tokens step):")
+		print(json.dumps(bullet_resp, indent=2))
+		sys.exit(1)
 
 	return bullet_token
 
