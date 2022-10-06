@@ -306,7 +306,6 @@ def get_bullet(web_service_token, web_view_ver, app_user_agent, user_lang, user_
 	}
 	url = "https://api.lp1.av5ja.srv.nintendo.net/api/bullet_tokens"
 	r = requests.post(url, headers=app_head, cookies=app_cookies)
-	bullet_resp = json.loads(r.text)
 
 	if r.status_code == 401:
 		print("Unauthorized error (ERROR_INVALID_GAME_WEB_TOKEN). Cannot fetch tokens at this time.")
@@ -317,13 +316,17 @@ def get_bullet(web_service_token, web_view_ver, app_user_agent, user_lang, user_
 	elif r.status_code == 204: # No Content, USER_NOT_REGISTERED
 		print("Cannot access SplatNet 3 without having played online.")
 		sys.exit(1)
-	else:
-		try:
-			bullet_token = bullet_resp["bulletToken"]
-		except:
-			print("Error from Nintendo (in api/bullet_tokens step):")
-			print(json.dumps(bullet_resp, indent=2))
-			sys.exit(1)
+
+	try:
+		bullet_resp = json.loads(r.text)
+		bullet_token = bullet_resp["bulletToken"]
+	except (json.decoder.JSONDecodeError, TypeError):
+		print("Got non-JSON response from Nintendo.")
+		sys.exit(1)
+	except:
+		print("Error from Nintendo (in api/bullet_tokens step):")
+		print(json.dumps(bullet_resp, indent=2))
+		sys.exit(1)
 
 	return bullet_token
 
