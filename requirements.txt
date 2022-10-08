@@ -1,5 +1,4 @@
 beautifulsoup4
 msgpack_python
 packaging
-Pillow
 requests
