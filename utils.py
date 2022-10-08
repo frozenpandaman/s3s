@@ -7,7 +7,6 @@ from bs4 import BeautifulSoup
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL   = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
 FALLBACK_WEB_VIEW_VERSION = "1.0.0-216d0219" # NSO Webview-app version fallback
-CURRENT_WEB_VIEW_VERSION = "" # get_web_view_ver()
 S3S_NAMESPACE = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
@@ -23,30 +22,30 @@ translate_rid = {
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
 }
 
-def get_web_view_ver(bhead, gtoken):
+def get_web_view_ver(bhead=[], gtoken=""):
 	'''Find & parse the SplatNet 3 main.js file for the current site version.'''
 
-	global CURRENT_WEB_VIEW_VERSION
-	if CURRENT_WEB_VIEW_VERSION != "":
-		return CURRENT_WEB_VIEW_VERSION
+	if not bhead or gtoken == "":
+		return FALLBACK_WEB_VIEW_VERSION
 
 	app_head = {
-		'User-Agent':       bhead["User-Agent"],
-		'Accept':           '*/*',
-		'dnt':              '1',
-		'X-Appcolorscheme': 'DARK',
-		'X-Gamewebtoken':   gtoken,
-		'X-Requested-With': 'com.nintendo.znca',
-		'Sec-Fetch-Site':   'none',
-		'Sec-Fetch-Mode':   'navigate',
-		'Sec-Fetch-User':   '?1',
-		'Sec-Fetch-Dest':   'document',
-		'Accept-Encoding':  bhead["Accept-Encoding"],
-		'Accept-Language':  bhead["Accept-Language"]
+		'Upgrade-Insecure-Requests':   '1',
+		'User-Agent':                  bhead["User-Agent"],
+		'Accept':                      '*/*',
+		'DNT':                         '1',
+		'X-Appcolorscheme':            'DARK',
+		'X-Gamewebtoken':              gtoken,
+		'X-Requested-With':            'com.nintendo.znca',
+		'Sec-Fetch-Site':              'none',
+		'Sec-Fetch-Mode':              'navigate',
+		'Sec-Fetch-User':              '?1',
+		'Sec-Fetch-Dest':              'document',
+		'Accept-Encoding':             bhead["Accept-Encoding"],
+		'Accept-Language':             bhead["Accept-Language"]
 	}
 	app_cookies = {
-		'_gtoken':          gtoken, # X-GameWebToken
-		'_dnt':             '1'     # Do Not Track
+		'_gtoken': gtoken, # X-GameWebToken
+		'_dnt':    '1'     # Do Not Track
 	}
 
 	splatnet3_home = requests.get(SPLATNET3_URL, headers=app_head, cookies=app_cookies)
@@ -59,15 +58,15 @@ def get_web_view_ver(bhead, gtoken):
 	main_js_url = SPLATNET3_URL + main_js.attrs["src"]
 
 	app_head = {
-		'User-Agent':       bhead["User-Agent"],
-		'Accept':           '*/*',
-		'X-Requested-With': 'com.nintendo.znca',
-		'Sec-Fetch-Site':   'same-origin',
-		'Sec-Fetch-Mode':   'no-cors',
-		'Sec-Fetch-Dest':   'script',
-		'Referer':          bhead["Referer"],
-		'Accept-Encoding':  bhead["Accept-Encoding"],
-		'Accept-Language':  bhead["Accept-Language"]
+		'User-Agent':          bhead["User-Agent"],
+		'Accept':              '*/*',
+		'X-Requested-With':    'com.nintendo.znca',
+		'Sec-Fetch-Site':      'same-origin',
+		'Sec-Fetch-Mode':      'no-cors',
+		'Sec-Fetch-Dest':      'script',
+		'Referer':             bhead["Referer"],
+		'Accept-Encoding':     bhead["Accept-Encoding"],
+		'Accept-Language':     bhead["Accept-Language"]
 	}
 
 	main_js_body = requests.get(main_js_url, headers=app_head, cookies=app_cookies)
@@ -77,8 +76,7 @@ def get_web_view_ver(bhead, gtoken):
 		return FALLBACK_WEB_VIEW_VERSION
 
 	version, revision = match.group("version"), match.group("revision")
-	CURRENT_WEB_VIEW_VERSION = f"{version}-{revision[:8]}"
-	return CURRENT_WEB_VIEW_VERSION
+	return f"{version}-{revision[:8]}"
 
 
 def set_noun(which):
