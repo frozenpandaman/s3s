@@ -343,7 +343,7 @@ def set_scoreboard(battle):
 		p_dict["me"]              = "yes" if player["isMyself"] else "no"
 		p_dict["name"]            = player["name"]
 		try:
-			p_dict["number"]      = player["nameId"] # splashtag number
+			p_dict["number"]      = str(player["nameId"]) # splashtag # - can contain alpha chars too... (why!!!)
 		except KeyError: # may not be present if first battle as "Player"
 			pass
 		p_dict["splashtag_title"] = player["byname"] # splashtag title
@@ -366,7 +366,7 @@ def set_scoreboard(battle):
 		p_dict["me"]              = "no"
 		p_dict["name"]            = player["name"]
 		try:
-			p_dict["number"]      = player["nameId"]
+			p_dict["number"]      = str(player["nameId"])
 		except:
 			pass
 		p_dict["splashtag_title"] = player["byname"]
