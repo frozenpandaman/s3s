@@ -8,7 +8,7 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.5"
+A_VERSION = "0.1.6"
 
 DEBUG = False
 
@@ -412,12 +412,10 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	elif mode == "PRIVATE":
 		payload["lobby"] = "private"
 	elif mode == "FEST":
-		# if utils.b64d(battle["vsMode"]["id"]) == 6:
-			# payload["lobby"] = "fest_open"
-		# elif  utils.b64d(battle["vsMode"]["id"]) == 7:
-			# payload["lobby"] = "fest_pro"
-		print("Splatfest battles are not yet supported - skipping. ")
-		return {}
+		if utils.b64d(battle["vsMode"]["id"]) == 6:
+			payload["lobby"] = "splatfest_open"
+		elif utils.b64d(battle["vsMode"]["id"]) == 7:
+			payload["lobby"] = "splatfest_challenge" # pro
 
 	## RULE ##
 	##########
@@ -432,8 +430,9 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		payload["rule"] = "hoko"
 	elif rule == "CLAM":
 		payload["rule"] = "asari"
-	# elif rule == "TRI_COLOR":
-		# payload["rule"] = "..."
+	elif rule == "TRI_COLOR":
+		print("Tricolor Turf War Splatfest battles are not yet supported - skipping.")
+		return {}
 
 	## STAGE ##
 	###########
@@ -505,16 +504,22 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 	## SPLATFEST ##
 	###############
-	# if mode == "FEST":
-		# battle["festMatch"]["dragonMatchType"] - NORMAL (1x), DECUPLE (10x), DRAGON (100x), DOUBLE_DRAGON (333x)
-		# battle["festMatch"]["contribution"] # clout
-		# battle["festMatch"]["jewel"]
-		# battle["festMatch"]["myFestPower"] # pro only
+	if mode == "FEST":
+		times_battle = battle["festMatch"]["dragonMatchType"] # NORMAL (1x), DECUPLE (10x), DRAGON (100x), DOUBLE_DRAGON (333x)
+		if times_battle == "DECUPLE":
+			payload["fest_dragon"] = "10x"
+		elif times_battle == "DRAGON":
+			payload["fest_dragon"] = "100x"
+		elif times_battle == "DOUBLE_DRAGON":
+			payload["fest_dragon"] = "333x"
+
+		payload["clout_change"] = battle["festMatch"]["contribution"]
+		payload["fest_power"]   = battle["festMatch"]["myFestPower"] # pro only
 		# if rule == "TRI_COLOR":
 			# ...
 
-	# Turf War only (NOT TRICOLOR)
-	if mode == "REGULAR":
+	# turf war only - not tricolor
+	if mode in ("REGULAR", "FEST"):
 		try:
 			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
 			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
