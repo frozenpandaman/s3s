@@ -130,7 +130,7 @@ def gen_new_tokens(reason, force=False):
 			print("The stored tokens have expired.")
 		else:
 			print("Cannot access SplatNet 3 without having played online.")
-			sys.exit(1)
+			sys.exit(0)
 
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
@@ -691,7 +691,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 
 		if payload["agent"][0:3] != os.path.basename(__file__)[:-3]:
 			print("Could not upload. Please contact @frozenpandaman on GitHub for assistance.")
-			sys.exit(1)
+			sys.exit(0)
 
 		if istestrun:
 			payload["test"] = "yes"
@@ -786,7 +786,7 @@ def get_num_results(which):
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
 	except ValueError:
 		print("Please enter an integer between 0 and 50. Exiting.")
-		sys.exit(1)
+		sys.exit(0)
 	if n < 1:
 		print("Exiting without uploading anything.")
 		sys.exit(0)
@@ -799,7 +799,7 @@ def get_num_results(which):
 				"(Regular, Anarchy, and Private) for up to 150 results total, run the script with " \
 				'\033[91m' + "-o" + '\033[0m' + " and then " \
 				'\033[91m' + "-i results.json overview.json" + '\033[0m' + ".")
-		sys.exit(1)
+		sys.exit(0)
 	else:
 		return n
 
@@ -1070,11 +1070,11 @@ def main():
 	############
 	if only_ink and only_salmon:
 		print("That doesn't make any sense! :) Exiting.")
-		sys.exit(1)
+		sys.exit(0)
 
 	elif outfile and len(sys.argv) > 2:
 		print("Cannot use -o with other arguments. Exiting.")
-		sys.exit(1)
+		sys.exit(0)
 
 	secs = -1
 	if n_value is not None:
@@ -1082,13 +1082,13 @@ def main():
 			secs = int(parser_result.N)
 		except ValueError:
 			print("Number provided must be an integer. Exiting.")
-			sys.exit(1)
+			sys.exit(0)
 		if secs < 0:
 			print("No.")
-			sys.exit(1)
+			sys.exit(0)
 		elif secs < 60:
 			print("Minimum number of seconds in monitoring mode is 60. Exiting.")
-			sys.exit(1)
+			sys.exit(0)
 
 	# export results to file: -o
 	############################
@@ -1183,7 +1183,7 @@ def main():
 	# TEMP.
 	if only_salmon:
 		print("stat.ink does not support uploading Salmon Run data at this time. Exiting.")
-		sys.exit(1)
+		sys.exit(0)
 
 	print('\033[96m' + "Uploading battles to stat.ink is now supported!" + '\033[0m' \
 		" To save your battle & job data to local files, run the script with the " \
@@ -1194,17 +1194,19 @@ def main():
 		"stat.ink does not support Salmon Run data (coop_results.json) or Splatfest battles at this time.\n")
 	# ---
 
-	if which != "ink":
+	if which in ("salmon", "both"):
 		update_salmon_profile()
 
 	if check_old:
 		check_if_missing(which, True if secs != -1 else False, blackout, test_run)
+
 	if secs != -1: # monitoring mode
 		monitor_battles(which, secs, blackout, test_run)
-	else: # regular mode (no -M)
+
+	if not check_old: # regular mode (no -M) and did not just use -r
 		if which == "both":
 			print("Please specify whether you want to upload battle results (-nsr) or Salmon Run jobs (-osr). Exiting.")
-			sys.exit(1)
+			sys.exit(0)
 
 		n = get_num_results(which)
 		print("Pulling data from online...")
