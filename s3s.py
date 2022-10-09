@@ -541,13 +541,17 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
 		payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"]
 
-		if overview_data or ismonitoring: # if we're passing in the overview.json file with -i, or monitoring mode
-			if overview_data is None:
-				overview_post = requests.post(utils.GRAPHQL_URL,
-					data=utils.gen_graphql_body(utils.translate_rid["BankaraBattleHistoriesQuery"]),
-					headers=headbutt(),
-					cookies=dict(_gtoken=GTOKEN))
-				overview_data = [json.loads(overview_post.text)] # make the request in real-time when monitoring to get rank, etc.
+		if overview_data is None: # no passed in file with -i
+			overview_post = requests.post(utils.GRAPHQL_URL,
+				data=utils.gen_graphql_body(utils.translate_rid["BankaraBattleHistoriesQuery"]),
+				headers=headbutt(),
+				cookies=dict(_gtoken=GTOKEN))
+			try:
+				overview_data = [json.loads(overview_post.text)] # make the request in real-time in attempt to get rank, etc.
+			except:
+				overview_data = None
+				print("Failed to get recent Anarchy battles. Proceeding without information on current rank.")
+		if overview_data is not None:
 			for screen in overview_data:
 				if "bankaraBattleHistories" in screen["data"]:
 					ranked_list = screen["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]
