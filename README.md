@@ -87,7 +87,7 @@ Automatic token generation involves making a *secure request to a non-Nintendo s
 
 **Privacy statement:** No identifying information is ever sent to the [imink API](https://status.imink.app/). Usernames and passwords are far removed from where the API comes into play and are never readable by anyone but you, and returned hash values do not contain meaningful information about your account. It is not possible to use either sent or stored data to identify which account/user performed a request, to view any identifying information about a user, or to gain access to an account. See the [imink API Privacy Policy](https://github.com/JoneWang/imink/wiki/Privacy-Policy) and [Documentation](https://github.com/JoneWang/imink/wiki/imink-API-Documentation) for more information.
 
-Alternatively, you can use [nsotokengen](https://github.com/clovervidia/nsotokengen) with an Android-x86 virtual machine as a drop-in replacement (customizable in `config.txt`) as a way to generate tokens locally without calls to a third-party API.
+Alternatively, you can use [nsotokengen](https://github.com/clovervidia/nsotokengen) or [nxapi-znca-api](https://github.com/samuelthomas2774/nxapi-znca-api) as a drop-in replacement (customizable in `config.txt`) in order to generate tokens locally without calls to a third-party API.
 
 ### Manual
 
