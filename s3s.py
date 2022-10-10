@@ -8,7 +8,7 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.5"
+A_VERSION = "0.1.6"
 WEB_VIEW_VERSION = "" # value is determined during the prefetch_checks() process.
 
 DEBUG = False
@@ -135,7 +135,7 @@ def gen_new_tokens(reason, force=False):
 			print("The stored tokens have expired.")
 		else:
 			print("Cannot access SplatNet 3 without having played online.")
-			sys.exit(1)
+			sys.exit(0)
 
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
@@ -348,7 +348,7 @@ def set_scoreboard(battle):
 		p_dict["me"]              = "yes" if player["isMyself"] else "no"
 		p_dict["name"]            = player["name"]
 		try:
-			p_dict["number"]      = player["nameId"] # splashtag number
+			p_dict["number"]      = str(player["nameId"]) # splashtag # - can contain alpha chars too... (why!!!)
 		except KeyError: # may not be present if first battle as "Player"
 			pass
 		p_dict["splashtag_title"] = player["byname"] # splashtag title
@@ -371,7 +371,7 @@ def set_scoreboard(battle):
 		p_dict["me"]              = "no"
 		p_dict["name"]            = player["name"]
 		try:
-			p_dict["number"]      = player["nameId"]
+			p_dict["number"]      = str(player["nameId"])
 		except:
 			pass
 		p_dict["splashtag_title"] = player["byname"]
@@ -417,12 +417,10 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	elif mode == "PRIVATE":
 		payload["lobby"] = "private"
 	elif mode == "FEST":
-		# if utils.b64d(battle["vsMode"]["id"]) == 6:
-			# payload["lobby"] = "fest_open"
-		# elif  utils.b64d(battle["vsMode"]["id"]) == 7:
-			# payload["lobby"] = "fest_pro"
-		print("Splatfest battles are not yet supported - skipping. ")
-		return {}
+		if utils.b64d(battle["vsMode"]["id"]) == 6:
+			payload["lobby"] = "splatfest_open"
+		elif utils.b64d(battle["vsMode"]["id"]) == 7:
+			payload["lobby"] = "splatfest_challenge" # pro
 
 	## RULE ##
 	##########
@@ -437,8 +435,9 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		payload["rule"] = "hoko"
 	elif rule == "CLAM":
 		payload["rule"] = "asari"
-	# elif rule == "TRI_COLOR":
-		# payload["rule"] = "..."
+	elif rule == "TRI_COLOR":
+		print("Tricolor Turf War Splatfest battles are not yet supported - skipping.")
+		return {}
 
 	## STAGE ##
 	###########
@@ -510,16 +509,22 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 	## SPLATFEST ##
 	###############
-	# if mode == "FEST":
-		# battle["festMatch"]["dragonMatchType"] - NORMAL (1x), DECUPLE (10x), DRAGON (100x), DOUBLE_DRAGON (333x)
-		# battle["festMatch"]["contribution"] # clout
-		# battle["festMatch"]["jewel"]
-		# battle["festMatch"]["myFestPower"] # pro only
+	if mode == "FEST":
+		times_battle = battle["festMatch"]["dragonMatchType"] # NORMAL (1x), DECUPLE (10x), DRAGON (100x), DOUBLE_DRAGON (333x)
+		if times_battle == "DECUPLE":
+			payload["fest_dragon"] = "10x"
+		elif times_battle == "DRAGON":
+			payload["fest_dragon"] = "100x"
+		elif times_battle == "DOUBLE_DRAGON":
+			payload["fest_dragon"] = "333x"
+
+		payload["clout_change"] = battle["festMatch"]["contribution"]
+		payload["fest_power"]   = battle["festMatch"]["myFestPower"] # pro only
 		# if rule == "TRI_COLOR":
 			# ...
 
-	# Turf War only (NOT TRICOLOR)
-	if mode == "REGULAR":
+	# turf war only - not tricolor
+	if mode in ("REGULAR", "FEST"):
 		try:
 			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
 			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
@@ -546,13 +551,17 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
 		payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"]
 
-		if overview_data or ismonitoring: # if we're passing in the overview.json file with -i, or monitoring mode
-			if overview_data is None:
-				overview_post = requests.post(utils.GRAPHQL_URL,
-					data=utils.gen_graphql_body(utils.translate_rid["BankaraBattleHistoriesQuery"]),
-					headers=headbutt(),
-					cookies=dict(_gtoken=GTOKEN))
-				overview_data = [json.loads(overview_post.text)] # make the request in real-time when monitoring to get rank, etc.
+		if overview_data is None: # no passed in file with -i
+			overview_post = requests.post(utils.GRAPHQL_URL,
+				data=utils.gen_graphql_body(utils.translate_rid["BankaraBattleHistoriesQuery"]),
+				headers=headbutt(),
+				cookies=dict(_gtoken=GTOKEN))
+			try:
+				overview_data = [json.loads(overview_post.text)] # make the request in real-time in attempt to get rank, etc.
+			except:
+				overview_data = None
+				print("Failed to get recent Anarchy battles. Proceeding without information on current rank.")
+		if overview_data is not None:
 			for screen in overview_data:
 				if "bankaraBattleHistories" in screen["data"]:
 					ranked_list = screen["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]
@@ -696,7 +705,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 
 		if payload["agent"][0:3] != os.path.basename(__file__)[:-3]:
 			print("Could not upload. Please contact @frozenpandaman on GitHub for assistance.")
-			sys.exit(1)
+			sys.exit(0)
 
 		if istestrun:
 			payload["test"] = "yes"
@@ -791,7 +800,7 @@ def get_num_results(which):
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
 	except ValueError:
 		print("Please enter an integer between 0 and 50. Exiting.")
-		sys.exit(1)
+		sys.exit(0)
 	if n < 1:
 		print("Exiting without uploading anything.")
 		sys.exit(0)
@@ -804,7 +813,7 @@ def get_num_results(which):
 				"(Regular, Anarchy, and Private) for up to 150 results total, run the script with " \
 				'\033[91m' + "-o" + '\033[0m' + " and then " \
 				'\033[91m' + "-i results.json overview.json" + '\033[0m' + ".")
-		sys.exit(1)
+		sys.exit(0)
 	else:
 		return n
 
@@ -1075,11 +1084,11 @@ def main():
 	############
 	if only_ink and only_salmon:
 		print("That doesn't make any sense! :) Exiting.")
-		sys.exit(1)
+		sys.exit(0)
 
 	elif outfile and len(sys.argv) > 2:
 		print("Cannot use -o with other arguments. Exiting.")
-		sys.exit(1)
+		sys.exit(0)
 
 	secs = -1
 	if n_value is not None:
@@ -1087,13 +1096,13 @@ def main():
 			secs = int(parser_result.N)
 		except ValueError:
 			print("Number provided must be an integer. Exiting.")
-			sys.exit(1)
+			sys.exit(0)
 		if secs < 0:
 			print("No.")
-			sys.exit(1)
+			sys.exit(0)
 		elif secs < 60:
 			print("Minimum number of seconds in monitoring mode is 60. Exiting.")
-			sys.exit(1)
+			sys.exit(0)
 
 	# export results to file: -o
 	############################
@@ -1188,7 +1197,7 @@ def main():
 	# TEMP.
 	if only_salmon:
 		print("stat.ink does not support uploading Salmon Run data at this time. Exiting.")
-		sys.exit(1)
+		sys.exit(0)
 
 	print('\033[96m' + "Uploading battles to stat.ink is now supported!" + '\033[0m' \
 		" To save your battle & job data to local files, run the script with the " \
@@ -1199,17 +1208,19 @@ def main():
 		"stat.ink does not support Salmon Run data (coop_results.json) or Splatfest battles at this time.\n")
 	# ---
 
-	if which != "ink":
+	if which in ("salmon", "both"):
 		update_salmon_profile()
 
 	if check_old:
 		check_if_missing(which, True if secs != -1 else False, blackout, test_run)
+
 	if secs != -1: # monitoring mode
 		monitor_battles(which, secs, blackout, test_run)
-	else: # regular mode (no -M)
+
+	if not check_old: # regular mode (no -M) and did not just use -r
 		if which == "both":
 			print("Please specify whether you want to upload battle results (-nsr) or Salmon Run jobs (-osr). Exiting.")
-			sys.exit(1)
+			sys.exit(0)
 
 		n = get_num_results(which)
 		print("Pulling data from online...")
