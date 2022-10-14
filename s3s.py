@@ -982,7 +982,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 							cookies=dict(_gtoken=GTOKEN))
 						result = json.loads(result_post.text)
 
-						if False and utils.custom_key_exists("ignore_private"): # TODO - how to check for SR private battles?
+						if False and utils.custom_key_exists("ignore_private", CONFIG_DATA): # TODO - how to check for SR private battles?
 							pass
 						else:
 							outcome = "Success" if result["job_result"]["is_clear"] == True else "Failure"
