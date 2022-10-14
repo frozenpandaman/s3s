@@ -1162,7 +1162,7 @@ def main():
 		try:
 			statink_uploads = json.loads(resp.text)
 		except:
-			print(f"Encountered an error while checking recently-uploaded {noun}. Is stat.ink down?")
+			print(f"Encountered an error while checking recently-uploaded data. Is stat.ink down?")
 			sys.exit(1)
 
 		to_upload = []
