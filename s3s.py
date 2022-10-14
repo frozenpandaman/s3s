@@ -25,7 +25,10 @@ if getattr(sys, 'frozen', False): # place config.txt in same directory as script
 	app_path = os.path.dirname(sys.executable)
 elif __file__:
 	app_path = os.path.dirname(__file__)
-config_path = os.path.join(app_path, "config.txt")
+else:
+	# No path to the script (probably can't happen) - just use the current directory
+	app_path = None
+config_path = "config.txt" if app_path is None else os.path.join(app_path, "config.txt")
 
 try:
 	config_file = open(config_path, "r")
