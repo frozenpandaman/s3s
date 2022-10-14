@@ -26,10 +26,13 @@ config_path = os.path.join(app_path, "config.txt")
 try:
 	config_file = open(config_path, "r")
 	CONFIG_DATA = json.load(config_file)
+	# upgrade config for last_played_time field
+	if "last_played_time" not in CONFIG_DATA:
+		CONFIG_DATA["last_played_time"] = "0001-01-01T00:00:00+00:00"
 	config_file.close()
 except (IOError, ValueError):
 	print("Generating new config file.")
-	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://api.imink.app/f"}
+	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://api.imink.app/f", "last_played_time": "0001-01-01T00:00:00+00:00"}
 	config_file = open(config_path, "w")
 	config_file.seek(0)
 	config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=False, separators=(',', ': ')))
@@ -39,13 +42,14 @@ except (IOError, ValueError):
 	config_file.close()
 
 # SET GLOBALS
-API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
-USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
-USER_COUNTRY  = CONFIG_DATA["acc_loc"][-2:]  # nintendo account info
-GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64
-BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64 json web token
-SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
-F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
+API_KEY          = CONFIG_DATA["api_key"]          # for stat.ink
+USER_LANG        = CONFIG_DATA["acc_loc"][:5]      # nintendo account info
+USER_COUNTRY     = CONFIG_DATA["acc_loc"][-2:]     # nintendo account info
+GTOKEN           = CONFIG_DATA["gtoken"]           # for accessing splatnet - base64
+BULLETTOKEN      = CONFIG_DATA["bullettoken"]      # for accessing splatnet - base64 json web token
+SESSION_TOKEN    = CONFIG_DATA["session_token"]    # for nintendo login
+F_GEN_URL        = CONFIG_DATA["f_gen"]            # endpoint for generating f (imink API by default)
+LAST_PLAYED_TIME = CONFIG_DATA["last_played_time"] # recorded last play time of battles and jobs
 
 # SET HTTP HEADERS
 if "app_user_agent" in CONFIG_DATA:
@@ -78,6 +82,8 @@ def write_config(tokens):
 	BULLETTOKEN = CONFIG_DATA["bullettoken"]
 	global SESSION_TOKEN
 	SESSION_TOKEN = CONFIG_DATA["session_token"]
+	global LAST_PLAYED_TIME
+	LAST_PLAYED_TIME = CONFIG_DATA["last_played_time"]
 
 	config_file.close()
 
@@ -210,12 +216,15 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 
 	needs_sorted = False # https://ygdp.yale.edu/phenomena/needs-washed :D
 
+	last_played_time = datetime.datetime.fromisoformat(LAST_PLAYED_TIME)
+	latest_played_time = datetime.datetime.fromisoformat(LAST_PLAYED_TIME)
+
 	for sha in queries:
 		if sha is not None:
 			if DEBUG:
 				print(f"* making query1 to {sha}")
 			sha = utils.translate_rid[sha]
-			battle_ids, job_ids = [], []
+			battle_ids, skippable_battle_ids, job_ids = [], [], []
 
 			query1 = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 			query1_resp = json.loads(query1.text)
@@ -225,27 +234,38 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			if "latestBattleHistories" in query1_resp["data"]:
 				for battle_group in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
+						played_time = datetime.datetime.fromisoformat(battle["playedTime"].replace("Z", "+00:00"))
+						if played_time <= last_played_time:
+							continue
+						if played_time > latest_played_time:
+							latest_played_time = played_time
 						battle_ids.append(battle["id"]) # don't filter out private battles here - do that in post_result()
 
 			# ink battles - latest 50 turf war
 			elif "regularBattleHistories" in query1_resp["data"]:
+				regular_battle_ids = []
 				needs_sorted = True
 				for battle_group in query1_resp["data"]["regularBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
-						battle_ids.append(battle["id"])
+						regular_battle_ids.append(battle["id"])
+				skippable_battle_ids.append(regular_battle_ids)
 			# ink battles - latest 50 anarchy battles
 			elif "bankaraBattleHistories" in query1_resp["data"]:
+				anarchy_battle_ids = []
 				needs_sorted = True
 				for battle_group in query1_resp["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
-						battle_ids.append(battle["id"])
+						anarchy_battle_ids.append(battle["id"])
+				skippable_battle_ids.append(anarchy_battle_ids)
 			# ink battles - latest 50 private battles
 			elif "privateBattleHistories" in query1_resp["data"] \
 			and not utils.custom_key_exists("ignore_private", CONFIG_DATA):
+				private_battle_ids = []
 				needs_sorted = True
 				for battle_group in query1_resp["data"]["privateBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
-						battle_ids.append(battle["id"])
+						private_battle_ids.append(battle["id"])
+				skippable_battle_ids.append(private_battle_ids)
 			# salmon run jobs - latest 50
 			elif "coopResult" in query1_resp["data"]:
 				for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
@@ -265,12 +285,33 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 					ink_list.append(query2_resp_b)
 					swim()
 
+				# regular battles, anarchy battles and private battles are skippable
+				for bids in skippable_battle_ids:
+					for bid in bids:
+						query2_b = requests.post(utils.GRAPHQL_URL,
+							data=utils.gen_graphql_body(utils.translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
+							headers=headbutt(),
+							cookies=dict(_gtoken=GTOKEN))
+						query2_resp_b = json.loads(query2_b.text)
+						played_time = datetime.datetime.fromisoformat(query2_resp_b["data"]["vsHistoryDetail"]["playedTime"].replace("Z", "+00:00"))
+						if played_time <= last_played_time:
+							break
+						if played_time > latest_played_time:
+							latest_played_time = played_time
+						ink_list.append(query2_resp_b)
+						swim()
+
 				for jid in job_ids:
 					query2_j = requests.post(utils.GRAPHQL_URL,
 						data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
 						headers=headbutt(),
 						cookies=dict(_gtoken=GTOKEN))
 					query2_resp_j = json.loads(query2_j.text)
+					played_time = datetime.datetime.fromisoformat(query2_resp_j["data"]["coopHistoryDetail"]["playedTime"].replace("Z", "+00:00"))
+					if played_time <= last_played_time:
+						break
+					if played_time > latest_played_time:
+						latest_played_time = played_time
 					salmon_list.append(query2_resp_j)
 					swim()
 
@@ -288,6 +329,10 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			parent_files.append(query1_resp)
 		else: # sha = None (we don't want to get the specified result type)
 			pass
+
+	if last_played_time != latest_played_time:
+		CONFIG_DATA["last_played_time"] = latest_played_time.isoformat()
+		write_config(CONFIG_DATA)
 
 	if exportall:
 		return parent_files, ink_list, salmon_list
