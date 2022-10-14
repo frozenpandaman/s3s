@@ -1,2 +1,4 @@
 config.txt
+venv
+.idea
 *.pyc
