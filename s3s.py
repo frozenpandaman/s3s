@@ -12,6 +12,10 @@ A_VERSION = "0.1.6"
 
 DEBUG = False
 
+DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
+		'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+		'Chrome/94.0.4606.61 Mobile Safari/537.36'
+
 os.system("") # ANSI escape setup
 if sys.version_info[1] >= 7: # only works on python 3.7+
 	sys.stdout.reconfigure(encoding='utf-8') # note: please stop using git bash
@@ -48,12 +52,8 @@ SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 
 # SET HTTP HEADERS
-if "app_user_agent" in CONFIG_DATA:
-	APP_USER_AGENT = str(CONFIG_DATA["app_user_agent"])
-else:
-	APP_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
-		'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-		'Chrome/94.0.4606.61 Mobile Safari/537.36'
+APP_USER_AGENT = str(CONFIG_DATA.get("app_user_agent", DEFAULT_USER_AGENT))
+
 
 def write_config(tokens):
 	'''Writes config file and updates the global variables.'''
