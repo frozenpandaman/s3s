@@ -20,15 +20,41 @@ os.system("") # ANSI escape setup
 if sys.version_info[1] >= 7: # only works on python 3.7+
 	sys.stdout.reconfigure(encoding='utf-8') # note: please stop using git bash
 
+
+def parse_arguments():
+	parser = argparse.ArgumentParser()
+	srgroup = parser.add_mutually_exclusive_group()
+	parser.add_argument("-M", dest="N", required=False, nargs="?", action="store",
+						help="monitoring mode; pull data every N secs (default: 300)", const=300)
+	parser.add_argument("-r", required=False, action="store_true",
+						help="retroactively post unuploaded battles/jobs")
+	srgroup.add_argument("-nsr", required=False, action="store_true",
+						 help="do not check for Salmon Run jobs")
+	srgroup.add_argument("-osr", required=False, action="store_true",
+						 help="only check for Salmon Run jobs")
+	# parser.add_argument("--blackout", required=False, action="store_true",
+	# help="black out names on scoreboard result images")
+	parser.add_argument("-o", required=False, action="store_true",
+						help="export all possible results to local files")
+	parser.add_argument("-i", dest="file", nargs=2, required=False,
+						help="upload local results. use `-i results.json overview.json`")
+	parser.add_argument("-f", dest="config", default="config.txt", required=False,
+						help="filename for config file. use `-f my_config.json`")
+	parser.add_argument("-t", required=False, action="store_true",
+						help="dry run for testing (won't post to stat.ink)")
+	return parser.parse_args()
+
+
 # CONFIG.TXT CREATION
-if getattr(sys, 'frozen', False): # place config.txt in same directory as script (bundled or not)
+CONFIG_FILE_NAME = parse_arguments().config
+if getattr(sys, 'frozen', False):  # place config.txt in same directory as script (bundled or not)
 	app_path = os.path.dirname(sys.executable)
 elif __file__:
 	app_path = os.path.dirname(__file__)
 else:
 	# No path to the script (probably can't happen) - just use the current directory
 	app_path = None
-config_path = "config.txt" if app_path is None else os.path.join(app_path, "config.txt")
+config_path = CONFIG_FILE_NAME if app_path is None else os.path.join(app_path, CONFIG_FILE_NAME)
 
 try:
 	config_file = open(config_path, "r")
@@ -1043,27 +1069,7 @@ def main():
 	check_for_updates()
 	check_statink_key()
 
-	# argparse stuff
-	################
-	parser = argparse.ArgumentParser()
-	srgroup = parser.add_mutually_exclusive_group()
-	parser.add_argument("-M", dest="N", required=False, nargs="?", action="store",
-		help="monitoring mode; pull data every N secs (default: 300)", const=300)
-	parser.add_argument("-r", required=False, action="store_true",
-		help="retroactively post unuploaded battles/jobs")
-	srgroup.add_argument("-nsr", required=False, action="store_true",
-						help="do not check for Salmon Run jobs")
-	srgroup.add_argument("-osr", required=False, action="store_true",
-						help="only check for Salmon Run jobs")
-	# parser.add_argument("--blackout", required=False, action="store_true",
-		# help="black out names on scoreboard result images")
-	parser.add_argument("-o", required=False, action="store_true",
-		help="export all possible results to local files")
-	parser.add_argument("-i", dest="file", nargs=2, required=False,
-		help="upload local results. use `-i results.json overview.json`")
-	parser.add_argument("-t", required=False, action="store_true",
-		help="dry run for testing (won't post to stat.ink)")
-	parser_result = parser.parse_args()
+	parser_result = parse_arguments()
 
 	# regular args
 	n_value     = parser_result.N
