@@ -1,5 +1,17 @@
+# Config files
+####
+
+# Default config file
 config.txt
-venv
-.idea
-*.pyc
+# Extension for alternate config files
 *.json
+
+# Development
+####
+
+# Python bytecode
+*.pyc
+# Virtual Environment
+venv
+# JetBrains IDE Project files
+.idea
