@@ -47,7 +47,7 @@ def parse_arguments():
 
 # CONFIG.TXT CREATION
 CONFIG_FILE_NAME = parse_arguments().config
-if getattr(sys, 'frozen', False):  # place config.txt in same directory as script (bundled or not)
+if getattr(sys, 'frozen', False):  # place config file in same directory as script (bundled or not)
 	app_path = os.path.dirname(sys.executable)
 elif __file__:
 	app_path = os.path.dirname(__file__)
@@ -169,7 +169,7 @@ def gen_new_tokens(reason, force=False):
 		elif new_token == "skip":
 			manual_entry = True
 		else:
-			print("\nWrote session_token to config.txt.")
+			print(f"\nWrote session_token to {CONFIG_FILE_NAME}.")
 		CONFIG_DATA["session_token"] = new_token
 		write_config(CONFIG_DATA)
 	elif SESSION_TOKEN == "skip":
@@ -180,7 +180,7 @@ def gen_new_tokens(reason, force=False):
 		new_gtoken, new_bullettoken = iksm.enter_tokens()
 		acc_lang = "en-US"
 		acc_country = "US"
-		print("Using `en-US` for language and `US` for country by default. These can be changed in config.txt.")
+		print(f"Using `en-US` for language and `US` for country by default. These can be changed in {CONFIG_FILE_NAME}.")
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
@@ -191,9 +191,9 @@ def gen_new_tokens(reason, force=False):
 	write_config(CONFIG_DATA)
 
 	if manual_entry:
-		print("Wrote tokens to config.txt.\n")
+		print(f"Wrote tokens to {CONFIG_FILE_NAME}.\n")
 	else:
-		print(f"Wrote tokens for {acc_name} to config.txt.\n")
+		print(f"Wrote tokens for {acc_name} to {CONFIG_FILE_NAME}.\n")
 
 
 def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False, skipprefetch=False):

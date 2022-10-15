@@ -97,7 +97,7 @@ def gen_graphql_body(sha256hash, varname=None, varvalue=None):
 
 
 def custom_key_exists(key, config_data, value=True):
-	'''Checks if a given custom key exists in config.txt and is set to the specified value (true by default).'''
+	'''Checks if a given custom key exists in config_data (from config file) and is set to the specified value (true by default).'''
 
 	# https://github.com/frozenpandaman/s3s/wiki/config-keys
 	if key not in ["ignore_private", "app_user_agent", "force_uploads"]:
