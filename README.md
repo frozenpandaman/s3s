@@ -23,7 +23,7 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
 
 ## Usage 🐙
 ```
-$ python s3s.py [-M [N]] [-r] [-nsr | -osr]
+$ python s3s.py [-M [N]] [-r] [-nsr | -osr] [-f config_filename.json]
 ```
 
 The `-M` flag runs the script in monitoring mode, uploading new battles/jobs as you play, checking for new results every `N` seconds; if no `N` is provided, it defaults to 300 (5 minutes).
@@ -33,6 +33,8 @@ The `-r` flag checks for & uploads any battles/jobs present on SplatNet 3 that h
 The `-nsr` flag makes Salmon Run jobs **not** be monitored/uploaded. Use this if you're playing Lobby modes only.
 
 The `-osr` flag, conversely, makes **only** Salmon Run jobs be monitored/uploaded. Use this if you're playing at Grizzco only.
+
+The `-f` flag uses a different config filename than the default `config.txt`. Use this for uploading to your kids' or partners' accounts.
 
 <!-- The `--blackout` flag blacks out other players' names on scoreboard result images and in uploaded data. -->
 
