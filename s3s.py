@@ -39,7 +39,7 @@ def parse_arguments():
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
 						help="upload local results. use `-i results.json overview.json`")
 	parser.add_argument("-f", dest="config", default="config.txt", required=False,
-						help="filename for config file. use `-f my_config.json`")
+						help="filename for config file. use `-f my_config.json` default: config.txt")
 	parser.add_argument("-t", required=False, action="store_true",
 						help="dry run for testing (won't post to stat.ink)")
 	return parser.parse_args()
