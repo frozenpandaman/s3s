@@ -588,6 +588,8 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 							if parent["bankaraMatchChallenge"]["udemaeAfter"] is None:
 								payload["rank_after"] = payload["rank_before"]
+								if payload["rank_before_s_plus"]:
+									payload["rank_after_s_plus"] = payload["rank_before_s_plus"]
 							else:
 								if idx != 0:
 									payload["rank_after"] = payload["rank_before"]
