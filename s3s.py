@@ -894,7 +894,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 	if DEBUG:
 		print(f"* monitoring mode start - calling fetch_json() w/ which={which}")
 	# ! fetch from online - no 'specific' = should all be within 'latest'
-	cached_battles, cached_jobs = fetch_json(which, separate=True, numbers_only=True, printout=True)
+	cached_battles, cached_jobs = fetch_json(which, separate=True, specific=True, numbers_only=True, printout=True)
 	if DEBUG:
 		print("* got battle numbers")
 
@@ -920,7 +920,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 
 			print("Checking for new results...", end='\r')
 			# ! fetch from online
-			ink_results, salmon_results = fetch_json(which, separate=True, numbers_only=True) # only numbers or it'd take a long time
+			ink_results, salmon_results = fetch_json(which, separate=True, specific=True, numbers_only=True) # only numbers or it'd take a long time
 
 			if which in ("both", "ink"):
 				for num in reversed(ink_results):
