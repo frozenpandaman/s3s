@@ -8,7 +8,7 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.6"
+A_VERSION = "0.1.7"
 
 DEBUG = False
 
@@ -534,13 +534,28 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		payload["our_team_inked"] = our_team_inked
 		payload["their_team_inked"] = their_team_inked
 
-	# Anarchy Battles only
+	if mode == "PRIVATE": # these don't get sent otherwise
+		try: # could be anarchy, maybe not
+			payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
+		except:
+			pass
+		try:
+			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
+			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
+		except:
+			pass
+		try:
+			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
+			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
+		except:
+			pass
+
 	if mode == "BANKARA":
 
 		try:
 			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
 			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
-		except TypeError: # draw - 'result' is null
+		except: # draw - 'result' is null
 			pass
 
 		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
@@ -593,6 +608,8 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 							if parent["bankaraMatchChallenge"]["udemaeAfter"] is None:
 								payload["rank_after"] = payload["rank_before"]
+								if payload["rank_before_s_plus"]:
+									payload["rank_after_s_plus"] = payload["rank_before_s_plus"]
 							else:
 								if idx != 0:
 									payload["rank_after"] = payload["rank_before"]
@@ -1008,6 +1025,8 @@ def monitor_battles(which, secs, isblackout, istestrun):
 
 	except KeyboardInterrupt:
 		# print(f"\nChecking to see if there are unuploaded {utils.set_noun(which)} before exiting...") # TODO
+
+		# check LatestBattleHistoriesQuery against https://stat.ink/api/v3/s3s/uuid-list
 
 		# TODO - do update_salmon_profile() at end if salmon run
 		print("\n\nChecking for unuploaded results before exiting is not yet implemented.")
