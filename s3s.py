@@ -585,9 +585,9 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 					if child["id"] == battle["id"]: # found the battle ID in the other file
 
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
-						payload["rank_before"] = full_rank[0]
 						s_plus_before = len(full_rank) > 1 #True if "before" rank is s+
 						
+						payload["rank_before"] = full_rank[0]
 						if s_plus_before:
 							payload["rank_before_s_plus"] = int(full_rank[1])
 
