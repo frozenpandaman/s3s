@@ -586,8 +586,12 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
 						payload["rank_before"] = full_rank[0]
+		
 						if len(full_rank) > 1:
+							s_plus = True
 							payload["rank_before_s_plus"] = int(full_rank[1])
+						else:
+							s_plus = False
 
 						# anarchy battle (series) - not open
 						if "bankaraMatchChallenge" in parent and parent["bankaraMatchChallenge"] is not None:
@@ -603,7 +607,7 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 							if parent["bankaraMatchChallenge"]["udemaeAfter"] is None:
 								payload["rank_after"] = payload["rank_before"]
-								if payload["rank_before_s_plus"]:
+								if s_plus:
 									payload["rank_after_s_plus"] = payload["rank_before_s_plus"]
 							else:
 								if idx != 0:
