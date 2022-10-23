@@ -1231,7 +1231,7 @@ def main():
 		'\033[91m' + "-i results.json overview.json" + '\033[0m' + ". " \
 		"Or, run the script in monitoring mode (with " + '\033[91m' + "-M" + '\033[0m' \
 		") to capture & upload new results as you play. " \
-		"stat.ink does not support Salmon Run data (coop_results.json) or Splatfest battles at this time.\n")
+		"stat.ink does not support Salmon Run data (coop_results.json) at this time.\n")
 	# ---
 
 	if which in ("salmon", "both"):
