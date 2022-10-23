@@ -8,7 +8,7 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.6"
+A_VERSION = "0.1.8"
 WEB_VIEW_VERSION = "" # value is determined during the prefetch_checks() process.
 
 DEBUG = False
@@ -39,6 +39,10 @@ except (IOError, ValueError):
 	CONFIG_DATA = json.load(config_file)
 	config_file.close()
 
+DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
+						'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+						'Chrome/94.0.4606.61 Mobile Safari/537.36'
+
 # SET GLOBALS
 API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
 USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
@@ -49,12 +53,8 @@ SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 
 # SET HTTP HEADERS
-if "app_user_agent" in CONFIG_DATA:
-	APP_USER_AGENT = str(CONFIG_DATA["app_user_agent"])
-else:
-	APP_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
-		'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-		'Chrome/94.0.4606.61 Mobile Safari/537.36'
+APP_USER_AGENT = str(CONFIG_DATA.get("app_user_agent", DEFAULT_USER_AGENT))
+
 
 def write_config(tokens):
 	'''Writes config file and updates the global variables.'''
@@ -539,13 +539,28 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		payload["our_team_inked"] = our_team_inked
 		payload["their_team_inked"] = their_team_inked
 
-	# Anarchy Battles only
+	if mode == "PRIVATE": # these don't get sent otherwise
+		try: # could be anarchy, maybe not
+			payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
+		except:
+			pass
+		try:
+			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
+			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
+		except:
+			pass
+		try:
+			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
+			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
+		except:
+			pass
+
 	if mode == "BANKARA":
 
 		try:
 			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
 			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
-		except TypeError: # draw - 'result' is null
+		except: # draw - 'result' is null
 			pass
 
 		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
@@ -575,8 +590,10 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 					if child["id"] == battle["id"]: # found the battle ID in the other file
 
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
+						was_s_plus_before = len(full_rank) > 1 # true if "before" rank is s+
+						
 						payload["rank_before"] = full_rank[0]
-						if len(full_rank) > 1:
+						if was_s_plus_before:
 							payload["rank_before_s_plus"] = int(full_rank[1])
 
 						# anarchy battle (series) - not open
@@ -593,6 +610,8 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 							if parent["bankaraMatchChallenge"]["udemaeAfter"] is None:
 								payload["rank_after"] = payload["rank_before"]
+								if was_s_plus_before:
+									payload["rank_after_s_plus"] = payload["rank_before_s_plus"] # also s+ after
 							else:
 								if idx != 0:
 									payload["rank_after"] = payload["rank_before"]
@@ -977,7 +996,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 						cached_battles.append(num)
 						post_result(result, True, isblackout, istestrun) # True = is monitoring mode
 
-			if which in ("both", "salmon"):
+			if which in ("salmon"): # TODO - add in "both" when we have SR support
 				for num in reversed(salmon_results):
 					if num not in cached_jobs:
 						# get the full job data
@@ -987,13 +1006,13 @@ def monitor_battles(which, secs, isblackout, istestrun):
 							cookies=dict(_gtoken=GTOKEN))
 						result = json.loads(result_post.text)
 
-						if False and utils.custom_key_exists("ignore_private"): # TODO - how to check for SR private battles?
+						if False and utils.custom_key_exists("ignore_private", CONFIG_DATA): # TODO - how to check for SR private battles?
 							pass
 						else:
-							outcome = "Success" if result["job_result"]["is_clear"] == True else "Failure"
-							if outcome == "Success":
+							outcome = "Clear" if result["data"]["coopHistoryDetail"]["resultWave"] == 0 else "Defeat"
+							if outcome == "Clear":
 								job_successes += 1
-							else: # Failure
+							else:
 								job_failures += 1
 
 							stagename = result["data"]["coopHistoryDetail"]["coopStage"]["name"]
@@ -1009,7 +1028,13 @@ def monitor_battles(which, secs, isblackout, istestrun):
 	except KeyboardInterrupt:
 		# print(f"\nChecking to see if there are unuploaded {utils.set_noun(which)} before exiting...") # TODO
 
-		# TODO - do update_salmon_profile() at end if salmon run
+		# check LatestBattleHistoriesQuery against https://stat.ink/api/v3/s3s/uuid-list
+
+		# if SR:
+		# check CoopHistoryQuery
+		# update_salmon_profile()
+
+		# show job/battle/splatfest_wins, etc.
 		print("\n\nChecking for unuploaded results before exiting is not yet implemented.")
 		print("Please run s3s again with " + '\033[91m' + "-r" + '\033[0m' + " to get these battles.")
 		print("Bye!")
@@ -1035,18 +1060,9 @@ class SquidProgress:
 		sys.stdout.flush()
 
 
-def main():
-	'''Main process, including I/O and setup.'''
+def parse_arguments():
+	'''Set up command-line options.'''
 
-	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
-
-	# setup
-	#######
-	check_for_updates()
-	check_statink_key()
-
-	# argparse stuff
-	################
 	parser = argparse.ArgumentParser()
 	srgroup = parser.add_mutually_exclusive_group()
 	parser.add_argument("-M", dest="N", required=False, nargs="?", action="store",
@@ -1065,7 +1081,22 @@ def main():
 		help="upload local results. use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
-	parser_result = parser.parse_args()
+	return parser.parse_args()
+
+
+def main():
+	'''Main process, including I/O and setup.'''
+
+	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
+
+	# setup
+	#######
+	check_for_updates()
+	check_statink_key()
+
+	# argparse setup
+	################
+	parser_result = parse_arguments()
 
 	# regular args
 	n_value     = parser_result.N
@@ -1167,7 +1198,7 @@ def main():
 		try:
 			statink_uploads = json.loads(resp.text)
 		except:
-			print(f"Encountered an error while checking recently-uploaded {noun}. Is stat.ink down?")
+			print(f"Encountered an error while checking recently-uploaded data. Is stat.ink down?")
 			sys.exit(1)
 
 		to_upload = []
