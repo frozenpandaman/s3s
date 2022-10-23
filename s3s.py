@@ -8,7 +8,7 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.7"
+A_VERSION = "0.1.8"
 
 DEBUG = False
 
@@ -991,7 +991,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 						cached_battles.append(num)
 						post_result(result, True, isblackout, istestrun) # True = is monitoring mode
 
-			if which in ("both", "salmon"):
+			if which in ("salmon"): # TODO - add in "both" when we have SR support
 				for num in reversed(salmon_results):
 					if num not in cached_jobs:
 						# get the full job data
@@ -1004,10 +1004,10 @@ def monitor_battles(which, secs, isblackout, istestrun):
 						if False and utils.custom_key_exists("ignore_private"): # TODO - how to check for SR private battles?
 							pass
 						else:
-							outcome = "Success" if result["job_result"]["is_clear"] == True else "Failure"
-							if outcome == "Success":
+							outcome = "Clear" if result["data"]["coopHistoryDetail"]["resultWave"] == 0 else "Defeat"
+							if outcome == "Clear":
 								job_successes += 1
-							else: # Failure
+							else:
 								job_failures += 1
 
 							stagename = result["data"]["coopHistoryDetail"]["coopStage"]["name"]
@@ -1025,7 +1025,11 @@ def monitor_battles(which, secs, isblackout, istestrun):
 
 		# check LatestBattleHistoriesQuery against https://stat.ink/api/v3/s3s/uuid-list
 
-		# TODO - do update_salmon_profile() at end if salmon run
+		# if SR:
+		# check CoopHistoryQuery
+		# update_salmon_profile()
+
+		# show job/battle/splatfest_wins, etc.
 		print("\n\nChecking for unuploaded results before exiting is not yet implemented.")
 		print("Please run s3s again with " + '\033[91m' + "-r" + '\033[0m' + " to get these battles.")
 		print("Bye!")
