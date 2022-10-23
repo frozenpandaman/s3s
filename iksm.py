@@ -2,8 +2,8 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import requests, json, re, sys
-import os, base64, hashlib
+import base64, hashlib, json, os, re, sys
+import requests
 from bs4 import BeautifulSoup
 
 session = requests.Session()
@@ -379,3 +379,8 @@ def enter_tokens():
 			new_bullettoken = input("Invalid token - length should be 124 characters. Try again.\nEnter your bulletToken: ")
 
 	return new_gtoken, new_bullettoken
+
+
+if __name__ == "__main__":
+	print("This program cannot be run alone. See https://github.com/frozenpandaman/s3s")
+	sys.exit(0)
