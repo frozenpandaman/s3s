@@ -2,12 +2,8 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import sys
-if __name__ == "__main__":
-	print("This program cannot be run alone. How to use: github.com/frozenpandaman/s3s")
-	sys.exit(0)
-
-import base64, datetime, json, re, requests, uuid
+import base64, datetime, json, re, sys, uuid
+import requests
 from bs4 import BeautifulSoup
 
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
@@ -108,3 +104,8 @@ def custom_key_exists(key, config_data, value=True):
 	if key not in ["ignore_private", "app_user_agent", "force_uploads"]:
 		print("(!) Checking unexpected custom key")
 	return True if key in config_data and config_data[key].lower() == str(value).lower() else False
+
+
+if __name__ == "__main__":
+	print("This program cannot be run alone. See https://github.com/frozenpandaman/s3s")
+	sys.exit(0)
