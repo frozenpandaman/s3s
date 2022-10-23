@@ -38,6 +38,10 @@ except (IOError, ValueError):
 	CONFIG_DATA = json.load(config_file)
 	config_file.close()
 
+DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
+						'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+						'Chrome/94.0.4606.61 Mobile Safari/537.36'
+
 # SET GLOBALS
 API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
 USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
@@ -48,12 +52,8 @@ SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 
 # SET HTTP HEADERS
-if "app_user_agent" in CONFIG_DATA:
-	APP_USER_AGENT = str(CONFIG_DATA["app_user_agent"])
-else:
-	APP_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
-		'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-		'Chrome/94.0.4606.61 Mobile Safari/537.36'
+APP_USER_AGENT = str(CONFIG_DATA.get("app_user_agent", DEFAULT_USER_AGENT))
+
 
 def write_config(tokens):
 	'''Writes config file and updates the global variables.'''
@@ -1055,18 +1055,9 @@ class SquidProgress:
 		sys.stdout.flush()
 
 
-def main():
-	'''Main process, including I/O and setup.'''
+def parse_arguments():
+	'''Set up command-line options.'''
 
-	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
-
-	# setup
-	#######
-	check_for_updates()
-	check_statink_key()
-
-	# argparse stuff
-	################
 	parser = argparse.ArgumentParser()
 	srgroup = parser.add_mutually_exclusive_group()
 	parser.add_argument("-M", dest="N", required=False, nargs="?", action="store",
@@ -1085,7 +1076,22 @@ def main():
 		help="upload local results. use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
-	parser_result = parser.parse_args()
+	return parser.parse_args()
+
+
+def main():
+	'''Main process, including I/O and setup.'''
+
+	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
+
+	# setup
+	#######
+	check_for_updates()
+	check_statink_key()
+
+	# argparse setup
+	################
+	parser_result = parse_arguments()
 
 	# regular args
 	n_value     = parser_result.N
@@ -1187,7 +1193,7 @@ def main():
 		try:
 			statink_uploads = json.loads(resp.text)
 		except:
-			print(f"Encountered an error while checking recently-uploaded {noun}. Is stat.ink down?")
+			print(f"Encountered an error while checking recently-uploaded data. Is stat.ink down?")
 			sys.exit(1)
 
 		to_upload = []
