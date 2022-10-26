@@ -110,7 +110,7 @@ def b64d(string):
 
 	if "Weapon-" in thing_id:
 		thing_id = thing_id.replace("Weapon-", "")
-		if len(thing_id) == 5 and thing_id[:2] == "20": # grizzco weapon ID from a hacker
+		if len(thing_id) == 5 and thing_id[:1] == "2" and thing_id[-3:] == "900": # grizzco weapon ID from a hacker
 			return ""
 
 	if thing_id[:15] == "VsHistoryDetail" or thing_id[:17] == "CoopHistoryDetail":
