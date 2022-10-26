@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 SPLATNET3_URL = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL   = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
-FALLBACK_WEB_VIEW_VERSION = "1.0.0-216d0219" # NSO Webview-app version fallback
+FALLBACK_WEB_VIEW_VERSION = "1.0.0-5644e7a2" # fallback for current splatnet 3 ver
 S3S_NAMESPACE = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
 
 # SHA256 hash database for SplatNet 3 GraphQL queries
