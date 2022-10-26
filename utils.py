@@ -11,6 +11,12 @@ GRAPHQL_URL   = "https://api.lp1.av5ja.srv.nintendo.net/api/graphql"
 FALLBACK_WEB_VIEW_VERSION = "1.0.0-5644e7a2" # fallback for current splatnet 3 ver
 S3S_NAMESPACE = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
 
+SUPPORTED_KEYS = [
+	"ignore_private",
+	"app_user_agent",
+	"force_uploads"
+]
+
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3737698
 translate_rid = {
@@ -21,7 +27,7 @@ translate_rid = {
 	'PrivateBattleHistoriesQuery':     '38e0529de8bc77189504d26c7a14e0b8', # INK / blank vars - query1
 	'VsHistoryDetailQuery':            '2b085984f729cd51938fc069ceef784a', # INK / req "vsResultId" - query2
 	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # SR  / blank vars - query1
-	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
+	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e'  # SR  / req "coopHistoryDetailId" - query2
 }
 
 def get_web_view_ver(bhead, gtoken):
@@ -73,8 +79,9 @@ def get_web_view_ver(bhead, gtoken):
 	if main_js_body.status_code != 200:
 		return FALLBACK_WEB_VIEW_VERSION
 
-	match = re.search(r"\b(?P<revision>[0-9a-f]{40})\b.*revision_info_not_set\"\),.*?=\"(?P<version>\d+\.\d+\.\d+)", main_js_body.text)
-	if not match:
+	pattern = r"\b(?P<revision>[0-9a-f]{40})\b.*revision_info_not_set\"\),.*?=\"(?P<version>\d+\.\d+\.\d+)"
+	match = re.search(pattern, main_js_body.text)
+	if match is None:
 		return FALLBACK_WEB_VIEW_VERSION
 
 	version, revision = match.group("version"), match.group("revision")
@@ -137,9 +144,9 @@ def custom_key_exists(key, config_data, value=True):
 	'''Checks if a given custom key exists in config.txt and is set to the specified value (true by default).'''
 
 	# https://github.com/frozenpandaman/s3s/wiki/config-keys
-	if key not in ["ignore_private", "app_user_agent", "force_uploads"]:
+	if key not in SUPPORTED_KEYS:
 		print("(!) Checking unexpected custom key")
-	return True if key in config_data and config_data[key].lower() == str(value).lower() else False
+	return str(config_data.get(key, None)).lower() == str(value).lower()
 
 
 if __name__ == "__main__":
