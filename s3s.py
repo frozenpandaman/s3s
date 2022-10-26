@@ -8,7 +8,8 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.8"
+A_VERSION = "0.1.9"
+WEB_VIEW_VERSION = "unknown" # set in prefetch_checks()
 
 DEBUG = False
 
@@ -89,7 +90,7 @@ def headbutt():
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
 		'Accept-Language':  USER_LANG,
 		'User-Agent':       APP_USER_AGENT,
-		'X-Web-View-Ver':   utils.get_web_view_ver(),
+		'X-Web-View-Ver':   WEB_VIEW_VERSION,
 		'Content-Type':     'application/json',
 		'Accept':           '*/*',
 		'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
@@ -105,8 +106,12 @@ def prefetch_checks(printout=False):
 
 	if printout:
 		print("Validating your tokens...", end='\r')
+
 	if SESSION_TOKEN == "" or GTOKEN == "" or BULLETTOKEN == "":
 		gen_new_tokens("blank")
+
+	global WEB_VIEW_VERSION
+	WEB_VIEW_VERSION = utils.get_web_view_ver(headbutt(), GTOKEN)
 
 	sha = utils.translate_rid["HomeQuery"]
 	test = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
@@ -134,7 +139,7 @@ def gen_new_tokens(reason, force=False):
 
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
-		new_token = iksm.log_in(A_VERSION)
+		new_token = iksm.log_in(A_VERSION, APP_USER_AGENT)
 		if new_token is None:
 			print("There was a problem logging you in. Please try again later.")
 		elif new_token == "skip":
@@ -155,7 +160,7 @@ def gen_new_tokens(reason, force=False):
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
-		new_bullettoken = iksm.get_bullet(new_gtoken, utils.get_web_view_ver(), APP_USER_AGENT, acc_lang, acc_country)
+		new_bullettoken = iksm.get_bullet(new_gtoken, WEB_VIEW_VERSION, APP_USER_AGENT, acc_lang, acc_country)
 	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
 	CONFIG_DATA["acc_loc"] = acc_lang + "|" + acc_country

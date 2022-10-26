@@ -37,7 +37,7 @@ def get_nsoapp_version():
 		return NSOAPP_VERSION
 
 
-def log_in(ver):
+def log_in(ver, app_user_agent):
 	'''Logs in to a Nintendo Account and returns a session_token.'''
 
 	global S3S_VERSION
@@ -55,7 +55,7 @@ def log_in(ver):
 		'Connection':                'keep-alive',
 		'Cache-Control':             'max-age=0',
 		'Upgrade-Insecure-Requests': '1',
-		'User-Agent':                'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.61 Mobile Safari/537.36',
+		'User-Agent':                app_user_agent,
 		'Accept':                    'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8n',
 		'DNT':                       '1',
 		'Accept-Encoding':           'gzip,deflate,br',
@@ -301,7 +301,8 @@ def get_bullet(web_service_token, web_view_ver, app_user_agent, user_lang, user_
 		'X-Requested-With': 'com.nintendo.znca'
 	}
 	app_cookies = {
-		'_gtoken': web_service_token # X-GameWebToken
+		'_gtoken': web_service_token, # X-GameWebToken
+		'_dnt':    '1'                # Do Not Track
 	}
 	url = "https://api.lp1.av5ja.srv.nintendo.net/api/bullet_tokens"
 	r = requests.post(url, headers=app_head, cookies=app_cookies)
