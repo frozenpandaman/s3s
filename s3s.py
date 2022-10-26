@@ -673,7 +673,8 @@ def prepare_job_result(battle, ismonitoring, overview_data=None):
 	'''Converts the Nintendo JSON format for a Salmon Run job to the stat.ink one.'''
 
 	pass # stat.ink doesn't support SR yet
-	# combo of set_teammates() + salmon_post_shift()
+	# combo of set_teammates() + salmon_post_shift() - mirrors prepare_battle_result()
+	# specify if private or not; also ensure SR results are formatted the same in post_result()!
 	# set payload["splatnet_json"]
 
 
@@ -713,7 +714,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			continue
 
 		# should have been taken care of in fetch_json() but just in case...
-		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA): # TODO - also check SR?
+		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA):
 			continue
 
 		# TODO - isblackout stuff... for SR too
@@ -1006,7 +1007,8 @@ def monitor_battles(which, secs, isblackout, istestrun):
 							cookies=dict(_gtoken=GTOKEN))
 						result = json.loads(result_post.text)
 
-						if False and utils.custom_key_exists("ignore_private", CONFIG_DATA): # TODO - how to check for SR private battles?
+						if result["data"]["coopHistoryDetail"]["jobScore"] == None \
+						and utils.custom_key_exists("ignore_private", CONFIG_DATA):
 							pass
 						else:
 							outcome = "Clear" if result["data"]["coopHistoryDetail"]["resultWave"] == 0 else "Defeat"
