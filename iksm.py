@@ -301,7 +301,8 @@ def get_bullet(web_service_token, web_view_ver, app_user_agent, user_lang, user_
 		'X-Requested-With': 'com.nintendo.znca'
 	}
 	app_cookies = {
-		'_gtoken': web_service_token # X-GameWebToken
+		'_gtoken': web_service_token, # X-GameWebToken
+		'_dnt':    '1'                # Do Not Track
 	}
 	url = "https://api.lp1.av5ja.srv.nintendo.net/api/bullet_tokens"
 	r = requests.post(url, headers=app_head, cookies=app_cookies)

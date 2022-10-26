@@ -24,19 +24,15 @@ translate_rid = {
 	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
 }
 
-def get_web_view_ver(bhead=[], gtoken=""):
+def get_web_view_ver(bhead, gtoken):
 	'''Find & parse the SplatNet 3 main.js file for the current site version.'''
 
-	if not bhead or gtoken == "":
-		return FALLBACK_WEB_VIEW_VERSION
-
-	app_head = {
+	app_head = { # bhead should have all fields from headbutt() & gtoken will be valid
 		'Upgrade-Insecure-Requests':   '1',
 		'User-Agent':                  bhead["User-Agent"],
 		'Accept':                      '*/*',
 		'DNT':                         '1',
-		'X-Appcolorscheme':            'DARK',
-		'X-Gamewebtoken':              gtoken,
+		'X-AppColorScheme':            'DARK',
 		'X-Requested-With':            'com.nintendo.znca',
 		'Sec-Fetch-Site':              'none',
 		'Sec-Fetch-Mode':              'navigate',
@@ -49,12 +45,14 @@ def get_web_view_ver(bhead=[], gtoken=""):
 		'_gtoken': gtoken, # X-GameWebToken
 		'_dnt':    '1'     # Do Not Track
 	}
+	home = requests.get(SPLATNET3_URL, headers=app_head, cookies=app_cookies)
+	if home.status_code != 200:
+		return FALLBACK_WEB_VIEW_VERSION
 
-	splatnet3_home = requests.get(SPLATNET3_URL, headers=app_head, cookies=app_cookies)
-	soup = BeautifulSoup(splatnet3_home.text, "html.parser")
-
+	soup = BeautifulSoup(home.text, "html.parser")
 	main_js = soup.select_one("script[src*='static']")
-	if not main_js:
+
+	if not main_js: # failed to parse html for main.js file
 		return FALLBACK_WEB_VIEW_VERSION
 
 	main_js_url = SPLATNET3_URL + main_js.attrs["src"]
@@ -72,6 +70,8 @@ def get_web_view_ver(bhead=[], gtoken=""):
 	}
 
 	main_js_body = requests.get(main_js_url, headers=app_head, cookies=app_cookies)
+	if main_js_body.status_code != 200:
+		return FALLBACK_WEB_VIEW_VERSION
 
 	match = re.search(r"\b(?P<revision>[0-9a-f]{40})\b.*revision_info_not_set\"\),.*?=\"(?P<version>\d+\.\d+\.\d+)", main_js_body.text)
 	if not match:

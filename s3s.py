@@ -8,8 +8,8 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.8"
-WEB_VIEW_VERSION = "" # value is determined during the prefetch_checks() process.
+A_VERSION = "0.1.9"
+WEB_VIEW_VERSION = "unknown" # set in prefetch_checks()
 
 DEBUG = False
 
