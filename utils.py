@@ -105,9 +105,14 @@ def b64d(string):
 	thing_id = base64.b64decode(string).decode('utf-8')
 	thing_id = thing_id.replace("VsStage-", "")
 	thing_id = thing_id.replace("VsMode-", "")
-	thing_id = thing_id.replace("Weapon-", "")
 	thing_id = thing_id.replace("CoopStage-", "")
 	thing_id = thing_id.replace("CoopGrade-", "")
+
+	if "Weapon-" in thing_id:
+		thing_id = thing_id.replace("Weapon-", "")
+		if len(thing_id) == 5 and thing_id[:2] == "20": # grizzco weapon ID from a hacker
+			return ""
+
 	if thing_id[:15] == "VsHistoryDetail" or thing_id[:17] == "CoopHistoryDetail":
 		return thing_id # string
 	else:
