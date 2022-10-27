@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.10"
+A_VERSION = "0.1.11"
 
 DEBUG = False
 
@@ -41,10 +41,10 @@ except (IOError, ValueError):
 
 # SET GLOBALS
 API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
-USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
+USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # user input
 USER_COUNTRY  = CONFIG_DATA["acc_loc"][-2:]  # nintendo account info
-GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64
-BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64 json web token
+GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64 json web token
+BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64
 SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 
@@ -155,20 +155,25 @@ def gen_new_tokens(reason, force=False):
 	if manual_entry: # no session_token ever gets stored
 		print("\nYou have opted against automatic token generation and must manually input your tokens.\n")
 		new_gtoken, new_bullettoken = iksm.enter_tokens()
-		acc_lang = "en-US"
+		acc_lang = "en-US" # overwritten by user setting
 		acc_country = "US"
-		print("Using `en-US` for language and `US` for country by default. These can be changed in config.txt.")
+		print("Using `US` for country by default. This can be changed in config.txt.")
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
 		new_bullettoken = iksm.get_bullet(new_gtoken, APP_USER_AGENT, acc_lang, acc_country)
 	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
-	CONFIG_DATA["acc_loc"] = acc_lang + "|" + acc_country
+
+	global USER_LANG
+	if acc_lang != USER_LANG:
+		acc_lang = USER_LANG
+	CONFIG_DATA["acc_loc"] = f"{acc_lang}|{acc_country}"
+
 	write_config(CONFIG_DATA)
 
 	if manual_entry:
-		print("Wrote tokens to config.txt.\n")
+		print("Wrote tokens to config.txt.\n") # and updates acc_country if necessary...
 	else:
 		print(f"Wrote tokens for {acc_name} to config.txt.\n")
 
@@ -679,6 +684,10 @@ def prepare_job_result(battle, ismonitoring, overview_data=None):
 def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message.'''
 
+	if len(API_KEY) != 43:
+		print("\nCannot post to stat.ink without a valid API key set in config.txt. Exiting.")
+		sys.exit(0)
+
 	if isinstance(data, list): # -o export format
 		try:
 			data = [x for x in data if x['data']['vsHistoryDetail'] is not None] # avoid {'data': {'vsHistoryDetail': None}} error
@@ -805,6 +814,30 @@ def check_statink_key():
 				new_api_key = input("stat.ink API key: ")
 			CONFIG_DATA["api_key"] = new_api_key
 		write_config(CONFIG_DATA)
+	return
+
+
+def set_language():
+	'''Prompts the user to set their game language.'''
+
+	if USER_LANG == "":
+		print("Default locale is en-US. Press Enter to accept, or enter your own (see readme for list).")
+		language_code = input("")
+
+		if language_code == "":
+			CONFIG_DATA["acc_loc"] = "en-US|US" # default
+			write_config(CONFIG_DATA)
+			return
+		else:
+			language_list = [
+				"de-DE", "en-GB", "en-US", "es-ES", "es-MX", "fr-CA", "fr-FR",
+				"it-IT", "ja-JP", "ko-KR", "nl-NL", "ru-RU", "zh-CN", "zh-TW"
+			]
+			while language_code not in language_list:
+				print("Invalid language code. Please try entering it again:")
+				language_code = input("")
+			CONFIG_DATA["acc_loc"] = f"{language_code}|US" # default to US until set by ninty
+			write_config(CONFIG_DATA)
 	return
 
 
@@ -1079,7 +1112,7 @@ def parse_arguments():
 	parser.add_argument("-o", required=False, action="store_true",
 		help="export all possible results to local files")
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
-		help="upload local results. use `-i results.json overview.json`")
+		help="upload local results; use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
 	return parser.parse_args()
@@ -1094,6 +1127,7 @@ def main():
 	#######
 	check_for_updates()
 	check_statink_key()
+	set_language()
 
 	# argparse setup
 	################
@@ -1173,7 +1207,7 @@ def main():
 	if filenames: # 2 files in list
 		if os.path.basename(filenames[0]) != "results.json" or os.path.basename(filenames[1]) != "overview.json":
 			print("Must use the format " \
-				'\033[91m' + "-i path/to/results.json path/to/overview.json" + '\033[0m' + ".")
+				'\033[91m' + "-i path/to/results.json path/to/overview.json" + '\033[0m' + ". Exiting.")
 			sys.exit(1)
 		for filename in filenames:
 			if not os.path.exists(filename):
@@ -1230,14 +1264,6 @@ def main():
 	if only_salmon:
 		print("stat.ink does not support uploading Salmon Run data at this time. Exiting.")
 		sys.exit(0)
-
-	print('\033[96m' + "Uploading battles to stat.ink is now supported!" + '\033[0m' \
-		" To save your battle & job data to local files, run the script with the " \
-		'\033[91m' + "-o" + '\033[0m' + " flag; to upload your previously exported results, use " \
-		'\033[91m' + "-i results.json overview.json" + '\033[0m' + ". " \
-		"Or, run the script in monitoring mode (with " + '\033[91m' + "-M" + '\033[0m' \
-		") to capture & upload new results as you play. " \
-		"stat.ink does not support Salmon Run data (coop_results.json) at this time.\n")
 	# ---
 
 	if which in ("salmon", "both"):
@@ -1249,7 +1275,7 @@ def main():
 	if secs != -1: # monitoring mode
 		monitor_battles(which, secs, blackout, test_run)
 
-	if not check_old: # regular mode (no -M) and did not just use -r
+	elif not check_old: # regular mode (no -M) and did not just use -r
 		if which == "both":
 			print("Please specify whether you want to upload battle results (-nsr) or Salmon Run jobs (-osr). Exiting.")
 			sys.exit(0)
