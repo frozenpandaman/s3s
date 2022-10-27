@@ -8,8 +8,7 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.9"
-WEB_VIEW_VERSION = "unknown" # set in prefetch_checks()
+A_VERSION = "0.1.10"
 
 DEBUG = False
 
@@ -39,10 +38,6 @@ except (IOError, ValueError):
 	CONFIG_DATA = json.load(config_file)
 	config_file.close()
 
-DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
-						'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-						'Chrome/94.0.4606.61 Mobile Safari/537.36'
-
 # SET GLOBALS
 API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
 USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # nintendo account info
@@ -53,6 +48,9 @@ SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 
 # SET HTTP HEADERS
+DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
+						'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+						'Chrome/94.0.4606.61 Mobile Safari/537.36'
 APP_USER_AGENT = str(CONFIG_DATA.get("app_user_agent", DEFAULT_USER_AGENT))
 
 
@@ -90,12 +88,12 @@ def headbutt():
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
 		'Accept-Language':  USER_LANG,
 		'User-Agent':       APP_USER_AGENT,
-		'X-Web-View-Ver':   WEB_VIEW_VERSION,
+		'X-Web-View-Ver':   iksm.WEB_VIEW_VERSION,
 		'Content-Type':     'application/json',
 		'Accept':           '*/*',
-		'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
+		'Origin':           iksm.SPLATNET3_URL,
 		'X-Requested-With': 'com.nintendo.znca',
-		'Referer':          f'https://api.lp1.av5ja.srv.nintendo.net/?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
+		'Referer':          f'{iksm.SPLATNET3_URL}?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
 		'Accept-Encoding':  'gzip, deflate'
 	}
 	return graphql_head
@@ -107,11 +105,11 @@ def prefetch_checks(printout=False):
 	if printout:
 		print("Validating your tokens...", end='\r')
 
+	global WEB_VIEW_VERSION
+	WEB_VIEW_VERSION = iksm.get_web_view_ver()
+
 	if SESSION_TOKEN == "" or GTOKEN == "" or BULLETTOKEN == "":
 		gen_new_tokens("blank")
-
-	global WEB_VIEW_VERSION
-	WEB_VIEW_VERSION = utils.get_web_view_ver(headbutt(), GTOKEN)
 
 	sha = utils.translate_rid["HomeQuery"]
 	test = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
@@ -130,7 +128,7 @@ def gen_new_tokens(reason, force=False):
 	manual_entry = False
 	if force != True: # unless we force our way through
 		if reason == "blank":
-			print("Blank token(s).")
+			print("Blank token(s).          ")
 		elif reason == "expiry":
 			print("The stored tokens have expired.")
 		else:
@@ -160,7 +158,7 @@ def gen_new_tokens(reason, force=False):
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
-		new_bullettoken = iksm.get_bullet(new_gtoken, WEB_VIEW_VERSION, APP_USER_AGENT, acc_lang, acc_country)
+		new_bullettoken = iksm.get_bullet(new_gtoken, APP_USER_AGENT, acc_lang, acc_country)
 	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
 	CONFIG_DATA["acc_loc"] = acc_lang + "|" + acc_country
