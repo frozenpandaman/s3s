@@ -1230,14 +1230,6 @@ def main():
 	if only_salmon:
 		print("stat.ink does not support uploading Salmon Run data at this time. Exiting.")
 		sys.exit(0)
-
-	print('\033[96m' + "Uploading battles to stat.ink is now supported!" + '\033[0m' \
-		" To save your battle & job data to local files, run the script with the " \
-		'\033[91m' + "-o" + '\033[0m' + " flag; to upload your previously exported results, use " \
-		'\033[91m' + "-i results.json overview.json" + '\033[0m' + ". " \
-		"Or, run the script in monitoring mode (with " + '\033[91m' + "-M" + '\033[0m' \
-		") to capture & upload new results as you play. " \
-		"stat.ink does not support Salmon Run data (coop_results.json) at this time.\n")
 	# ---
 
 	if which in ("salmon", "both"):
