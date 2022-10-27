@@ -89,22 +89,22 @@ def get_web_view_ver(bhead=[], gtoken=""):
 			'X-Requested-With':    'com.nintendo.znca',
 			'Sec-Fetch-Site':      'same-origin',
 			'Sec-Fetch-Mode':      'no-cors',
-			'Sec-Fetch-Dest':      'script'
+			'Sec-Fetch-Dest':      'script',
+			'Referer':             SPLATNET3_URL # /?lang=en-US&na_country=JP&na_lang=ja-JP
 		}
 		if bhead:
 			app_head["User-Agent"]      = bhead.get("User-Agent")
-			app_head["Referer"]         = bhead.get("Referer")
 			app_head["Accept-Encoding"] = bhead.get("Accept-Encoding")
 			app_head["Accept-Language"] = bhead.get("Accept-Language")
 
 		main_js_body = requests.get(main_js_url, headers=app_head, cookies=app_cookies)
 		if main_js_body.status_code != 200:
-			return iksm.WEB_VIEW_VER_FALLBACK
+			return WEB_VIEW_VER_FALLBACK
 
 		pattern = r"\b(?P<revision>[0-9a-f]{40})\b.*revision_info_not_set\"\),.*?=\"(?P<version>\d+\.\d+\.\d+)"
 		match = re.search(pattern, main_js_body.text)
 		if match is None:
-			return iksm.WEB_VIEW_VER_FALLBACK
+			return WEB_VIEW_VER_FALLBACK
 
 		version, revision = match.group("version"), match.group("revision")
 		ver_string = f"{version}-{revision[:8]}"

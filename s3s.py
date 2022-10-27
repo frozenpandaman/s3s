@@ -88,7 +88,7 @@ def headbutt():
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
 		'Accept-Language':  USER_LANG,
 		'User-Agent':       APP_USER_AGENT,
-		'X-Web-View-Ver':   iksm.WEB_VIEW_VERSION,
+		'X-Web-View-Ver':   iksm.get_web_view_ver(),
 		'Content-Type':     'application/json',
 		'Accept':           '*/*',
 		'Origin':           iksm.SPLATNET3_URL,
@@ -105,8 +105,7 @@ def prefetch_checks(printout=False):
 	if printout:
 		print("Validating your tokens...", end='\r')
 
-	global WEB_VIEW_VERSION
-	WEB_VIEW_VERSION = iksm.get_web_view_ver()
+	iksm.get_web_view_ver() # setup
 
 	if SESSION_TOKEN == "" or GTOKEN == "" or BULLETTOKEN == "":
 		gen_new_tokens("blank")
