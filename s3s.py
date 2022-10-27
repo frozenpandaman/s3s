@@ -5,12 +5,11 @@
 # License: GPLv3
 
 import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
+from concurrent.futures import ThreadPoolExecutor
 import msgpack
 import iksm, utils
 
-from concurrent.futures import ThreadPoolExecutor
-
-A_VERSION = "0.1.6"
+A_VERSION = "0.1.10"
 
 DEBUG = False
 
@@ -52,12 +51,11 @@ F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink 
 thread_pool = ThreadPoolExecutor(max_workers=10)
 
 # SET HTTP HEADERS
-if "app_user_agent" in CONFIG_DATA:
-	APP_USER_AGENT = str(CONFIG_DATA["app_user_agent"])
-else:
-	APP_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
-		'AppleWebKit/537.36 (KHTML, like Gecko) ' \
-		'Chrome/94.0.4606.61 Mobile Safari/537.36'
+DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
+						'AppleWebKit/537.36 (KHTML, like Gecko) ' \
+						'Chrome/94.0.4606.61 Mobile Safari/537.36'
+APP_USER_AGENT = str(CONFIG_DATA.get("app_user_agent", DEFAULT_USER_AGENT))
+
 
 def write_config(tokens):
 	'''Writes config file and updates the global variables.'''
@@ -87,28 +85,32 @@ def write_config(tokens):
 
 
 def headbutt():
-	'''Return a (dynamic!) header used for GraphQL requests.'''
+	'''Returns a (dynamic!) header used for GraphQL requests.'''
 
 	graphql_head = {
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
 		'Accept-Language':  USER_LANG,
 		'User-Agent':       APP_USER_AGENT,
-		'X-Web-View-Ver':   utils.get_web_view_ver(),
+		'X-Web-View-Ver':   iksm.WEB_VIEW_VERSION,
 		'Content-Type':     'application/json',
 		'Accept':           '*/*',
-		'Origin':           'https://api.lp1.av5ja.srv.nintendo.net',
+		'Origin':           iksm.SPLATNET3_URL,
 		'X-Requested-With': 'com.nintendo.znca',
-		'Referer':          f'https://api.lp1.av5ja.srv.nintendo.net/?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
+		'Referer':          f'{iksm.SPLATNET3_URL}?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
 		'Accept-Encoding':  'gzip, deflate'
 	}
 	return graphql_head
 
 
 def prefetch_checks(printout=False):
-	'''Queries the SplatNet 3 homepage to check if our gtoken cookie and bulletToken are still valid, otherwise regenerate.'''
+	'''Queries the SplatNet 3 homepage to check if our gtoken & bulletToken are still valid and regenerates them if not.'''
 
 	if printout:
 		print("Validating your tokens...", end='\r')
+
+	global WEB_VIEW_VERSION
+	WEB_VIEW_VERSION = iksm.get_web_view_ver()
+
 	if SESSION_TOKEN == "" or GTOKEN == "" or BULLETTOKEN == "":
 		gen_new_tokens("blank")
 
@@ -129,7 +131,7 @@ def gen_new_tokens(reason, force=False):
 	manual_entry = False
 	if force != True: # unless we force our way through
 		if reason == "blank":
-			print("Blank token(s).")
+			print("Blank token(s).          ")
 		elif reason == "expiry":
 			print("The stored tokens have expired.")
 		else:
@@ -138,7 +140,7 @@ def gen_new_tokens(reason, force=False):
 
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
-		new_token = iksm.log_in(A_VERSION)
+		new_token = iksm.log_in(A_VERSION, APP_USER_AGENT)
 		if new_token is None:
 			print("There was a problem logging you in. Please try again later.")
 		elif new_token == "skip":
@@ -159,7 +161,7 @@ def gen_new_tokens(reason, force=False):
 	else:
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
-		new_bullettoken = iksm.get_bullet(new_gtoken, utils.get_web_view_ver(), APP_USER_AGENT, acc_lang, acc_country)
+		new_bullettoken = iksm.get_bullet(new_gtoken, APP_USER_AGENT, acc_lang, acc_country)
 	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
 	CONFIG_DATA["acc_loc"] = acc_lang + "|" + acc_country
@@ -172,7 +174,7 @@ def gen_new_tokens(reason, force=False):
 
 
 def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False, skipprefetch=False):
-	'''Returns results JSON from SplatNet 3, including a combined dict for ink battles + SR jobs if requested.'''
+	'''Returns results JSON from SplatNet 3, including a combined dictionary for battles + SR jobs if requested.'''
 
 	swim = SquidProgress()
 
@@ -535,13 +537,28 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		payload["our_team_inked"] = our_team_inked
 		payload["their_team_inked"] = their_team_inked
 
-	# Anarchy Battles only
+	if mode == "PRIVATE": # these don't get sent otherwise
+		try: # could be anarchy, maybe not
+			payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
+		except:
+			pass
+		try:
+			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
+			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
+		except:
+			pass
+		try:
+			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
+			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
+		except:
+			pass
+
 	if mode == "BANKARA":
 
 		try:
 			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
 			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
-		except TypeError: # draw - 'result' is null
+		except: # draw - 'result' is null
 			pass
 
 		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
@@ -571,8 +588,10 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 					if child["id"] == battle["id"]: # found the battle ID in the other file
 
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
+						was_s_plus_before = len(full_rank) > 1 # true if "before" rank is s+
+						
 						payload["rank_before"] = full_rank[0]
-						if len(full_rank) > 1:
+						if was_s_plus_before:
 							payload["rank_before_s_plus"] = int(full_rank[1])
 
 						# anarchy battle (series) - not open
@@ -589,6 +608,8 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 
 							if parent["bankaraMatchChallenge"]["udemaeAfter"] is None:
 								payload["rank_after"] = payload["rank_before"]
+								if was_s_plus_before:
+									payload["rank_after_s_plus"] = payload["rank_before_s_plus"] # also s+ after
 							else:
 								if idx != 0:
 									payload["rank_after"] = payload["rank_before"]
@@ -650,12 +671,13 @@ def prepare_job_result(battle, ismonitoring, overview_data=None):
 	'''Converts the Nintendo JSON format for a Salmon Run job to the stat.ink one.'''
 
 	pass # stat.ink doesn't support SR yet
-	# combo of set_teammates() + salmon_post_shift()
+	# combo of set_teammates() + salmon_post_shift() - mirrors prepare_battle_result()
+	# specify if private or not; also ensure SR results are formatted the same in post_result()!
 	# set payload["splatnet_json"]
 
 
 def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
-	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message..'''
+	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message.'''
 
 	if isinstance(data, list): # -o export format
 		try:
@@ -690,7 +712,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			continue
 
 		# should have been taken care of in fetch_json() but just in case...
-		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA): # TODO - also check SR?
+		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA):
 			continue
 
 		# TODO - isblackout stuff... for SR too
@@ -742,6 +764,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 def check_for_updates():
 	'''Checks the script version against the repo, reminding users to update if available.'''
 
+	# TODO
 	print('\033[3m' + "» While s3s is in beta, please update the script regularly via " \
 		'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
 	# try:
@@ -833,7 +856,7 @@ def fetch_and_upload_single_result(hash, noun, ismonitoring, isblackout, istestr
 
 
 def check_if_missing(which, ismonitoring, isblackout, istestrun):
-	'''Checks for unuploaded battles, and uploads any that are found.'''
+	'''Checks for unuploaded battles and uploads any that are found.'''
 
 	noun = utils.set_noun(which)
 	print(f"Checking if there are previously-unuploaded {noun}...")
@@ -890,7 +913,7 @@ def check_if_missing(which, ismonitoring, isblackout, istestrun):
 
 
 def monitor_battles(which, secs, isblackout, istestrun):
-	'''Monitors JSON for changes/new battles and uploads them.'''
+	'''Monitors SplatNet endpoint(s) for changes (new results) and uploads them.'''
 
 	if DEBUG:
 		print(f"* monitoring mode start - calling fetch_json() w/ which={which}")
@@ -973,7 +996,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 						cached_battles.append(num)
 						post_result(result, True, isblackout, istestrun) # True = is monitoring mode
 
-			if which in ("both", "salmon"):
+			if which in ("salmon"): # TODO - add in "both" when we have SR support
 				for num in reversed(salmon_results):
 					if num not in cached_jobs:
 						# get the full job data
@@ -983,13 +1006,14 @@ def monitor_battles(which, secs, isblackout, istestrun):
 							cookies=dict(_gtoken=GTOKEN))
 						result = json.loads(result_post.text)
 
-						if False and utils.custom_key_exists("ignore_private"): # TODO - how to check for SR private battles?
+						if result["data"]["coopHistoryDetail"]["jobScore"] == None \
+						and utils.custom_key_exists("ignore_private", CONFIG_DATA):
 							pass
 						else:
-							outcome = "Success" if result["job_result"]["is_clear"] == True else "Failure"
-							if outcome == "Success":
+							outcome = "Clear" if result["data"]["coopHistoryDetail"]["resultWave"] == 0 else "Defeat"
+							if outcome == "Clear":
 								job_successes += 1
-							else: # Failure
+							else:
 								job_failures += 1
 
 							stagename = result["data"]["coopHistoryDetail"]["coopStage"]["name"]
@@ -1005,14 +1029,20 @@ def monitor_battles(which, secs, isblackout, istestrun):
 	except KeyboardInterrupt:
 		# print(f"\nChecking to see if there are unuploaded {utils.set_noun(which)} before exiting...") # TODO
 
-		# TODO - do update_salmon_profile() at end if salmon run
+		# check LatestBattleHistoriesQuery against https://stat.ink/api/v3/s3s/uuid-list
+
+		# if SR:
+		# check CoopHistoryQuery
+		# update_salmon_profile()
+
+		# show job/battle/splatfest_wins, etc.
 		print("\n\nChecking for unuploaded results before exiting is not yet implemented.")
 		print("Please run s3s again with " + '\033[91m' + "-r" + '\033[0m' + " to get these battles.")
 		print("Bye!")
 
 
 class SquidProgress:
-	'''Display animation while waiting.'''
+	'''Displays an animation of a squid swimming while waiting. :)'''
 
 	def __init__(self):
 		self.count = 0
@@ -1031,18 +1061,9 @@ class SquidProgress:
 		sys.stdout.flush()
 
 
-def main():
-	'''Main process, including I/O and setup.'''
+def parse_arguments():
+	'''Setup for command-line options.'''
 
-	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
-
-	# setup
-	#######
-	check_for_updates()
-	check_statink_key()
-
-	# argparse stuff
-	################
 	parser = argparse.ArgumentParser()
 	srgroup = parser.add_mutually_exclusive_group()
 	parser.add_argument("-M", dest="N", required=False, nargs="?", action="store",
@@ -1061,7 +1082,22 @@ def main():
 		help="upload local results. use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
-	parser_result = parser.parse_args()
+	return parser.parse_args()
+
+
+def main():
+	'''Main process, including I/O and setup.'''
+
+	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
+
+	# setup
+	#######
+	check_for_updates()
+	check_statink_key()
+
+	# argparse setup
+	################
+	parser_result = parse_arguments()
 
 	# regular args
 	n_value     = parser_result.N
@@ -1163,7 +1199,7 @@ def main():
 		try:
 			statink_uploads = json.loads(resp.text)
 		except:
-			print(f"Encountered an error while checking recently-uploaded {noun}. Is stat.ink down?")
+			print(f"Encountered an error while checking recently-uploaded data. Is stat.ink down?")
 			sys.exit(1)
 
 		to_upload = []
@@ -1201,7 +1237,7 @@ def main():
 		'\033[91m' + "-i results.json overview.json" + '\033[0m' + ". " \
 		"Or, run the script in monitoring mode (with " + '\033[91m' + "-M" + '\033[0m' \
 		") to capture & upload new results as you play. " \
-		"stat.ink does not support Salmon Run data (coop_results.json) or Splatfest battles at this time.\n")
+		"stat.ink does not support Salmon Run data (coop_results.json) at this time.\n")
 	# ---
 
 	if which in ("salmon", "both"):
