@@ -90,7 +90,7 @@ def get_web_view_ver(bhead=[], gtoken=""):
 			'Sec-Fetch-Site':      'same-origin',
 			'Sec-Fetch-Mode':      'no-cors',
 			'Sec-Fetch-Dest':      'script',
-			'Referer':             SPLATNET3_URL # /?lang=en-US&na_country=JP&na_lang=ja-JP
+			'Referer':             SPLATNET3_URL # sending w/o lang, na_country, na_lang params
 		}
 		if bhead:
 			app_head["User-Agent"]      = bhead.get("User-Agent")
