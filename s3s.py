@@ -1079,7 +1079,7 @@ def parse_arguments():
 	parser.add_argument("-o", required=False, action="store_true",
 		help="export all possible results to local files")
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
-		help="upload local results. use `-i results.json overview.json`")
+		help="upload local results; use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
 	return parser.parse_args()
@@ -1173,7 +1173,7 @@ def main():
 	if filenames: # 2 files in list
 		if os.path.basename(filenames[0]) != "results.json" or os.path.basename(filenames[1]) != "overview.json":
 			print("Must use the format " \
-				'\033[91m' + "-i path/to/results.json path/to/overview.json" + '\033[0m' + ".")
+				'\033[91m' + "-i path/to/results.json path/to/overview.json" + '\033[0m' + ". Exiting.")
 			sys.exit(1)
 		for filename in filenames:
 			if not os.path.exists(filename):
@@ -1249,7 +1249,7 @@ def main():
 	if secs != -1: # monitoring mode
 		monitor_battles(which, secs, blackout, test_run)
 
-	if not check_old: # regular mode (no -M) and did not just use -r
+	elif not check_old: # regular mode (no -M) and did not just use -r
 		if which == "both":
 			print("Please specify whether you want to upload battle results (-nsr) or Salmon Run jobs (-osr). Exiting.")
 			sys.exit(0)
