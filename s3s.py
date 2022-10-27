@@ -684,6 +684,10 @@ def prepare_job_result(battle, ismonitoring, overview_data=None):
 def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message.'''
 
+	if len(API_KEY) != 43:
+		print("\nCannot post to stat.ink without a valid API key set in config.txt. Exiting.")
+		sys.exit(0)
+
 	if isinstance(data, list): # -o export format
 		try:
 			data = [x for x in data if x['data']['vsHistoryDetail'] is not None] # avoid {'data': {'vsHistoryDetail': None}} error
