@@ -82,7 +82,7 @@ def write_config(tokens):
 
 
 def headbutt():
-	'''Return a (dynamic!) header used for GraphQL requests.'''
+	'''Returns a (dynamic!) header used for GraphQL requests.'''
 
 	graphql_head = {
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
@@ -100,7 +100,7 @@ def headbutt():
 
 
 def prefetch_checks(printout=False):
-	'''Queries the SplatNet 3 homepage to check if our gtoken cookie and bulletToken are still valid, otherwise regenerate.'''
+	'''Queries the SplatNet 3 homepage to check if our gtoken & bulletToken are still valid and regenerates them if not.'''
 
 	if printout:
 		print("Validating your tokens...", end='\r')
@@ -171,7 +171,7 @@ def gen_new_tokens(reason, force=False):
 
 
 def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False, skipprefetch=False):
-	'''Returns results JSON from SplatNet 3, including a combined dict for ink battles + SR jobs if requested.'''
+	'''Returns results JSON from SplatNet 3, including a combined dictionary for battles + SR jobs if requested.'''
 
 	swim = SquidProgress()
 
@@ -677,7 +677,7 @@ def prepare_job_result(battle, ismonitoring, overview_data=None):
 
 
 def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
-	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message..'''
+	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message.'''
 
 	if isinstance(data, list): # -o export format
 		try:
@@ -764,6 +764,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 def check_for_updates():
 	'''Checks the script version against the repo, reminding users to update if available.'''
 
+	# TODO
 	print('\033[3m' + "» While s3s is in beta, please update the script regularly via " \
 		'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
 	# try:
@@ -855,7 +856,7 @@ def fetch_and_upload_single_result(hash, noun, ismonitoring, isblackout, istestr
 
 
 def check_if_missing(which, ismonitoring, isblackout, istestrun):
-	'''Checks for unuploaded battles, and uploads any that are found.'''
+	'''Checks for unuploaded battles and uploads any that are found.'''
 
 	noun = utils.set_noun(which)
 	print(f"Checking if there are previously-unuploaded {noun}...")
@@ -912,7 +913,7 @@ def check_if_missing(which, ismonitoring, isblackout, istestrun):
 
 
 def monitor_battles(which, secs, isblackout, istestrun):
-	'''Monitors JSON for changes/new battles and uploads them.'''
+	'''Monitors SplatNet endpoint(s) for changes (new results) and uploads them.'''
 
 	if DEBUG:
 		print(f"* monitoring mode start - calling fetch_json() w/ which={which}")
@@ -1041,7 +1042,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 
 
 class SquidProgress:
-	'''Display animation while waiting.'''
+	'''Displays an animation of a squid swimming while waiting. :)'''
 
 	def __init__(self):
 		self.count = 0
@@ -1061,7 +1062,7 @@ class SquidProgress:
 
 
 def parse_arguments():
-	'''Set up command-line options.'''
+	'''Setup for command-line options.'''
 
 	parser = argparse.ArgumentParser()
 	srgroup = parser.add_mutually_exclusive_group()

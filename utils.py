@@ -43,7 +43,7 @@ def set_noun(which):
 
 
 def b64d(string):
-	'''Base64 decodes a string and cut off the SplatNet prefix.'''
+	'''Base64-decodes a string and cuts off the SplatNet prefix.'''
 
 	thing_id = base64.b64decode(string).decode('utf-8')
 	thing_id = thing_id.replace("VsStage-", "")
@@ -63,7 +63,7 @@ def b64d(string):
 
 
 def epoch_time(time_string):
-	'''Converts a playedTime string into an int representing the epoch time.'''
+	'''Converts a playedTime string into an integer representing the epoch time.'''
 
 	utc_time = datetime.datetime.strptime(time_string, "%Y-%m-%dT%H:%M:%SZ")
 	epoch_time = int((utc_time - datetime.datetime(1970, 1, 1)).total_seconds())
