@@ -1163,7 +1163,7 @@ def main():
 			print("Number provided must be an integer. Exiting.")
 			sys.exit(0)
 		if secs < 0:
-			print("No.")
+			print("Number provided must be a positive integer. Exiting.")
 			sys.exit(0)
 		elif secs < 60:
 			print("Minimum number of seconds in monitoring mode is 60. Exiting.")
