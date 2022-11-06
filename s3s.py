@@ -194,10 +194,9 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 	swim()
 
 	last_export_time = 0
-	last_played_time = 0
-	if record_time:
-		if "last_export_time" in CONFIG_DATA:
-			last_export_time = CONFIG_DATA["last_export_time"]
+	if record_time and "last_export_time" in CONFIG_DATA:
+		last_export_time = CONFIG_DATA["last_export_time"]
+	last_played_time = last_export_time
 
 	ink_list, salmon_list = [], []
 	parent_files = []
@@ -334,7 +333,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		else: # sha = None (we don't want to get the specified result type)
 			pass
 
-	if record_time and last_export_time != last_played_time:
+	if record_time:
 		CONFIG_DATA["last_export_time"] = last_played_time
 		write_config(CONFIG_DATA)
 
