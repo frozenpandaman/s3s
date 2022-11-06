@@ -26,13 +26,10 @@ config_path = os.path.join(app_path, "config.txt")
 try:
 	config_file = open(config_path, "r")
 	CONFIG_DATA = json.load(config_file)
-	# upgrade config for last_played_time field
-	if "last_played_time" not in CONFIG_DATA:
-		CONFIG_DATA["last_played_time"] = "0001-01-01T00:00:00+00:00"
 	config_file.close()
 except (IOError, ValueError):
 	print("Generating new config file.")
-	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://api.imink.app/f", "last_played_time": "0001-01-01T00:00:00+00:00"}
+	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://api.imink.app/f"}
 	config_file = open(config_path, "w")
 	config_file.seek(0)
 	config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=False, separators=(',', ': ')))
@@ -49,7 +46,6 @@ GTOKEN           = CONFIG_DATA["gtoken"]           # for accessing splatnet - ba
 BULLETTOKEN      = CONFIG_DATA["bullettoken"]      # for accessing splatnet - base64
 SESSION_TOKEN    = CONFIG_DATA["session_token"]    # for nintendo login
 F_GEN_URL        = CONFIG_DATA["f_gen"]            # endpoint for generating f (imink API by default)
-LAST_PLAYED_TIME = CONFIG_DATA["last_played_time"] # recorded last play time of battles and jobs
 
 # SET HTTP HEADERS
 DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
@@ -81,8 +77,6 @@ def write_config(tokens):
 	BULLETTOKEN = CONFIG_DATA["bullettoken"]
 	global SESSION_TOKEN
 	SESSION_TOKEN = CONFIG_DATA["session_token"]
-	global LAST_PLAYED_TIME
-	LAST_PLAYED_TIME = CONFIG_DATA["last_played_time"]
 
 	config_file.close()
 
@@ -180,7 +174,7 @@ def gen_new_tokens(reason, force=False):
 		print(f"Wrote tokens for {acc_name} to config.txt.\n")
 
 
-def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False, skipprefetch=False):
+def fetch_json(which, separate=False, exportall=False, specific=False, numbers_only=False, printout=False, skipprefetch=False, record_time=False):
 	'''Returns results JSON from SplatNet 3, including a combined dictionary for battles + SR jobs if requested.'''
 
 	swim = SquidProgress()
@@ -198,6 +192,12 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		if DEBUG:
 			print("* prefetch_checks() succeeded")
 	swim()
+
+	last_played_time = 0
+	latest_played_time = 0
+	if record_time:
+		if "last_played_time" in CONFIG_DATA:
+			last_played_time = CONFIG_DATA["last_played_time"]
 
 	ink_list, salmon_list = [], []
 	parent_files = []
@@ -222,9 +222,6 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		queries.append(None)
 
 	needs_sorted = False # https://ygdp.yale.edu/phenomena/needs-washed :D
-
-	last_played_time = utils.epoch_time(LAST_PLAYED_TIME)
-	latest_played_time = utils.epoch_time(LAST_PLAYED_TIME)
 
 	for sha in queries:
 		if sha is not None:
@@ -337,8 +334,8 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		else: # sha = None (we don't want to get the specified result type)
 			pass
 
-	if last_played_time != latest_played_time:
-		CONFIG_DATA["last_played_time"] = latest_played_time.isoformat()
+	if record_time and last_played_time != latest_played_time:
+		CONFIG_DATA["last_played_time"] = latest_played_time
 		write_config(CONFIG_DATA)
 
 	if exportall:
@@ -1220,7 +1217,7 @@ def main():
 		prefetch_checks(printout=True)
 		print("Fetching your JSON files to export locally. This might take a while...")
 		# fetch_json() calls prefetch_checks() to gen or check tokens
-		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True, skipprefetch=True)
+		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True, skipprefetch=True, record_time=True)
 
 		cwd = os.getcwd()
 		export_dir = os.path.join(cwd, f'export-{int(time.time())}')
