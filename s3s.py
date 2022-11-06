@@ -39,13 +39,13 @@ except (IOError, ValueError):
 	config_file.close()
 
 # SET GLOBALS
-API_KEY          = CONFIG_DATA["api_key"]          # for stat.ink
-USER_LANG        = CONFIG_DATA["acc_loc"][:5]      # user input
-USER_COUNTRY     = CONFIG_DATA["acc_loc"][-2:]     # nintendo account info
-GTOKEN           = CONFIG_DATA["gtoken"]           # for accessing splatnet - base64 json web token
-BULLETTOKEN      = CONFIG_DATA["bullettoken"]      # for accessing splatnet - base64
-SESSION_TOKEN    = CONFIG_DATA["session_token"]    # for nintendo login
-F_GEN_URL        = CONFIG_DATA["f_gen"]            # endpoint for generating f (imink API by default)
+API_KEY       = CONFIG_DATA["api_key"]       # for stat.ink
+USER_LANG     = CONFIG_DATA["acc_loc"][:5]   # user input
+USER_COUNTRY  = CONFIG_DATA["acc_loc"][-2:]  # nintendo account info
+GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64 json web token
+BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64
+SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
+F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 
 # SET HTTP HEADERS
 DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
