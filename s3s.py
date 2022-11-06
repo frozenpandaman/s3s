@@ -223,8 +223,8 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 
 	needs_sorted = False # https://ygdp.yale.edu/phenomena/needs-washed :D
 
-	last_played_time = datetime.datetime.fromisoformat(LAST_PLAYED_TIME)
-	latest_played_time = datetime.datetime.fromisoformat(LAST_PLAYED_TIME)
+	last_played_time = utils.epoch_time(LAST_PLAYED_TIME)
+	latest_played_time = utils.epoch_time(LAST_PLAYED_TIME)
 
 	for sha in queries:
 		if sha is not None:
@@ -241,7 +241,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			if "latestBattleHistories" in query1_resp["data"]:
 				for battle_group in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
-						played_time = datetime.datetime.fromisoformat(battle["playedTime"].replace("Z", "+00:00"))
+						played_time = utils.epoch_time(battle["playedTime"])
 						if played_time <= last_played_time:
 							continue
 						if played_time > latest_played_time:
@@ -300,7 +300,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 							headers=headbutt(),
 							cookies=dict(_gtoken=GTOKEN))
 						query2_resp_b = json.loads(query2_b.text)
-						played_time = datetime.datetime.fromisoformat(query2_resp_b["data"]["vsHistoryDetail"]["playedTime"].replace("Z", "+00:00"))
+						played_time = utils.epoch_time(query2_resp_b["data"]["vsHistoryDetail"]["playedTime"])
 						if played_time <= last_played_time:
 							break
 						if played_time > latest_played_time:
@@ -314,7 +314,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 						headers=headbutt(),
 						cookies=dict(_gtoken=GTOKEN))
 					query2_resp_j = json.loads(query2_j.text)
-					played_time = datetime.datetime.fromisoformat(query2_resp_j["data"]["coopHistoryDetail"]["playedTime"].replace("Z", "+00:00"))
+					played_time = utils.epoch_time(query2_resp_j["data"]["coopHistoryDetail"]["playedTime"])
 					if played_time <= last_played_time:
 						break
 					if played_time > latest_played_time:
