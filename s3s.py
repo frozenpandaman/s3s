@@ -193,11 +193,11 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			print("* prefetch_checks() succeeded")
 	swim()
 
+	last_export_time = 0
 	last_played_time = 0
-	latest_played_time = 0
 	if record_time:
-		if "last_played_time" in CONFIG_DATA:
-			last_played_time = CONFIG_DATA["last_played_time"]
+		if "last_export_time" in CONFIG_DATA:
+			last_export_time = CONFIG_DATA["last_export_time"]
 
 	ink_list, salmon_list = [], []
 	parent_files = []
@@ -239,10 +239,10 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				for battle_group in query1_resp["data"]["latestBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						played_time = utils.epoch_time(battle["playedTime"])
-						if played_time <= last_played_time:
+						if played_time <= last_export_time:
 							continue
-						if played_time > latest_played_time:
-							latest_played_time = played_time
+						if played_time > last_played_time:
+							last_played_time = played_time
 						battle_ids.append(battle["id"]) # don't filter out private battles here - do that in post_result()
 
 			# ink battles - latest 50 turf war
@@ -298,10 +298,10 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 							cookies=dict(_gtoken=GTOKEN))
 						query2_resp_b = json.loads(query2_b.text)
 						played_time = utils.epoch_time(query2_resp_b["data"]["vsHistoryDetail"]["playedTime"])
-						if played_time <= last_played_time:
+						if played_time <= last_export_time:
 							break
-						if played_time > latest_played_time:
-							latest_played_time = played_time
+						if played_time > last_played_time:
+							last_played_time = played_time
 						ink_list.append(query2_resp_b)
 						swim()
 
@@ -312,10 +312,10 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 						cookies=dict(_gtoken=GTOKEN))
 					query2_resp_j = json.loads(query2_j.text)
 					played_time = utils.epoch_time(query2_resp_j["data"]["coopHistoryDetail"]["playedTime"])
-					if played_time <= last_played_time:
+					if played_time <= last_export_time:
 						break
-					if played_time > latest_played_time:
-						latest_played_time = played_time
+					if played_time > last_played_time:
+						last_played_time = played_time
 					salmon_list.append(query2_resp_j)
 					swim()
 
@@ -334,8 +334,8 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		else: # sha = None (we don't want to get the specified result type)
 			pass
 
-	if record_time and last_played_time != latest_played_time:
-		CONFIG_DATA["last_played_time"] = latest_played_time
+	if record_time and last_export_time != last_played_time:
+		CONFIG_DATA["last_export_time"] = last_played_time
 		write_config(CONFIG_DATA)
 
 	if exportall:
