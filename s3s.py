@@ -8,7 +8,7 @@ import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
 import iksm, utils
 
-A_VERSION = "0.1.11"
+A_VERSION = "0.1.12"
 
 DEBUG = False
 
@@ -339,6 +339,39 @@ def update_salmon_profile():
 	# 	print(updateprofile.text)
 
 
+def populate_gear_abilities(player):
+	'''Returns string representing all 12 ability slots for the player's gear, for use in set_scoreboard().'''
+
+	h_main = utils.translate_gear_ability(player["headGear"]["primaryGearPower"]["image"]["url"])
+	h_subs = []
+	if len(player["headGear"]["additionalGearPowers"]) > 0:
+		h_subs.append(utils.translate_gear_ability(player["headGear"]["additionalGearPowers"][0]["image"]["url"]))
+	if len(player["headGear"]["additionalGearPowers"]) > 1:
+		h_subs.append(utils.translate_gear_ability(player["headGear"]["additionalGearPowers"][1]["image"]["url"]))
+	if len(player["headGear"]["additionalGearPowers"]) > 2:
+		h_subs.append(utils.translate_gear_ability(player["headGear"]["additionalGearPowers"][2]["image"]["url"]))
+
+	c_main = utils.translate_gear_ability(player["clothingGear"]["primaryGearPower"]["image"]["url"])
+	c_subs = []
+	if len(player["clothingGear"]["additionalGearPowers"]) > 0:
+		h_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][0]["image"]["url"]))
+	if len(player["clothingGear"]["additionalGearPowers"]) > 1:
+		c_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][1]["image"]["url"]))
+	if len(player["clothingGear"]["additionalGearPowers"]) > 2:
+		c_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][2]["image"]["url"]))
+
+	s_main = utils.translate_gear_ability(player["shoesGear"]["primaryGearPower"]["image"]["url"])
+	s_subs = []
+	if len(player["shoesGear"]["additionalGearPowers"]) > 0:
+		h_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][0]["image"]["url"]))
+	if len(player["shoesGear"]["additionalGearPowers"]) > 1:
+		s_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][1]["image"]["url"]))
+	if len(player["shoesGear"]["additionalGearPowers"]) > 2:
+		s_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][2]["image"]["url"]))
+
+	return h_main, h_subs, c_main, c_subs, s_main, s_subs
+
+
 def set_scoreboard(battle):
 	'''Returns two lists of player dictionaries, for our_team_players and their_team_players.'''
 
@@ -364,6 +397,14 @@ def set_scoreboard(battle):
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
 			p_dict["disconnected"]   = "no"
+
+			# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle#gears-structure
+			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
+			h_main, h_subs, c_main, c_subs, s_main, s_subs = populate_gear_abilities(player)
+			gear_struct["headgear"] = {"primary_ability": h_main, "secondary_abilities": h_subs}
+			gear_struct["clothing"] = {"primary_ability": c_main, "secondary_abilities": c_subs}
+			gear_struct["shoes"]    = {"primary_ability": s_main, "secondary_abilities": s_subs}
+			p_dict["gears"] = gear_struct
 		else:
 			p_dict["disconnected"]   = "yes"
 		our_team_players.append(p_dict)
@@ -387,6 +428,13 @@ def set_scoreboard(battle):
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
 			p_dict["disconnected"]   = "no"
+
+			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
+			h_main, h_subs, c_main, c_subs, s_main, s_subs = populate_gear_abilities(player)
+			gear_struct["headgear"] = {"primary_ability": h_main, "secondary_abilities": h_subs}
+			gear_struct["clothing"] = {"primary_ability": c_main, "secondary_abilities": c_subs}
+			gear_struct["shoes"]    = {"primary_ability": s_main, "secondary_abilities": s_subs}
+			p_dict["gears"] = gear_struct
 		else:
 			p_dict["disconnected"]   = "yes"
 		their_team_players.append(p_dict)
