@@ -3,7 +3,7 @@ s3s 🦑
 
 **s3s** is a script that uploads _Splatoon 3_ battle data from the SplatNet 3 service (part of the Nintendo Switch Online app) to [stat.ink](https://stat.ink/), a site for recording, visualizing, and aggregating statistics from the *Splatoon* series of games.
 
-(ja) 日本語版セットアップ手順は[こちら](https://zenn.dev/hibikine/articles/1febb4eb03b604)。
+(ja) 日本語版セットアップ手順は[こちら](https://vanillasalt.net/2022/10/10/how-to-use-s3s/)、または[こちら](https://zenn.dev/hibikine/articles/1febb4eb03b604)。
 
 Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://github.com/frozenpandaman/splatnet2statink)**.
 
