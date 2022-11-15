@@ -811,8 +811,6 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 		if istestrun:
 			payload["test"] = "yes"
 
-		print(json.dumps(payload))
-		sys.exit(0)
 		# post
 		url = "https://stat.ink/api/v3/battle"
 		auth = {'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/x-msgpack'}
