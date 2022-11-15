@@ -15,7 +15,7 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
  - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
 
 ### What's coming?
- - [ ] Support for Splatfest battles, Salmon Run jobs & Grizzco profile data (as soon as stat.ink supports it!)
+ - [ ] Support for Tricolor Turf War battles, Salmon Run jobs & Grizzco profile data (as soon as stat.ink supports it!)
  - [ ] Monitoring mode for Salmon Run
  - [ ] Post-battle scoreboard & gear screenshots
  - [ ] Flag to black out other players' names from results
@@ -25,7 +25,7 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
 
 ## Usage 🐙
 ```
-$ python s3s.py [-M [N]] [-r] [-nsr | -osr]
+$ python s3s.py [-M [N]] [-r] [-nsr | -osr] [--blackout]
 ```
 
 The `-M` flag runs the script in monitoring mode, uploading new battles/jobs as you play, checking for new results every `N` seconds; if no `N` is provided, it defaults to 300 (5 minutes).
@@ -36,7 +36,7 @@ The `-nsr` flag makes Salmon Run jobs **not** be monitored/uploaded. Use this if
 
 The `-osr` flag, conversely, makes **only** Salmon Run jobs be monitored/uploaded. Use this if you're playing at Grizzco only.
 
-<!-- The `--blackout` flag blacks out other players' names on scoreboard result images and in uploaded data. -->
+The `--blackout` flag blacks out other players' names in uploaded scoreboard data.
 
 Arguments for advanced usage (e.g. locally exporting data to JSON files) can be viewed using `--help`.
 

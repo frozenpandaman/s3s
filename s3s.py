@@ -9,7 +9,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.1.12"
+A_VERSION = "0.1.13"
 
 DEBUG = False
 
@@ -397,6 +397,7 @@ def set_scoreboard(battle):
 			p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
+			# noroshiTry
 			p_dict["disconnected"]   = "no"
 
 			# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle#gears-structure
@@ -428,6 +429,7 @@ def set_scoreboard(battle):
 			p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
+			# noroshiTry
 			p_dict["disconnected"]   = "no"
 
 			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
@@ -443,7 +445,7 @@ def set_scoreboard(battle):
 	return our_team_players, their_team_players
 
 
-def prepare_battle_result(battle, ismonitoring, overview_data=None):
+def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	'''Converts the Nintendo JSON format for a Turf War/Ranked battle to the stat.ink one.'''
 
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle
@@ -534,7 +536,7 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 				payload["kill"]           = payload["kill_or_assist"] - payload["assist"]
 				payload["death"]          = player["result"]["death"]
 				payload["special"]        = player["result"]["special"]
-				# ...        = player["result"]["noroshiTry"] = ultra signal attempts - splatfest
+				# ...        = player["result"]["noroshiTry"] = ultra signal attempts - splatfest tricolor tw
 				break
 
 	## RESULT ##
@@ -574,6 +576,8 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		# if rule == "TRI_COLOR":
 			# ...
 
+		# no support for splatfest fest_title
+
 	# turf war only - not tricolor
 	if mode in ("REGULAR", "FEST"):
 		try:
@@ -607,7 +611,6 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 			pass
 
 	if mode == "BANKARA":
-
 		try:
 			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
 			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
@@ -712,15 +715,40 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	# gear
 	# payload["image_gear"] = ...
 
-	# no way to get: level_beforea/after, cash_before/after, rank_after_exp
+	# no way to get: level_before/after, cash_before/after, rank_after_exp
 
 	payload["automated"] = "yes" # data was not manually entered!
+
+	if isblackout:
+		# fix payload
+		for player in payload["our_team_players"]:
+			if player["me"] == "no": # only black out others
+				player["name"] = None
+				player["number"] = None
+				player["splashtag_title"] = None
+		for player in payload["their_team_players"]:
+			player["name"] = None
+			player["number"] = None
+			player["splashtag_title"] = None
+
+		# fix battle json
+		for player in battle["myTeam"]["players"]:
+			if not player["isMyself"]: # only black out others
+				player["name"] = None
+				player["nameId"] = None
+				player["byname"] = None
+		for team in battle["otherTeams"]:
+			for player in team["players"]:
+				player["name"] = None
+				player["nameId"] = None
+				player["byname"] = None
+
 	payload["splatnet_json"] = json.dumps(battle)
 
 	return payload
 
 
-def prepare_job_result(battle, ismonitoring, overview_data=None):
+def prepare_job_result(battle, ismonitoring, isblackout, overview_data=None):
 	'''Converts the Nintendo JSON format for a Salmon Run job to the stat.ink one.'''
 
 	pass # stat.ink doesn't support SR yet
@@ -756,9 +784,9 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 	# filter down to one battle at a time
 	for i in range(len(results)):
 		if "vsHistoryDetail" in results[i]["data"]: # ink battle
-			payload = prepare_battle_result(results[i]["data"], ismonitoring, overview_data)
+			payload = prepare_battle_result(results[i]["data"], ismonitoring, isblackout, overview_data)
 		elif "coopHistoryDetail" in results[i]["data"]: # salmon run job
-			payload = prepare_job_result(results[i]["data"], ismonitoring, overview_data)
+			payload = prepare_job_result(results[i]["data"], ismonitoring, isblackout, overview_data)
 		else: # shouldn't happen
 			print("Ill-formatted JSON while uploading. Exiting.")
 			print('results[i]["data"]:')
@@ -772,8 +800,6 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA):
 			continue
 
-		# TODO - isblackout stuff... for SR too
-
 		s3s_values = {'agent': '\u0073\u0033\u0073', 'agent_version': f'v{A_VERSION}'} # lol
 		s3s_values["agent_variables"] = {'Upload Mode': "Monitoring" if ismonitoring else "Manual"}
 		payload.update(s3s_values)
@@ -785,6 +811,8 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 		if istestrun:
 			payload["test"] = "yes"
 
+		print(json.dumps(payload))
+		sys.exit(0)
 		# post
 		url = "https://stat.ink/api/v3/battle"
 		auth = {'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/x-msgpack'}
@@ -1156,14 +1184,15 @@ def parse_arguments():
 						help="do not check for Salmon Run jobs")
 	srgroup.add_argument("-osr", required=False, action="store_true",
 						help="only check for Salmon Run jobs")
-	# parser.add_argument("--blackout", required=False, action="store_true",
-		# help="black out names on scoreboard result images")
+	parser.add_argument("--blackout", required=False, action="store_true",
+		help="black out names in uploaded scoreboard data")
 	parser.add_argument("-o", required=False, action="store_true",
 		help="export all possible results to local files")
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
 		help="upload local results; use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
+	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
 
@@ -1187,13 +1216,13 @@ def main():
 	check_old   = parser_result.r
 	only_ink    = parser_result.nsr # ink battles ONLY
 	only_salmon = parser_result.osr # salmon run ONLY
-	# blackout    = parser_result.blackout
-	blackout = False
+	blackout    = parser_result.blackout
 
 	# testing/dev stuff
-	test_run  = parser_result.t
-	filenames = parser_result.file # intended for results.json AND overview.json
-	outfile   = parser_result.o # output to local files
+	test_run     = parser_result.t            # send to stat.ink as dry run
+	filenames    = parser_result.file         # intended for results.json AND overview.json
+	outfile      = parser_result.o            # output to local files
+	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
 	# i/o checks
 	############
@@ -1333,7 +1362,11 @@ def main():
 		print("Pulling data from online...")
 
 		# ! fetch from online
-		results = fetch_json(which, numbers_only=True, printout=True)
+		try:
+			results = fetch_json(which, numbers_only=True, printout=True, skipprefetch=skipprefetch)
+		except json.decoder.JSONDecodeError:
+			print("\nCould not fetch results JSON. Are your tokens invalid?")
+			sys.exit(1)
 
 		results = results[:n] # limit to n uploads
 		results.reverse() # sort from oldest to newest
