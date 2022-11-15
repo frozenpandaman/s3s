@@ -9,7 +9,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.1.13"
+A_VERSION = "0.1.14"
 
 DEBUG = False
 
@@ -355,7 +355,7 @@ def populate_gear_abilities(player):
 	c_main = utils.translate_gear_ability(player["clothingGear"]["primaryGearPower"]["image"]["url"])
 	c_subs = []
 	if len(player["clothingGear"]["additionalGearPowers"]) > 0:
-		h_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][0]["image"]["url"]))
+		c_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][0]["image"]["url"]))
 	if len(player["clothingGear"]["additionalGearPowers"]) > 1:
 		c_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][1]["image"]["url"]))
 	if len(player["clothingGear"]["additionalGearPowers"]) > 2:
@@ -364,7 +364,7 @@ def populate_gear_abilities(player):
 	s_main = utils.translate_gear_ability(player["shoesGear"]["primaryGearPower"]["image"]["url"])
 	s_subs = []
 	if len(player["shoesGear"]["additionalGearPowers"]) > 0:
-		h_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][0]["image"]["url"]))
+		s_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][0]["image"]["url"]))
 	if len(player["shoesGear"]["additionalGearPowers"]) > 1:
 		s_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][1]["image"]["url"]))
 	if len(player["shoesGear"]["additionalGearPowers"]) > 2:
