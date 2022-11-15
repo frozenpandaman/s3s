@@ -6,6 +6,7 @@
 
 import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 import msgpack
+from packaging import version
 import iksm, utils
 
 A_VERSION = "0.1.12"
@@ -820,31 +821,32 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 def check_for_updates():
 	'''Checks the script version against the repo, reminding users to update if available.'''
 
-	# TODO
-	print('\033[3m' + "» While s3s is in beta, please update the script regularly via " \
-		'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
-	# try:
-	# 	latest_script = requests.get("https://raw.githubusercontent.com/frozenpandaman/s3s/master/s3s.py")
-	# 	new_version = re.search(r'A_VERSION = "([\d.]*)"', latest_script.text).group(1)
-	# 	update_available = version.parse(new_version) > version.parse(A_VERSION)
-	# 	if update_available:
-	# 		print(f"\nThere is a new version (v{new_version}) available.", end='')
-	# 		if os.path.isdir(".git"):
-	# 			update_now = input("\nWould you like to update now? [Y/n] ")
-	# 			if update_now == "" or update_now[0].lower() == "y":
-	# 				FNULL = open(os.devnull, "w")
-	# 				call(["git", "checkout", "."], stdout=FNULL, stderr=FNULL)
-	# 				call(["git", "checkout", "master"], stdout=FNULL, stderr=FNULL)
-	# 				call(["git", "pull"], stdout=FNULL, stderr=FNULL)
-	# 				print(f"Successfully updated to v{new_version}. Please restart s3s.")
-	# 				return True
-	# 			else:
-	# 				print("Remember to update later with `git pull` to get the latest version.\n")
-	# 		else: # no git directory
-	# 			print(" Visit the site below to update:\nhttps://github.com/frozenpandaman/s3s\n")
-	# except: # if there's a problem connecting to github
-	# 	pass
-
+	try:
+		latest_script = requests.get("https://raw.githubusercontent.com/frozenpandaman/s3s/master/s3s.py")
+		new_version = re.search(r'A_VERSION = "([\d.]*)"', latest_script.text).group(1)
+		update_available = version.parse(new_version) > version.parse(A_VERSION)
+		if update_available:
+			print(f"\nThere is a new version (v{new_version}) available.", end='')
+			if os.path.isdir(".git"):
+				update_now = input("\nWould you like to update now? [Y/n] ")
+				if update_now == "" or update_now[0].lower() == "y":
+					FNULL = open(os.devnull, "w")
+					call(["git", "checkout", "."], stdout=FNULL, stderr=FNULL)
+					call(["git", "checkout", "master"], stdout=FNULL, stderr=FNULL)
+					call(["git", "pull"], stdout=FNULL, stderr=FNULL)
+					print(f"Successfully updated to v{new_version}. Please restart s3s.")
+					sys.exit(0)
+				else:
+					print("Please update to the latest version by running " \
+						'`\033[91m' + "git pull" + '\033[0m' \
+						"` as soon as possible.\n")
+			else: # no git directory
+				print(" Visit the site below to update:\nhttps://github.com/frozenpandaman/s3s\n")
+	except: # if there's a problem connecting to github
+		print('\033[3m' + "» Couldn't connect to GitHub. Please update the script manually via " \
+			'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
+		# print('\033[3m' + "» While s3s is in beta, please update the script regularly via " \
+		# 	'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
 
 def check_statink_key():
 	'''Checks if a valid length API key has been provided and, if not, prompts the user to enter one.'''
@@ -893,7 +895,7 @@ def get_num_results(which):
 
 	noun = utils.set_noun(which)
 	try:
-		if which == "ink":
+		if which == "ink": # TODO update '150' numbers when x battles & league released
 			print("Note: 50 recent battles of each type (up to 150 total) may be uploaded by instead manually exporting data with " \
 				'\033[91m' + "-o" + '\033[0m' + ".\n")
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
