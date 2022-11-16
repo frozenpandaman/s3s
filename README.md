@@ -3,7 +3,9 @@ s3s 🦑
 
 **s3s** is a script that uploads _Splatoon 3_ battle data from the SplatNet 3 service (part of the Nintendo Switch Online app) to [stat.ink](https://stat.ink/), a site for recording, visualizing, and aggregating statistics from the *Splatoon* series of games.
 
-Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://github.com/frozenpandaman/splatnet2statink)**. (日本語版セットアップ手順 & 中文版的安装说明)
+(ja) 日本語版セットアップ手順は[こちら](https://vanillasalt.net/2022/10/10/how-to-use-s3s/)、または[こちら](https://zenn.dev/hibikine/articles/1febb4eb03b604)。
+
+Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://github.com/frozenpandaman/splatnet2statink)**.
 
 ### Features
  - [x] Full automation of SplatNet token generation via user log-in
@@ -13,7 +15,7 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
  - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
 
 ### What's coming?
- - [ ] Support for Splatfest battles, Salmon Run jobs & Grizzco profile data (as soon as stat.ink supports it!)
+ - [ ] Support for Tricolor Turf War battles, Salmon Run jobs & Grizzco profile data (as soon as stat.ink supports it!)
  - [ ] Monitoring mode for Salmon Run
  - [ ] Post-battle scoreboard & gear screenshots
  - [ ] Flag to black out other players' names from results
@@ -23,7 +25,7 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
 
 ## Usage 🐙
 ```
-$ python s3s.py [-M [N]] [-r] [-nsr | -osr]
+$ python s3s.py [-M [N]] [-r] [-nsr | -osr] [--blackout]
 ```
 
 The `-M` flag runs the script in monitoring mode, uploading new battles/jobs as you play, checking for new results every `N` seconds; if no `N` is provided, it defaults to 300 (5 minutes).
@@ -34,7 +36,7 @@ The `-nsr` flag makes Salmon Run jobs **not** be monitored/uploaded. Use this if
 
 The `-osr` flag, conversely, makes **only** Salmon Run jobs be monitored/uploaded. Use this if you're playing at Grizzco only.
 
-<!-- The `--blackout` flag blacks out other players' names on scoreboard result images and in uploaded data. -->
+The `--blackout` flag blacks out other players' names in uploaded scoreboard data.
 
 Arguments for advanced usage (e.g. locally exporting data to JSON files) can be viewed using `--help`.
 

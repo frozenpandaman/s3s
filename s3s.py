@@ -7,9 +7,10 @@
 import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
 from concurrent.futures import ThreadPoolExecutor
 import msgpack
+from packaging import version
 import iksm, utils
 
-A_VERSION = "0.1.11"
+A_VERSION = "0.1.14"
 
 DEBUG = False
 
@@ -339,6 +340,39 @@ def update_salmon_profile():
 	# 	print(updateprofile.text)
 
 
+def populate_gear_abilities(player):
+	'''Returns string representing all 12 ability slots for the player's gear, for use in set_scoreboard().'''
+
+	h_main = utils.translate_gear_ability(player["headGear"]["primaryGearPower"]["image"]["url"])
+	h_subs = []
+	if len(player["headGear"]["additionalGearPowers"]) > 0:
+		h_subs.append(utils.translate_gear_ability(player["headGear"]["additionalGearPowers"][0]["image"]["url"]))
+	if len(player["headGear"]["additionalGearPowers"]) > 1:
+		h_subs.append(utils.translate_gear_ability(player["headGear"]["additionalGearPowers"][1]["image"]["url"]))
+	if len(player["headGear"]["additionalGearPowers"]) > 2:
+		h_subs.append(utils.translate_gear_ability(player["headGear"]["additionalGearPowers"][2]["image"]["url"]))
+
+	c_main = utils.translate_gear_ability(player["clothingGear"]["primaryGearPower"]["image"]["url"])
+	c_subs = []
+	if len(player["clothingGear"]["additionalGearPowers"]) > 0:
+		c_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][0]["image"]["url"]))
+	if len(player["clothingGear"]["additionalGearPowers"]) > 1:
+		c_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][1]["image"]["url"]))
+	if len(player["clothingGear"]["additionalGearPowers"]) > 2:
+		c_subs.append(utils.translate_gear_ability(player["clothingGear"]["additionalGearPowers"][2]["image"]["url"]))
+
+	s_main = utils.translate_gear_ability(player["shoesGear"]["primaryGearPower"]["image"]["url"])
+	s_subs = []
+	if len(player["shoesGear"]["additionalGearPowers"]) > 0:
+		s_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][0]["image"]["url"]))
+	if len(player["shoesGear"]["additionalGearPowers"]) > 1:
+		s_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][1]["image"]["url"]))
+	if len(player["shoesGear"]["additionalGearPowers"]) > 2:
+		s_subs.append(utils.translate_gear_ability(player["shoesGear"]["additionalGearPowers"][2]["image"]["url"]))
+
+	return h_main, h_subs, c_main, c_subs, s_main, s_subs
+
+
 def set_scoreboard(battle):
 	'''Returns two lists of player dictionaries, for our_team_players and their_team_players.'''
 
@@ -363,7 +397,16 @@ def set_scoreboard(battle):
 			p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
+			# noroshiTry
 			p_dict["disconnected"]   = "no"
+
+			# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle#gears-structure
+			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
+			h_main, h_subs, c_main, c_subs, s_main, s_subs = populate_gear_abilities(player)
+			gear_struct["headgear"] = {"primary_ability": h_main, "secondary_abilities": h_subs}
+			gear_struct["clothing"] = {"primary_ability": c_main, "secondary_abilities": c_subs}
+			gear_struct["shoes"]    = {"primary_ability": s_main, "secondary_abilities": s_subs}
+			p_dict["gears"] = gear_struct
 		else:
 			p_dict["disconnected"]   = "yes"
 		our_team_players.append(p_dict)
@@ -386,7 +429,15 @@ def set_scoreboard(battle):
 			p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
+			# noroshiTry
 			p_dict["disconnected"]   = "no"
+
+			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
+			h_main, h_subs, c_main, c_subs, s_main, s_subs = populate_gear_abilities(player)
+			gear_struct["headgear"] = {"primary_ability": h_main, "secondary_abilities": h_subs}
+			gear_struct["clothing"] = {"primary_ability": c_main, "secondary_abilities": c_subs}
+			gear_struct["shoes"]    = {"primary_ability": s_main, "secondary_abilities": s_subs}
+			p_dict["gears"] = gear_struct
 		else:
 			p_dict["disconnected"]   = "yes"
 		their_team_players.append(p_dict)
@@ -394,7 +445,7 @@ def set_scoreboard(battle):
 	return our_team_players, their_team_players
 
 
-def prepare_battle_result(battle, ismonitoring, overview_data=None):
+def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	'''Converts the Nintendo JSON format for a Turf War/Ranked battle to the stat.ink one.'''
 
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Post-v3-battle
@@ -485,7 +536,7 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 				payload["kill"]           = payload["kill_or_assist"] - payload["assist"]
 				payload["death"]          = player["result"]["death"]
 				payload["special"]        = player["result"]["special"]
-				# ...        = player["result"]["noroshiTry"] = ultra signal attempts - splatfest
+				# ...        = player["result"]["noroshiTry"] = ultra signal attempts - splatfest tricolor tw
 				break
 
 	## RESULT ##
@@ -525,6 +576,8 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 		# if rule == "TRI_COLOR":
 			# ...
 
+		# no support for splatfest fest_title
+
 	# turf war only - not tricolor
 	if mode in ("REGULAR", "FEST"):
 		try:
@@ -558,7 +611,6 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 			pass
 
 	if mode == "BANKARA":
-
 		try:
 			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
 			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
@@ -663,15 +715,40 @@ def prepare_battle_result(battle, ismonitoring, overview_data=None):
 	# gear
 	# payload["image_gear"] = ...
 
-	# no way to get: level_beforea/after, cash_before/after, rank_after_exp
+	# no way to get: level_before/after, cash_before/after, rank_after_exp
 
 	payload["automated"] = "yes" # data was not manually entered!
+
+	if isblackout:
+		# fix payload
+		for player in payload["our_team_players"]:
+			if player["me"] == "no": # only black out others
+				player["name"] = None
+				player["number"] = None
+				player["splashtag_title"] = None
+		for player in payload["their_team_players"]:
+			player["name"] = None
+			player["number"] = None
+			player["splashtag_title"] = None
+
+		# fix battle json
+		for player in battle["myTeam"]["players"]:
+			if not player["isMyself"]: # only black out others
+				player["name"] = None
+				player["nameId"] = None
+				player["byname"] = None
+		for team in battle["otherTeams"]:
+			for player in team["players"]:
+				player["name"] = None
+				player["nameId"] = None
+				player["byname"] = None
+
 	payload["splatnet_json"] = json.dumps(battle)
 
 	return payload
 
 
-def prepare_job_result(battle, ismonitoring, overview_data=None):
+def prepare_job_result(battle, ismonitoring, isblackout, overview_data=None):
 	'''Converts the Nintendo JSON format for a Salmon Run job to the stat.ink one.'''
 
 	pass # stat.ink doesn't support SR yet
@@ -707,9 +784,9 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 	# filter down to one battle at a time
 	for i in range(len(results)):
 		if "vsHistoryDetail" in results[i]["data"]: # ink battle
-			payload = prepare_battle_result(results[i]["data"], ismonitoring, overview_data)
+			payload = prepare_battle_result(results[i]["data"], ismonitoring, isblackout, overview_data)
 		elif "coopHistoryDetail" in results[i]["data"]: # salmon run job
-			payload = prepare_job_result(results[i]["data"], ismonitoring, overview_data)
+			payload = prepare_job_result(results[i]["data"], ismonitoring, isblackout, overview_data)
 		else: # shouldn't happen
 			print("Ill-formatted JSON while uploading. Exiting.")
 			print('results[i]["data"]:')
@@ -722,8 +799,6 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 		# should have been taken care of in fetch_json() but just in case...
 		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA):
 			continue
-
-		# TODO - isblackout stuff... for SR too
 
 		s3s_values = {'agent': '\u0073\u0033\u0073', 'agent_version': f'v{A_VERSION}'} # lol
 		s3s_values["agent_variables"] = {'Upload Mode': "Monitoring" if ismonitoring else "Manual"}
@@ -772,31 +847,32 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 def check_for_updates():
 	'''Checks the script version against the repo, reminding users to update if available.'''
 
-	# TODO
-	print('\033[3m' + "» While s3s is in beta, please update the script regularly via " \
-		'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
-	# try:
-	# 	latest_script = requests.get("https://raw.githubusercontent.com/frozenpandaman/s3s/master/s3s.py")
-	# 	new_version = re.search(r'A_VERSION = "([\d.]*)"', latest_script.text).group(1)
-	# 	update_available = version.parse(new_version) > version.parse(A_VERSION)
-	# 	if update_available:
-	# 		print(f"\nThere is a new version (v{new_version}) available.", end='')
-	# 		if os.path.isdir(".git"):
-	# 			update_now = input("\nWould you like to update now? [Y/n] ")
-	# 			if update_now == "" or update_now[0].lower() == "y":
-	# 				FNULL = open(os.devnull, "w")
-	# 				call(["git", "checkout", "."], stdout=FNULL, stderr=FNULL)
-	# 				call(["git", "checkout", "master"], stdout=FNULL, stderr=FNULL)
-	# 				call(["git", "pull"], stdout=FNULL, stderr=FNULL)
-	# 				print(f"Successfully updated to v{new_version}. Please restart s3s.")
-	# 				return True
-	# 			else:
-	# 				print("Remember to update later with `git pull` to get the latest version.\n")
-	# 		else: # no git directory
-	# 			print(" Visit the site below to update:\nhttps://github.com/frozenpandaman/s3s\n")
-	# except: # if there's a problem connecting to github
-	# 	pass
-
+	try:
+		latest_script = requests.get("https://raw.githubusercontent.com/frozenpandaman/s3s/master/s3s.py")
+		new_version = re.search(r'A_VERSION = "([\d.]*)"', latest_script.text).group(1)
+		update_available = version.parse(new_version) > version.parse(A_VERSION)
+		if update_available:
+			print(f"\nThere is a new version (v{new_version}) available.", end='')
+			if os.path.isdir(".git"):
+				update_now = input("\nWould you like to update now? [Y/n] ")
+				if update_now == "" or update_now[0].lower() == "y":
+					FNULL = open(os.devnull, "w")
+					call(["git", "checkout", "."], stdout=FNULL, stderr=FNULL)
+					call(["git", "checkout", "master"], stdout=FNULL, stderr=FNULL)
+					call(["git", "pull"], stdout=FNULL, stderr=FNULL)
+					print(f"Successfully updated to v{new_version}. Please restart s3s.")
+					sys.exit(0)
+				else:
+					print("Please update to the latest version by running " \
+						'`\033[91m' + "git pull" + '\033[0m' \
+						"` as soon as possible.\n")
+			else: # no git directory
+				print(" Visit the site below to update:\nhttps://github.com/frozenpandaman/s3s\n")
+	except: # if there's a problem connecting to github
+		print('\033[3m' + "» Couldn't connect to GitHub. Please update the script manually via " \
+			'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
+		# print('\033[3m' + "» While s3s is in beta, please update the script regularly via " \
+		# 	'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
 
 def check_statink_key():
 	'''Checks if a valid length API key has been provided and, if not, prompts the user to enter one.'''
@@ -845,7 +921,7 @@ def get_num_results(which):
 
 	noun = utils.set_noun(which)
 	try:
-		if which == "ink":
+		if which == "ink": # TODO update '150' numbers when x battles & league released
 			print("Note: 50 recent battles of each type (up to 150 total) may be uploaded by instead manually exporting data with " \
 				'\033[91m' + "-o" + '\033[0m' + ".\n")
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
@@ -1106,14 +1182,15 @@ def parse_arguments():
 						help="do not check for Salmon Run jobs")
 	srgroup.add_argument("-osr", required=False, action="store_true",
 						help="only check for Salmon Run jobs")
-	# parser.add_argument("--blackout", required=False, action="store_true",
-		# help="black out names on scoreboard result images")
+	parser.add_argument("--blackout", required=False, action="store_true",
+		help="black out names in uploaded scoreboard data")
 	parser.add_argument("-o", required=False, action="store_true",
 		help="export all possible results to local files")
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
 		help="upload local results; use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
+	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
 
@@ -1137,13 +1214,13 @@ def main():
 	check_old   = parser_result.r
 	only_ink    = parser_result.nsr # ink battles ONLY
 	only_salmon = parser_result.osr # salmon run ONLY
-	# blackout    = parser_result.blackout
-	blackout = False
+	blackout    = parser_result.blackout
 
 	# testing/dev stuff
-	test_run  = parser_result.t
-	filenames = parser_result.file # intended for results.json AND overview.json
-	outfile   = parser_result.o # output to local files
+	test_run     = parser_result.t            # send to stat.ink as dry run
+	filenames    = parser_result.file         # intended for results.json AND overview.json
+	outfile      = parser_result.o            # output to local files
+	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
 	# i/o checks
 	############
@@ -1283,7 +1360,11 @@ def main():
 		print("Pulling data from online...")
 
 		# ! fetch from online
-		results = fetch_json(which, numbers_only=True, printout=True)
+		try:
+			results = fetch_json(which, numbers_only=True, printout=True, skipprefetch=skipprefetch)
+		except json.decoder.JSONDecodeError:
+			print("\nCould not fetch results JSON. Are your tokens invalid?")
+			sys.exit(1)
 
 		results = results[:n] # limit to n uploads
 		results.reverse() # sort from oldest to newest
