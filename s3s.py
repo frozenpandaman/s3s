@@ -49,7 +49,7 @@ BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64
 SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
 
-thread_pool = ThreadPoolExecutor(max_workers=10)
+thread_pool = ThreadPoolExecutor(max_workers=2)
 
 # SET HTTP HEADERS
 DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
