@@ -4,7 +4,7 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
+import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid, base64
 import msgpack
 from packaging import version
 import iksm, utils
