@@ -4,13 +4,14 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import argparse, datetime, json, os, shutil, re, requests, sys, time, uuid
+import argparse, base64, datetime, json, os, shutil, re, requests, sys, time, uuid
 from concurrent.futures import ThreadPoolExecutor
+
 import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.1.14"
+A_VERSION = "0.1.15"
 
 DEBUG = False
 
@@ -620,6 +621,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
 		payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"]
 
+		battle_id = base64.b64decode(battle["id"]).decode('utf-8')
 		if overview_data is None: # no passed in file with -i
 			overview_post = requests.post(utils.GRAPHQL_URL,
 				data=utils.gen_graphql_body(utils.translate_rid["BankaraBattleHistoriesQuery"]),
@@ -641,7 +643,9 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 			for parent in ranked_list: # groups in overview (ranked) JSON/screen
 				for idx, child in enumerate(parent["historyDetails"]["nodes"]):
 
-					if child["id"] == battle["id"]: # found the battle ID in the other file
+					overview_battle_id = base64.b64decode(child["id"]).decode('utf-8')
+					overview_battle_id_mutated = overview_battle_id.replace("BANKARA", "RECENT") # same battle, different screens
+					if overview_battle_id_mutated == battle_id: # found the battle ID in the other file
 
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
 						was_s_plus_before = len(full_rank) > 1 # true if "before" rank is s+
@@ -1040,7 +1044,7 @@ def monitor_battles(which, secs, isblackout, istestrun):
 
 	mins = str(round(float(secs)/60.0, 2))
 	mins = mins[:-2] if mins[-2:] == ".0" else mins
-	print(f"Waiting for new {utils.set_noun(which)}... (checking every {mins} minutes)")
+	print(f"Waiting for new {utils.set_noun(which)}... (checking every {mins} minute{'s' if mins != '1' else ''})")
 
 	try:
 		while True:
@@ -1096,6 +1100,8 @@ def monitor_battles(which, secs, isblackout, istestrun):
 
 							stagename = result["data"]["vsHistoryDetail"]["vsStage"]["name"]
 							shortname = stagename.split(" ")[-1]
+							if shortname == "d'Alfonsino": # lol franch
+								shortname = "Museum"
 							endtime = utils.epoch_time(result["data"]["vsHistoryDetail"]["playedTime"]) + \
 								result["data"]["vsHistoryDetail"]["duration"]
 							dt = datetime.datetime.fromtimestamp(endtime).strftime('%I:%M:%S %p').lstrip("0")
