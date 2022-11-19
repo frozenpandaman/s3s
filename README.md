@@ -9,16 +9,14 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
 
 ### Features
  - [x] Full automation of SplatNet token generation via user log-in
- - [x] Ability to parse & upload complete battle stats to stat.ink
- - [x] Monitoring for new battle results in real-time & checking for missing/unuploaded battles
+ - [x] Ability to parse & upload complete battle/job stats to stat.ink ([example profile](https://stat.ink/@frozenpandaman/spl3))
+ - [x] Monitoring for new results in real-time & checking for missing/unuploaded results
+ - [x] Flag to black out other players' names from results
  - [x] Support for all available game languages
  - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
 
 ### What's coming?
  - [ ] Support for Tricolor Turf War battles, Salmon Run jobs & Grizzco profile data (as soon as stat.ink supports it!)
- - [ ] Monitoring mode for Salmon Run
- - [ ] Post-battle scoreboard & gear screenshots
- - [ ] Flag to black out other players' names from results
  - [ ] Downloadable, pre-packaged program executables
 
 ---
