@@ -1175,27 +1175,28 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 		print("\n== SESSION REPORT ==")
 		if which in ("ink", "both"):
 			if battle_draws == 0:
-				print(f" Battles: {battle_wins} win{'' if battle_wins == 1 else 's'} and " \
+				print(f"Battles: {battle_wins} win{'' if battle_wins == 1 else 's'} and " \
 					f"{battle_losses} loss{'' if battle_losses == 1 else 'es'}.")
 			else:
-				print(f" Battles: {battle_wins} win{'' if battle_wins == 1 else 's'}, " \
+				print(f"Battles: {battle_wins} win{'' if battle_wins == 1 else 's'}, " \
 					f"{battle_losses} loss{'' if battle_losses == 1 else 'es'}, and " \
 					f"{battle_draws} draw{'' if battle_draws == 1 else 's'}.")
 
 			if splatfest_wins + splatfest_losses + splatfest_draws > 0:
 				if splatfest_draws == 0:
-					print(f" Splatfest: {splatfest_wins} win{'' if splatfest_wins == 1 else 's'} and " \
+					print(f"Splatfest: {splatfest_wins} win{'' if splatfest_wins == 1 else 's'} and " \
 						f"{splatfest_losses} loss{'' if splatfest_losses == 1 else 'es'} against the other Splatfest team.")
 				else:
-					print(f" Splatfest: {splatfest_wins} win{'' if splatfest_wins == 1 else 's'}, " \
+					print(f"Splatfest: {splatfest_wins} win{'' if splatfest_wins == 1 else 's'}, " \
 						f"{splatfest_losses} loss{'' if splatfest_losses == 1 else 'es'}, and " \
 						f"{splatfest_draws} draw{'' if splatfest_draws == 1 else 's'} against the other Splatfest team.")
 
 				print(f"{mirror_matches} mirror match{'' if mirror_matches == 1 else 'es'} against your Splatfest team.")
 
-		if which in ("salmon", "both"):
-			print(f" Salmon Run: {job_successes} success{'' if job_successes == 1 else 'es'} and " \
-				f"{job_failures} failure{'' if job_failures == 1 else 's'}.")
+		# SR TODO
+		# if which in ("salmon", "both"):
+		# 	print(f"Salmon Run: {job_successes} success{'' if job_successes == 1 else 'es'} and " \
+		# 		f"{job_failures} failure{'' if job_failures == 1 else 's'}.")
 
 		print("Bye!")
 
