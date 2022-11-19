@@ -415,7 +415,7 @@ def call_f_api(id_token, step, f_gen_url):
 		}
 		api_body = {
 			'token':       id_token,
-			'hashMethod':  step
+			'hash_method':  step
 		}
 		api_response = requests.post(f_gen_url, data=json.dumps(api_body), headers=api_head)
 		resp = json.loads(api_response.text)
