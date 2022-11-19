@@ -1284,7 +1284,7 @@ def main():
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(0)
 
-	elif outfile and len(sys.argv) > 2:
+	elif outfile and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
 		print("Cannot use -o with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1305,7 +1305,8 @@ def main():
 	# export results to file: -o flag
 	#################################
 	if outfile:
-		prefetch_checks(printout=True, skipprefetch=skipprefetch)
+		if not skipprefetch:
+			prefetch_checks(printout=True)
 		print("Fetching your JSON files to export locally. This might take a while...")
 		# fetch_json() calls prefetch_checks() to gen or check tokens
 		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True, skipprefetch=True)
