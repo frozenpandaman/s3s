@@ -192,6 +192,9 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		prefetch_checks(printout)
 		if DEBUG:
 			print("* prefetch_checks() succeeded")
+	else:
+		if DEBUG:
+			print("* skipping prefetch_checks()")
 	swim()
 
 	ink_list, salmon_list = [], []
@@ -943,7 +946,7 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 
 
 def check_if_missing(which, isblackout, istestrun):
-	'''Checks for unuploaded battles and uploads any that are found.'''
+	'''Checks for unuploaded battles and uploads any that are found (-r flag).'''
 
 	noun = utils.set_noun(which)
 	print(f"Checking if there are previously-unuploaded {noun}...")
@@ -974,7 +977,8 @@ def check_if_missing(which, isblackout, istestrun):
 				sys.exit(1)
 
 			# ! fetch from online
-			splatnet_ids = fetch_json(which, specific=True, numbers_only=True) # 'specific' - check ALL possible battles
+			# specific - check ALL possible battles; printout - to show tokens are being checked at program start
+			splatnet_ids = fetch_json(which, specific=True, numbers_only=True, printout=True)
 
 			# same as code in -i section below...
 			for id in reversed(splatnet_ids):
@@ -1111,7 +1115,7 @@ def check_for_new_results(input_params):
 
 
 def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
-	'''Monitors SplatNet endpoint(s) for changes (new results) and uploads them.'''
+	'''Monitors SplatNet endpoint(s) for changes (new results) and uploads them (-M flag).'''
 
 	if DEBUG:
 		print(f"* monitoring mode start - calling fetch_json() w/ which={which}")
@@ -1298,8 +1302,8 @@ def main():
 			print("Minimum number of seconds in monitoring mode is 60. Exiting.")
 			sys.exit(0)
 
-	# export results to file: -o
-	############################
+	# export results to file: -o flag
+	#################################
 	if outfile:
 		prefetch_checks(printout=True, skipprefetch=skipprefetch)
 		print("Fetching your JSON files to export locally. This might take a while...")
@@ -1330,8 +1334,8 @@ def main():
 		print("\nHave fun playing Splatoon 3! :) Bye!")
 		sys.exit(0)
 
-	# manual json upload: -i
-	########################
+	# manual json upload: -i flag
+	#############################
 	if filenames: # 2 files in list
 		if os.path.basename(filenames[0]) != "results.json" or os.path.basename(filenames[1]) != "overview.json":
 			print("Must use the format " \
@@ -1392,9 +1396,11 @@ def main():
 
 	if check_old:
 		check_if_missing(which, blackout, test_run) # monitoring mode hasn't begun yet
+		print()
 
 	if secs != -1: # monitoring mode
-		monitor_battles(which, secs, blackout, test_run, skipprefetch)
+		skipprefetch = True if skipprefetch or check_old else False
+		monitor_battles(which, secs, blackout, test_run, skipprefetch) # skip prefetch checks if already done in -r
 
 	elif not check_old: # regular mode (no -M) and did not just use -r
 		if which == "both":
