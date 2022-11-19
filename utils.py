@@ -20,14 +20,15 @@ SUPPORTED_KEYS = [
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
 translate_rid = {
-	'HomeQuery':                       'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
-	'LatestBattleHistoriesQuery':      '7d8b560e31617e981cf7c8aa1ca13a00', # INK / blank vars - query1
-	'RegularBattleHistoriesQuery':     'f6e7e0277e03ff14edfef3b41f70cd33', # INK / blank vars - query1
-	'BankaraBattleHistoriesQuery':     'c1553ac75de0a3ea497cdbafaa93e95b', # INK / blank vars - query1
-	'PrivateBattleHistoriesQuery':     '38e0529de8bc77189504d26c7a14e0b8', # INK / blank vars - query1
-	'VsHistoryDetailQuery':            '2b085984f729cd51938fc069ceef784a', # INK / req "vsResultId" - query2
-	'CoopHistoryQuery':                '817618ce39bcf5570f52a97d73301b30', # SR  / blank vars - query1
-	'CoopHistoryDetailQuery':          'f3799a033f0a7ad4b1b396f9a3bafb1e'  # SR  / req "coopHistoryDetailId" - query2
+	'HomeQuery':                         'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
+	'LatestBattleHistoriesQuery':        '7d8b560e31617e981cf7c8aa1ca13a00', # INK / blank vars - query1
+	'RegularBattleHistoriesQuery':       'f6e7e0277e03ff14edfef3b41f70cd33', # INK / blank vars - query1
+	'BankaraBattleHistoriesQuery':       'c1553ac75de0a3ea497cdbafaa93e95b', # INK / blank vars - query1
+	'PrivateBattleHistoriesQuery':       '38e0529de8bc77189504d26c7a14e0b8', # INK / blank vars - query1
+	'VsHistoryDetailQuery':              '2b085984f729cd51938fc069ceef784a', # INK / req "vsResultId" - query2
+	'CoopHistoryQuery':                  '817618ce39bcf5570f52a97d73301b30', # SR  / blank vars - query1
+	'CoopHistoryDetailQuery':            'f3799a033f0a7ad4b1b396f9a3bafb1e', # SR  / req "coopHistoryDetailId" - query2
+	'MyOutfitCommonDataEquipmentsQuery': 'd29cd0c2b5e6bac90dd5b817914832f8'  # for Lean's seed checker
 }
 
 
@@ -94,7 +95,7 @@ def b64d(string):
 		if len(thing_id) == 5 and thing_id[:1] == "2" and thing_id[-3:] == "900": # grizzco weapon ID from a hacker
 			return ""
 
-	if thing_id[:15] == "VsHistoryDetail" or thing_id[:17] == "CoopHistoryDetail":
+	if thing_id[:15] == "VsHistoryDetail" or thing_id[:17] == "CoopHistoryDetail" or thing_id[:8] == "VsPlayer":
 		return thing_id # string
 	else:
 		return int(thing_id) # integer

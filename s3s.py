@@ -5,11 +5,11 @@
 # License: GPLv3
 
 import argparse, base64, datetime, json, os, shutil, re, requests, sys, time, uuid
-import msgpack
+import mmh3, msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.1.16"
+A_VERSION = "0.1.17"
 
 DEBUG = False
 
@@ -1225,6 +1225,67 @@ class SquidProgress:
 		sys.stdout.flush()
 
 
+def export_seed_json(skipprefetch=False):
+	'''Export a JSON file for use with Lean's seed checker at https://leanny.github.io/splat3seedchecker/.'''
+
+	if not skipprefetch:
+		prefetch_checks(printout=True)
+
+	sha = utils.translate_rid["MyOutfitCommonDataEquipmentsQuery"]
+	outfit_post = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
+		headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+
+	sha = utils.translate_rid["LatestBattleHistoriesQuery"]
+	history_post = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
+		headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+
+	if outfit_post.status_code != 200 or history_post.status_code != 200:
+		print("Could not reach SplatNet 3. Exiting.")
+		sys.exit(1)
+	try:
+		outfit = json.loads(outfit_post.text)
+		history = json.loads(history_post.text)
+	except:
+		print("Ill-formatted JSON file received. Exiting.")
+		sys.exit(1)
+
+	try:
+		pid = history["data"]["latestBattleHistories"]["historyGroupsOnlyFirst"]["nodes"][0]["historyDetails"]["nodes"][0]["player"]["id"]
+		# VsPlayer-u-<20 char long player id>:RECENT:<YYYYMMDD>T<HHMMSS>_<UUID>:u-<same player id as earlier>
+		s = utils.b64d(pid)
+		r = s.split(":")[-1]
+	except KeyError: # no recent battles (mr. grizz is pleased)
+		try:
+			sha = utils.translate_rid["CoopHistoryQuery"]
+			history_post = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
+				headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+
+			if history_post.status_code != 200:
+				print("Could not reach SplatNet 3. Exiting.")
+				sys.exit(1)
+			try:
+				history = json.loads(history_post.text)
+			except:
+				print("Ill-formatted JSON file received. Exiting.")
+				sys.exit(1)
+
+			pid = history["data"]["coopResult"]["historyGroupsOnlyFirst"]["nodes"][0]["historyDetails"]["nodes"][0]["id"]
+			# CoopHistoryDetail-u-<20 char long player id>:<YYYYMMDD>T<HHMMSS>_<UUID>
+			s = utils.b64d(pid)
+			r = s.split(":")[0].replace("CoopHistoryDetail-", "")
+		except KeyError:
+			r = ""
+
+	h = mmh3.hash(r)&0xFFFFFFFF # make positive
+	key = base64.b64encode(bytes([k^(h&0xFF) for k in bytes(r, "utf-8")]))
+	t = int(time.time())
+
+	with open(os.path.join(os.getcwd(), f"gear_{t}.json"), "x") as fout:
+		json.dump({"key": key.decode("utf-8"), "h": h, "timestamp": t, "gear": outfit}, fout)
+
+	print(f"gear_{t}.json has been exported.")
+
+
 def parse_arguments():
 	'''Setup for command-line options.'''
 
@@ -1235,17 +1296,19 @@ def parse_arguments():
 	parser.add_argument("-r", required=False, action="store_true",
 		help="retroactively post unuploaded battles/jobs")
 	srgroup.add_argument("-nsr", required=False, action="store_true",
-						help="do not check for Salmon Run jobs")
+		help="do not check for Salmon Run jobs")
 	srgroup.add_argument("-osr", required=False, action="store_true",
-						help="only check for Salmon Run jobs")
+		help="only check for Salmon Run jobs")
 	parser.add_argument("--blackout", required=False, action="store_true",
-		help="black out names in uploaded scoreboard data")
+		help="remove player names from uploaded scoreboard data")
 	parser.add_argument("-o", required=False, action="store_true",
 		help="export all possible results to local files")
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
 		help="upload local results; use `-i results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
+	parser.add_argument("--getseed", required=False, action="store_true",
+		help="export JSON for gear & Shell-Out Machine seed checker")
 	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
@@ -1271,6 +1334,7 @@ def main():
 	only_ink    = parser_result.nsr # ink battles ONLY
 	only_salmon = parser_result.osr # salmon run ONLY
 	blackout    = parser_result.blackout
+	getseed     = parser_result.getseed
 
 	# testing/dev stuff
 	test_run     = parser_result.t            # send to stat.ink as dry run
@@ -1280,7 +1344,15 @@ def main():
 
 	# i/o checks
 	############
-	if only_ink and only_salmon:
+	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
+		print("Cannot use --getseed with other arguments. Exiting.")
+		sys.exit(0)
+
+	elif getseed:
+		export_seed_json(skipprefetch)
+		sys.exit(0)
+
+	elif only_ink and only_salmon:
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(0)
 

@@ -1,4 +1,5 @@
 beautifulsoup4
+mmh3
 msgpack_python
 packaging
 requests
