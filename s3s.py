@@ -5,6 +5,7 @@
 # License: GPLv3
 
 import argparse, base64, datetime, json, os, shutil, re, requests, sys, time, uuid
+from subprocess import call
 import msgpack
 from packaging import version
 import iksm, utils
@@ -849,7 +850,7 @@ def check_for_updates():
 						"` as soon as possible.\n")
 			else: # no git directory
 				print(" Visit the site below to update:\nhttps://github.com/frozenpandaman/s3s\n")
-	except: # if there's a problem connecting to github
+	except Exception as e: # if there's a problem connecting to github
 		print('\033[3m' + "» Couldn't connect to GitHub. Please update the script manually via " \
 			'`\033[91m' + "git pull" + '\033[0m' + "`." + '\033[0m' + "\n")
 		# print('\033[3m' + "» While s3s is in beta, please update the script regularly via " \
