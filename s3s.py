@@ -5,7 +5,7 @@
 # License: GPLv3
 
 import argparse, base64, datetime, json, os, shutil, re, requests, sys, time, uuid
-import mmh3, msgpack
+import msgpack
 from packaging import version
 import iksm, utils
 
@@ -1227,6 +1227,13 @@ class SquidProgress:
 
 def export_seed_json(skipprefetch=False):
 	'''Export a JSON file for use with Lean's seed checker at https://leanny.github.io/splat3seedchecker/.'''
+
+	try:
+		import mmh3
+	except ModuleNotFoundError:
+		print("This function requires a Python module you don't have installed. " \
+			"Please run " + '`\033[91m' + "pip install -r requirements.txt" + '\033[0m`' + " and try again.")
+		sys.exit(1)
 
 	if not skipprefetch:
 		prefetch_checks(printout=True)
