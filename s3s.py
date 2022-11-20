@@ -945,7 +945,7 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 	post_result(result, False, isblackout, istestrun) # not monitoring mode
 
 
-def check_if_missing(which, isblackout, istestrun):
+def check_if_missing(which, isblackout, istestrun, skipprefetch):
 	'''Checks for unuploaded battles and uploads any that are found (-r flag).'''
 
 	noun = utils.set_noun(which)
@@ -978,7 +978,7 @@ def check_if_missing(which, isblackout, istestrun):
 
 			# ! fetch from online
 			# specific - check ALL possible battles; printout - to show tokens are being checked at program start
-			splatnet_ids = fetch_json(which, specific=True, numbers_only=True, printout=True)
+			splatnet_ids = fetch_json(which, specific=True, numbers_only=True, printout=True, skipprefetch=skipprefetch)
 
 			# same as code in -i section below...
 			for id in reversed(splatnet_ids):
@@ -1475,7 +1475,7 @@ def main():
 		update_salmon_profile()
 
 	if check_old:
-		check_if_missing(which, blackout, test_run) # monitoring mode hasn't begun yet
+		check_if_missing(which, blackout, test_run, skipprefetch) # monitoring mode hasn't begun yet
 		print()
 
 	if secs != -1: # monitoring mode
