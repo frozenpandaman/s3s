@@ -1003,24 +1003,8 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 		noun = "jobs" # for second run through the loop
 		which = "salmon"
 
-def check_for_new_results(input_params):
+def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, isblackout, istestrun):
 	'''Helper function for monitor_battles(), called every N seconds or when exiting.'''
-
-	# INPUT PARAMETERS, IN ORDER:
-	which            = input_params[0] # "ink", "salmon", or "both"
-	cached_battles   = input_params[1] # lists of battles/jobs monitoring mode already knows about
-	cached_jobs      = input_params[2]
-	battle_wins      = input_params[3] # ink battle counters
-	battle_losses    = input_params[4]
-	battle_draws     = input_params[5]
-	splatfest_wins   = input_params[6] # splatfest counters
-	splatfest_losses = input_params[7]
-	splatfest_draws  = input_params[8]
-	mirror_matches   = input_params[9]
-	job_successes    = input_params[10] # salmon run counters
-	job_failures     = input_params[11]
-	isblackout       = input_params[12] # type of run
-	istestrun        = input_params[13]
 
 	# ! fetch from online
 	# check only numbers (quicker); specific=False since checks recent (latest) only
@@ -1153,7 +1137,7 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 				job_successes, job_failures,
 				isblackout, istestrun
 			]
-			which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, foundany = check_for_new_results(input_params)
+			which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, foundany = check_for_new_results(*input_params)
 
 	except KeyboardInterrupt:
 		print(f"\n\nChecking to see if there are unuploaded {utils.set_noun(which)} before exiting...")
@@ -1166,7 +1150,7 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 			job_successes, job_failures,
 			isblackout, istestrun
 		]
-		which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, foundany = check_for_new_results(input_params)
+		which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, foundany = check_for_new_results(*input_params)
 
 		noun = utils.set_noun(which)
 		if foundany:
