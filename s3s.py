@@ -9,7 +9,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.1.17"
+A_VERSION = "0.1.18"
 
 DEBUG = False
 
