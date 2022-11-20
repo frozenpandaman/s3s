@@ -9,23 +9,22 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
 
 ### Features
  - [x] Full automation of SplatNet token generation via user log-in
- - [x] Ability to parse & upload complete battle stats to stat.ink
- - [x] Monitoring for new battle results in real-time & checking for missing/unuploaded battles
+ - [x] Ability to parse & upload complete battle/job stats to stat.ink ([example profile](https://stat.ink/@frozenpandaman/spl3))
+ - [x] Monitoring for new results in real-time & checking for missing/unuploaded results
+ - [x] Flag to remove other players' names from results
+ - [x] File exporting function for use with Lean's [gear & Shell-Out Machine seed checker](https://leanny.github.io/splat3seedchecker/)
  - [x] Support for all available game languages
  - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
 
 ### What's coming?
  - [ ] Support for Tricolor Turf War battles, Salmon Run jobs & Grizzco profile data (as soon as stat.ink supports it!)
- - [ ] Monitoring mode for Salmon Run
- - [ ] Post-battle scoreboard & gear screenshots
- - [ ] Flag to black out other players' names from results
  - [ ] Downloadable, pre-packaged program executables
 
 ---
 
 ## Usage 🐙
 ```
-$ python s3s.py [-M [N]] [-r] [-nsr | -osr] [--blackout]
+$ python s3s.py [-M [N]] [-r] [-nsr | -osr] [--blackout] [--getseed]
 ```
 
 The `-M` flag runs the script in monitoring mode, uploading new battles/jobs as you play, checking for new results every `N` seconds; if no `N` is provided, it defaults to 300 (5 minutes).
@@ -36,7 +35,9 @@ The `-nsr` flag makes Salmon Run jobs **not** be monitored/uploaded. Use this if
 
 The `-osr` flag, conversely, makes **only** Salmon Run jobs be monitored/uploaded. Use this if you're playing at Grizzco only.
 
-The `--blackout` flag blacks out other players' names in uploaded scoreboard data.
+The `--blackout` flag removes other players' names from uploaded scoreboard data.
+
+The `--getseed` flag exports a file which can be uploaded to Lean's [gear & Shell-Out Machine seed checker](https://leanny.github.io/splat3seedchecker/).
 
 Arguments for advanced usage (e.g. locally exporting data to JSON files) can be viewed using `--help`.
 
