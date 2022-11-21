@@ -1197,17 +1197,19 @@ class SquidProgress:
 		self.count = 0
 
 	def __call__(self):
-		lineend = shutil.get_terminal_size()[0] - 5 # 5 = ('>=> ' or '===>') + blank 1
-		ika = '>=> ' if self.count % 2 == 0 else '===>'
-		sys.stdout.write(f"\r{' '*self.count}{ika}{' '*(lineend - self.count)}")
-		sys.stdout.flush()
-		self.count += 1
-		if self.count > lineend:
-			self.count = 0
+		if sys.stdout.isatty():
+			lineend = shutil.get_terminal_size()[0] - 5 # 5 = ('>=> ' or '===>') + blank 1
+			ika = '>=> ' if self.count % 2 == 0 else '===>'
+			sys.stdout.write(f"\r{' '*self.count}{ika}{' '*(lineend - self.count)}")
+			sys.stdout.flush()
+			self.count += 1
+			if self.count > lineend:
+				self.count = 0
 
 	def __del__(self):
-		sys.stdout.write(f"\r{' '*(shutil.get_terminal_size()[0] - 1)}\r")
-		sys.stdout.flush()
+		if sys.stdout.isatty():
+			sys.stdout.write(f"\r{' '*(shutil.get_terminal_size()[0] - 1)}\r")
+			sys.stdout.flush()
 
 
 def export_seed_json(skipprefetch=False):
