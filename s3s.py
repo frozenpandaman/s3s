@@ -1124,10 +1124,12 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 	try:
 		while True:
 			for i in range(secs, -1, -1):
-				sys.stdout.write(f"Press Ctrl+C to exit. {i} ")
-				sys.stdout.flush()
+				if sys.stdout.isatty():
+					sys.stdout.write(f"Press Ctrl+C to exit. {i} ")
+					sys.stdout.flush()
 				time.sleep(1)
-				sys.stdout.write("\r")
+				if sys.stdout.isatty():
+					sys.stdout.write("\r")
 
 			print("Checking for new results...", end='\r')
 			input_params = [
