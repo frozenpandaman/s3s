@@ -647,13 +647,11 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 							else:
 								payload["rank_up_battle"] = "no"
 
-							if parent["bankaraMatchChallenge"]["udemaeAfter"] is None:
-								payload["rank_after"] = payload["rank_before"]
-								if was_s_plus_before:
-									payload["rank_after_s_plus"] = payload["rank_before_s_plus"] # also s+ after
-							else:
+							if parent["bankaraMatchChallenge"]["udemaeAfter"] is not None:
 								if idx != 0:
 									payload["rank_after"] = payload["rank_before"]
+									if was_s_plus_before: # not a rank-up battle, so must be the same
+										payload["rank_after_s_plus"] = payload["rank_before_s_plus"]
 								else: # the battle where we actually ranked up
 									full_rank_after = re.split('([0-9]+)', parent["bankaraMatchChallenge"]["udemaeAfter"].lower())
 									payload["rank_after"] = full_rank_after[0]
