@@ -10,7 +10,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.1.18"
+A_VERSION = "0.1.19"
 
 DEBUG = False
 
@@ -599,7 +599,9 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
 		payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"]
 
-		battle_id = base64.b64decode(battle["id"]).decode('utf-8')
+		battle_id         = base64.b64decode(battle["id"]).decode('utf-8')
+		battle_id_mutated = battle_id.replace("BANKARA", "RECENT") # normalize the ID, make work with -M and -r
+
 		if overview_data is None: # no passed in file with -i
 			overview_post = requests.post(utils.GRAPHQL_URL,
 				data=utils.gen_graphql_body(utils.translate_rid["BankaraBattleHistoriesQuery"]),
@@ -621,9 +623,10 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 			for parent in ranked_list: # groups in overview (ranked) JSON/screen
 				for idx, child in enumerate(parent["historyDetails"]["nodes"]):
 
-					overview_battle_id = base64.b64decode(child["id"]).decode('utf-8')
+					overview_battle_id         = base64.b64decode(child["id"]).decode('utf-8')
 					overview_battle_id_mutated = overview_battle_id.replace("BANKARA", "RECENT") # same battle, different screens
-					if overview_battle_id_mutated == battle_id: # found the battle ID in the other file
+
+					if overview_battle_id_mutated == battle_id_mutated: # found the battle ID in the other file
 
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
 						was_s_plus_before = len(full_rank) > 1 # true if "before" rank is s+
