@@ -1215,7 +1215,7 @@ def export_seed_json(skipprefetch=False):
 	'''Export a JSON file for use with Lean's seed checker at https://leanny.github.io/splat3seedchecker/.'''
 
 	try:
-		import mmh3
+		import pymmh3 as mmh3
 	except ModuleNotFoundError:
 		print("This function requires a Python module you don't have installed. " \
 			"Please run " + '`\033[91m' + "pip install -r requirements.txt" + '\033[0m`' + " and try again.")
