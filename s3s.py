@@ -10,7 +10,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.1.19"
+A_VERSION = "0.2.0"
 
 DEBUG = False
 
@@ -83,19 +83,26 @@ def write_config(tokens):
 	config_file.close()
 
 
-def headbutt():
+def headbutt(forcelang=None):
 	'''Returns a (dynamic!) header used for GraphQL requests.'''
+
+	if forcelang:
+		lang    = forcelang
+		country = forcelang[-2:]
+	else:
+		lang    = USER_LANG
+		country = USER_COUNTRY
 
 	graphql_head = {
 		'Authorization':    f'Bearer {BULLETTOKEN}', # update every time it's called with current global var
-		'Accept-Language':  USER_LANG,
+		'Accept-Language':  lang,
 		'User-Agent':       APP_USER_AGENT,
 		'X-Web-View-Ver':   iksm.get_web_view_ver(),
 		'Content-Type':     'application/json',
 		'Accept':           '*/*',
 		'Origin':           iksm.SPLATNET3_URL,
 		'X-Requested-With': 'com.nintendo.znca',
-		'Referer':          f'{iksm.SPLATNET3_URL}?lang={USER_LANG}&na_country={USER_COUNTRY}&na_lang={USER_LANG}',
+		'Referer':          f'{iksm.SPLATNET3_URL}?lang={lang}&na_country={country}&na_lang={lang}',
 		'Accept-Encoding':  'gzip, deflate'
 	}
 	return graphql_head
@@ -226,10 +233,14 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		if sha is not None:
 			if DEBUG:
 				print(f"* making query1 to {sha}")
+			lang = 'en-US' if sha == "CoopHistoryQuery" else None
 			sha = utils.translate_rid[sha]
 			battle_ids, job_ids = [], []
 
-			query1 = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+			query1 = requests.post(utils.GRAPHQL_URL,
+				data=utils.gen_graphql_body(sha),
+				headers=headbutt(forcelang=lang),
+				cookies=dict(_gtoken=GTOKEN))
 			query1_resp = json.loads(query1.text)
 			swim()
 
@@ -280,7 +291,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				for jid in job_ids:
 					query2_j = requests.post(utils.GRAPHQL_URL,
 						data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
-						headers=headbutt(),
+						headers=headbutt(forcelang='en-US'),
 						cookies=dict(_gtoken=GTOKEN))
 					query2_resp_j = json.loads(query2_j.text)
 					salmon_list.append(query2_resp_j)
@@ -314,13 +325,14 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 def update_salmon_profile():
 	''' Updates stat.ink Salmon Run stats/profile.'''
 
-	pass
+	pass # SR TODO
 
 	# prefetch_checks()
 
-	# old code - need stat.ink s3 support - TODO
-	# url = nintendo's api/coop_results...
-	# results_list = requests.get(url, headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+	# results_list = requests.post(utils.GRAPHQL_URL,
+	# 	data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryQuery"]),
+	# 	headers=headbutt(forcelang='en-US'),
+	# 	cookies=dict(_gtoken=GTOKEN))
 	# data = json.loads(results_list.text)
 	# profile = data["summary"]
 
@@ -330,10 +342,10 @@ def update_salmon_profile():
 	# 	"total_eggs":        profile["card"]["ikura_total"],
 	# 	"total_rescued":     profile["card"]["help_total"],
 	# 	"total_point":       profile["card"]["kuma_point_total"]
-	# 	# TODO - other new things - fish scales, xtrawave stuff?, etc.
+	# 	# other new things - total fish scales, kings defeated, current & total points?
 	# }
 
-	# url = "https://stat.ink/api/v2/salmon-stats" # TODO - need stat.ink s3 support
+	# url = "https://stat.ink/api/v2/salmon-stats"
 	# auth = {'Authorization': f'Bearer {API_KEY}'}
 	# updateprofile = requests.post(url, headers=auth, data=payload)
 
@@ -731,13 +743,233 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	return payload
 
 
-def prepare_job_result(battle, ismonitoring, isblackout, overview_data=None):
+def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	'''Converts the Nintendo JSON format for a Salmon Run job to the stat.ink one.'''
 
-	pass # stat.ink doesn't support SR yet
-	# combo of set_teammates() + salmon_post_shift() - mirrors prepare_battle_result()
-	# specify if private or not; also ensure SR results are formatted the same in post_result()!
-	# set payload["splatnet_json"]
+	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Salmon-%EF%BC%8D-Post
+	payload = {}
+	job = job["coopHistoryDetail"]
+
+	full_id = utils.b64d(job["id"])
+	payload["uuid"] = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id[-52:]))
+
+	payload["stage"] = utils.b64d(job["coopStage"]["id"])
+
+	payload["danger_rate"] = job["dangerRate"] * 100
+	payload["king_smell"] = job["smellMeter"]
+
+	waves_cleared = job["resultWave"] - 1 # resultWave = 0 if all normal waves cleared
+	payload["clear_waves"] = 3 if waves_cleared == -1 else waves_cleared
+
+	if payload["clear_waves"] < 0: # player dc'd
+		payload["clear_waves"] = None
+
+	elif payload["clear_waves"] != 3: # job defeat only
+		underperformed = False
+		for wave in job["waveResults"]:
+			if wave["teamDeliverCount"] < wave["deliverNorm"]:
+				underperformed = True
+		payload["fail_reason"] = "time_limit" if underperformed else "wipe_out"
+
+	# xtrawave only
+	# https://stat.ink/api-info/boss-salmonid3
+	if job["bossResult"]:
+		king_id = utils.b64d(job["bossResult"]["boss"]["id"])
+		if king_id == 23: # cohozuna
+			payload["king_salmonid"] = "yokozuna"
+
+		payload["clear_extra"] = "yes" if job["bossResult"]["hasDefeatBoss"] else "no"
+
+	# https://stat.ink/api-info/salmon-title3
+	payload["title_after"]     = utils.b64d(job["afterGrade"]["id"])
+	payload["title_exp_after"] = job["afterGradePoint"]
+
+	point_diff = 20 if payload["clear_waves"] == 3 else -30 + (10 * job["resultWave"]) # +20 for win or -(30-10w) for loss
+	if payload["title_exp_after"] - point_diff >= 0: # before exp isn't negative, i.e. no title change
+		payload["title_before"]     = payload["title_after"]
+		payload["title_exp_before"] = payload["title_exp_after"] - point_diff
+	else: # ranked up
+		payload["title_before"]     = payload["title_after"] - 1
+		# exp...
+
+	geggs = job["myResult"]["goldenDeliverCount"]
+	peggs = job["myResult"]["deliverCount"]
+	for player in job["memberResults"]:
+		geggs += player["goldenDeliverCount"]
+		peggs += player["deliverCount"]
+	payload["golden_eggs"] = geggs
+	payload["power_eggs"]  = peggs
+
+	if job["scale"]:
+		payload["gold_scale"]   = job["scale"]["gold"]
+		payload["silver_scale"] = job["scale"]["silver"]
+		payload["bronze_scale"] = job["scale"]["bronze"]
+
+	payload["job_score"] = job["jobScore"] # job score
+	payload["job_rate"]  = job["jobRate"]  # pay grade
+	payload["job_bonus"] = job["jobBonus"] # clear bonus
+	payload["job_point"] = job["jobPoint"] # your points = floor((score x rate) + bonus)
+	# note the current bug with "bonus" lol... https://github.com/frozenpandaman/s3s/wiki/%7C-splatnet-bugs
+
+	waves = []
+	for wave in job["waveResults"]:
+		wave_info = {}
+		wave_info["tide"]               = "low" if wave["waterLevel"] == 0 else "high" if wave["waterLevel"] == 2 else "normal"
+		wave_info["golden_quota"]       = wave["deliverNorm"]
+		wave_info["golden_delivered"]   = wave["teamDeliverCount"]
+		wave_info["golden_appearances"] = wave["goldenPopCount"]
+
+		if wave["eventWave"]:
+			event_id = utils.b64d(wave["eventWave"]["id"])
+			translate_occurrence = {
+				1: "rush",
+				2: "goldie_seeking",
+				3: "the_griller",
+				4: "the_mothership",
+				5: "fog",
+				6: "cohock_charge",
+				7: "giant_tornado",
+				8: "mudmouth_eruption"
+			}
+			wave_info["event"] = translate_occurrence[event_id]
+
+		translate_special = {
+			20006: "nicedama",
+			20007: "hopsonar",
+			20009: "megaphone51",
+			20010: "jetpack",
+			20012: "kanitank",
+			20013: "sameride",
+			20014: "tripletornado"
+		}
+		special_uses = {
+			"nicedama": 0,
+			"hopsonar": 0,
+			"megaphone51": 0,
+			"jetpack": 0,
+			"kanitank": 0,
+			"sameride": 0,
+			"tripletornado": 0,
+			"unknown": 0
+		}
+		for wep_use in wave["specialWeapons"]:
+			special_id = utils.b64d(wep_use["id"])
+			special_key = translate_special.get(special_id, "unknown")
+			special_uses[special_key] += 1 # increment value of the key each time it's found
+		wave_info["special_uses"] = special_uses
+
+		waves.append(wave_info)
+	payload["waves"] = waves
+
+	players = []
+	players_json = [job["myResult"]]
+	for teammate in job["memberResults"]:
+		players_json.append(teammate)
+
+	for player in players_json:
+		player_info = {}
+		player_info["me"] = "yes" if player["player"]["isMyself"] else "no"
+		player_info["name"] = player["player"]["name"]
+		player_info["number"] = player["player"]["nameId"]
+		player_info["splashtag_title"] = player["player"]["byname"]
+		player_info["golden_eggs"] = player["goldenDeliverCount"]
+		player_info["golden_assist"] = player["goldenAssistCount"]
+		player_info["power_eggs"] = player["deliverCount"]
+		player_info["rescue"] = player["rescueCount"]
+		player_info["rescued"] = player["rescuedCount"]
+		player_info["defeat_boss"] = player["defeatEnemyCount"]
+
+		dc_indicators = [
+			player_info["golden_eggs"],
+			player_info["power_eggs"],
+			player_info["rescue"],
+			player_info["rescued"],
+			player_info["defeat_boss"]
+		]
+		player_info["disconnected"] = "yes" if all(value == 0 for value in dc_indicators) else "no"
+
+		slop_num = utils.b64d(player["player"]["uniform"]["id"])
+		translate_slop = {
+			1: "orange",
+			2: "green",
+			3: "yellow",
+			4: "pink",
+			5: "blue",
+			6: "black",
+			7: "white"
+		}
+		player_info["uniform"] = translate_slop[slop_num]
+
+		try:
+			special_id = utils.b64d(player["specialWeapon"]["id"])
+			player_info["special"] = translate_special[special_id]
+		except TypeError: # player.specialWeapon is null - player dc'd
+			pass
+		except KeyError: # invalid special weapon - likely defaulted to '1' before it could be assigned
+			pass
+
+		weapons = []
+		for weapon in player["weapons"]: # should always be returned in in english due to headbutt() using forcelang
+			wep_string = weapon["name"].lower().replace(" ", "_").replace("-", "_").replace(".", "").replace("'", "")
+			if wep_string == "random": # NINTENDOOOOOOO
+				wep_string = None
+			weapons.append(wep_string)
+		player_info["weapons"] = weapons
+
+		players.append(player_info)
+	payload["players"] = players
+
+	# https://stat.ink/api-info/boss-salmonid3
+	bosses = {}
+	translate_boss = {
+		4:  "bakudan",
+		5:  "katapad",
+		6:  "teppan",
+		7:  "hebi",
+		8:  "tower",
+		9:  "mogura",
+		10: "koumori",
+		11: "hashira",
+		12: "diver",
+		13: "tekkyu",
+		14: "nabebuta",
+		15: "kin_shake",
+		17: "grill",
+		20: "doro_shake"
+	}
+	for boss in job["enemyResults"]:
+		boss_id  = utils.b64d(boss["enemy"]["id"])
+		boss_key = translate_boss[boss_id]
+		bosses[boss_key] = {
+			"appearances":    boss["popCount"],
+			"defeated":       boss["teamDefeatCount"],
+			"defeated_by_me": boss["defeatCount"]
+		}
+	payload["bosses"] = bosses
+
+	payload["start_at"] = utils.epoch_time(job["playedTime"])
+	payload["private"] = "yes" if not job["jobPoint"] else "no"
+
+	payload["big_run"] = "no" # SR TODO
+
+	if isblackout:
+		# fix payload
+		for player in payload["players"]:
+			if player["me"] == "no":
+				player["name"] = None
+				player["number"] = None
+				player["splashtag_title"] = None
+
+		# fix job json
+		for player in job["memberResults"]:
+			player["player"]["name"] = None
+			player["player"]["nameId"] = None
+			player["player"]["byname"] = None
+
+	payload["splatnet_json"] = json.dumps(job)
+	payload["automated"] = "yes"
+
+	return payload
 
 
 def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
@@ -749,12 +981,12 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 
 	if isinstance(data, list): # -o export format
 		try:
-			data = [x for x in data if x['data']['vsHistoryDetail'] is not None] # avoid {'data': {'vsHistoryDetail': None}} error
-			results = sorted(data, key=lambda d: d['data']['vsHistoryDetail']['playedTime'])
+			data = [x for x in data if x["data"]["vsHistoryDetail"] is not None] # avoid {"data": {"vsHistoryDetail": None}} error
+			results = sorted(data, key=lambda d: d["data"]["vsHistoryDetail"]["playedTime"])
 		except KeyError:
 			try:
-				data = [x for x in data if x['coopHistoryDetail'] is not None]
-				results = sorted(data, key=lambda d: d['data']['coopHistoryDetail']['playedTime'])
+				data = [x for x in data if x["data"]["coopHistoryDetail"] is not None]
+				results = sorted(data, key=lambda d: d["data"]["coopHistoryDetail"]["playedTime"])
 			except KeyError: # unsorted - shouldn't happen
 				print("(!) Uploading without chronologically sorting results")
 				results = data
@@ -768,8 +1000,10 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 	for i in range(len(results)):
 		if "vsHistoryDetail" in results[i]["data"]: # ink battle
 			payload = prepare_battle_result(results[i]["data"], ismonitoring, isblackout, overview_data)
+			which = "ink"
 		elif "coopHistoryDetail" in results[i]["data"]: # salmon run job
 			payload = prepare_job_result(results[i]["data"], ismonitoring, isblackout, overview_data)
+			which = "salmon"
 		else: # shouldn't happen
 			print("Ill-formatted JSON while uploading. Exiting.")
 			print('\nDebug info:')
@@ -780,7 +1014,8 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			continue
 
 		# should have been taken care of in fetch_json() but just in case...
-		if payload["lobby"] == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA):
+		if payload.get("lobby") == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA) or \
+			payload.get("private") == "yes" and utils.custom_key_exists("ignore_private", CONFIG_DATA): # SR version
 			continue
 
 		s3s_values = {'agent': '\u0073\u0033\u0073', 'agent_version': f'v{A_VERSION}'} # lol
@@ -794,8 +1029,12 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 		if istestrun:
 			payload["test"] = "yes"
 
-		# post
-		url = "https://stat.ink/api/v3/battle"
+		# POST
+		url = "https://stat.ink/api/v3"
+		if which == "ink":
+			url += "/battle"
+		elif which == "salmon":
+			url += "/salmon"
 		auth = {'Authorization': f'Bearer {API_KEY}', 'Content-Type': 'application/x-msgpack'}
 		postbattle = requests.post(url, headers=auth, data=msgpack.packb(payload), allow_redirects=False)
 
@@ -819,12 +1058,12 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			print(f"* time uploaded: {time_uploaded}; time now: {time_now}")
 
 		if postbattle.status_code != 201: # Created (or already exists)
-			print("Error uploading battle. Message from server:")
+			print(f"Error uploading {utils.set_noun(which)[:-1]}. Message from server:")
 			print(postbattle.content.decode('utf-8'))
 		elif time_uploaded <= time_now - 5: # give some leeway
-			print(f"Battle already uploaded - {headerloc}")
+			print(f"{utils.set_noun(which)[:-1].capitalize()} already uploaded - {headerloc}")
 		else: # 200 OK
-			print(f"Battle uploaded to {headerloc}")
+			print(f"{utils.set_noun(which)[:-1].capitalize()} uploaded to {headerloc}")
 
 
 def check_for_updates():
@@ -930,18 +1169,20 @@ def get_num_results(which):
 
 
 def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
-	'''Performs a GraphQL request for a single vsResultId/coopResultId and call post_result().'''
+	'''Performs a GraphQL request for a single vsResultId/coopHistoryDetailId and call post_result().'''
 
 	if noun in ("battles", "battle"):
 		dict_key  = "VsHistoryDetailQuery"
 		dict_key2 = "vsResultId"
+		lang = None
 	else: # noun == "jobs" or "job"
-		dict_key  = "CoopHistoryQuery"
-		dict_key2 = "coopResultId"
+		dict_key  = "CoopHistoryDetailQuery"
+		dict_key2 = "coopHistoryDetailId"
+		lang = 'en-US'
 
 	result_post = requests.post(utils.GRAPHQL_URL,
 			data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
-			headers=headbutt(),
+			headers=headbutt(forcelang=lang),
 			cookies=dict(_gtoken=GTOKEN))
 	result = json.loads(result_post.text)
 	post_result(result, False, isblackout, istestrun) # not monitoring mode
@@ -960,10 +1201,10 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 		urls.append("https://stat.ink/api/v3/s3s/uuid-list") # max 200 entries
 	else:
 		urls.append(None)
-	# if which == "both" or which == "salmon":
-		# urls.append("...")
-	# else:
-		# urls.append(None)
+	if which == "both" or which == "salmon":
+		urls.append("https://stat.ink/api/v3/salmon/uuid-list")
+	else:
+		urls.append(None)
 
 	noun = "battles" # first (and maybe only)
 	which = "ink"
@@ -985,14 +1226,22 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 			# same as code in -i section below...
 			for id in reversed(splatnet_ids):
 				full_id = utils.b64d(id)
-				old_uuid = full_id[-36:]
-				new_uuid = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:]))
 
-				if new_uuid in statink_uploads:
-					continue
-				if old_uuid in statink_uploads:
-					if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
+				if which == "ink":
+					old_battle_uuid = full_id[-36:]
+					new_battle_uuid = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:]))
+
+					if new_battle_uuid in statink_uploads:
 						continue
+					if old_battle_uuid in statink_uploads:
+						if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
+							continue
+
+				elif which == "salmon":
+					job_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id[-52:]))
+					if job_uuid in statink_uploads:
+						continue
+
 				if not printed:
 					printed = True
 					print(f"Previously-unuploaded {noun} detected. Uploading now...")
@@ -1071,8 +1320,8 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 			if num not in cached_jobs:
 				# get the full job data
 				result_post = requests.post(utils.GRAPHQL_URL,
-					data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopResultId", num),
-					headers=headbutt(),
+					data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", num),
+					headers=headbutt(forcelang='en-US'),
 					cookies=dict(_gtoken=GTOKEN))
 				result = json.loads(result_post.text)
 
@@ -1089,8 +1338,7 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 
 					stagename = result["data"]["coopHistoryDetail"]["coopStage"]["name"]
 					shortname = stagename.split(" ")[-1] # fine for salmon run stage names too
-					endtime = utils.epoch_time(result["data"]["coopHistoryDetail"]["playedTime"]) + \
-						result["data"]["coopHistoryDetail"]["duration"]
+					endtime = utils.epoch_time(result["data"]["coopHistoryDetail"]["playedTime"])
 
 					dt = datetime.datetime.fromtimestamp(endtime).strftime('%I:%M:%S %p').lstrip("0")
 					print(f"New job result detected at {dt}! ({shortname}, {outcome})")
@@ -1183,10 +1431,9 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 
 				print(f"{mirror_matches} mirror match{'' if mirror_matches == 1 else 'es'} against your Splatfest team.")
 
-		# SR TODO
-		# if which in ("salmon", "both"):
-		# 	print(f"Salmon Run: {job_successes} success{'' if job_successes == 1 else 'es'} and " \
-		# 		f"{job_failures} failure{'' if job_failures == 1 else 's'}.")
+		if which in ("salmon", "both"):
+			print(f"Salmon Run: {job_successes} success{'' if job_successes == 1 else 'es'} and " \
+				f"{job_failures} failure{'' if job_failures == 1 else 's'}.")
 
 		print("Bye!")
 
@@ -1297,7 +1544,7 @@ def parse_arguments():
 	parser.add_argument("-o", required=False, action="store_true",
 		help="export all possible results to local files")
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
-		help="upload local results; use `-i results.json overview.json`")
+		help="upload local results: `-i (coop_)results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
 	parser.add_argument("--getseed", required=False, action="store_true",
@@ -1403,9 +1650,11 @@ def main():
 	# manual json upload: -i flag
 	#############################
 	if filenames: # 2 files in list
-		if os.path.basename(filenames[0]) != "results.json" or os.path.basename(filenames[1]) != "overview.json":
+		if (os.path.basename(filenames[0]) != "results.json" \
+		and os.path.basename(filenames[0]) != "coop_results.json") \
+		or os.path.basename(filenames[1]) != "overview.json":
 			print("Must use the format " \
-				'\033[91m' + "-i path/to/results.json path/to/overview.json" + '\033[0m' + ". Exiting.")
+				'\033[91m' + "-i path/to/(coop_)results.json path/to/overview.json" + '\033[0m' + ". Exiting.")
 			sys.exit(1)
 		for filename in filenames:
 			if not os.path.exists(filename):
@@ -1415,7 +1664,7 @@ def main():
 			try:
 				data = json.load(data_file)
 			except ValueError:
-				print("Could not decode JSON object in results.json.")
+				print(f"Could not decode JSON object in {os.path.basename(filenames[0])}.")
 				sys.exit(1)
 		with open(filenames[1]) as data_file:
 			try:
@@ -1427,28 +1676,41 @@ def main():
 
 		# only upload unuploaded results
 		auth = {'Authorization': f'Bearer {API_KEY}'}
-		resp = requests.get("https://stat.ink/api/v3/s3s/uuid-list", headers=auth)
+		resp_b = requests.get("https://stat.ink/api/v3/s3s/uuid-list", headers=auth)
+		resp_j = requests.get("https://stat.ink/api/v3/salmon/uuid-list", headers=auth)
 		try:
-			statink_uploads = json.loads(resp.text)
+			statink_uploads = json.loads(resp_b.text)
+			statink_uploads.extend(json.loads(resp_j.text))
 		except:
 			print(f"Encountered an error while checking recently-uploaded data. Is stat.ink down?")
 			sys.exit(1)
 
 		to_upload = []
-		for battle in data:
-			if battle["data"]["vsHistoryDetail"] is not None:
-				full_id = utils.b64d(battle["data"]["vsHistoryDetail"]["id"])
-				old_uuid = full_id[-36:] # not unique because nintendo hates us
-				new_uuid = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:]))
+		for result in data:
+			try: # ink battle
+				if result["data"]["vsHistoryDetail"] is not None:
+					full_id = utils.b64d(result["data"]["vsHistoryDetail"]["id"])
+					old_uuid = full_id[-36:] # not unique because nintendo hates us
+					new_uuid = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:]))
 
-				if new_uuid in statink_uploads:
-					print("Skipping already-uploaded battle.")
-					continue
-				if old_uuid in statink_uploads:
-					if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
+					if new_uuid in statink_uploads:
 						print("Skipping already-uploaded battle.")
 						continue
-				to_upload.append(battle)
+					if old_uuid in statink_uploads:
+						if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
+							print("Skipping already-uploaded battle.")
+							continue
+					to_upload.append(result)
+
+			except KeyError: # salmon run job
+				if result["data"]["coopHistoryDetail"] is not None:
+					full_id = utils.b64d(result["data"]["coopHistoryDetail"]["id"])
+					the_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id[-52:]))
+
+					if the_uuid in statink_uploads:
+						print("Skipping already-uploaded job.")
+						continue
+					to_upload.append(result)
 
 		post_result(to_upload, False, blackout, test_run, overview_data=overview_file) # one or multiple; monitoring mode = False
 		sys.exit(0)
@@ -1461,6 +1723,9 @@ def main():
 		update_salmon_profile()
 
 	if check_old:
+		if which == "both":
+			prefetch_checks(printout=True)
+			skipprefetch = True
 		check_if_missing(which, blackout, test_run, skipprefetch) # monitoring mode hasn't begun yet
 		print()
 

@@ -7,9 +7,10 @@ import requests
 from bs4 import BeautifulSoup
 import iksm
 
-SPLATNET3_URL = iksm.SPLATNET3_URL
-GRAPHQL_URL   = f'{SPLATNET3_URL}/api/graphql'
-S3S_NAMESPACE = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
+SPLATNET3_URL    = iksm.SPLATNET3_URL
+GRAPHQL_URL      = f'{SPLATNET3_URL}/api/graphql'
+S3S_NAMESPACE    = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
+SALMON_NAMESPACE = uuid.UUID('f1911910-605e-11ed-a622-7085c2057a9d')
 
 SUPPORTED_KEYS = [
 	"ignore_private",
@@ -89,6 +90,10 @@ def b64d(string):
 	thing_id = thing_id.replace("VsMode-", "")
 	thing_id = thing_id.replace("CoopStage-", "")
 	thing_id = thing_id.replace("CoopGrade-", "")
+	thing_id = thing_id.replace("CoopEnemy-", "")
+	thing_id = thing_id.replace("CoopEventWave-", "")
+	thing_id = thing_id.replace("CoopUniform-", "")
+	thing_id = thing_id.replace("SpecialWeapon-", "")
 
 	if "Weapon-" in thing_id:
 		thing_id = thing_id.replace("Weapon-", "")
