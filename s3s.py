@@ -647,7 +647,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
 						was_s_plus_before = len(full_rank) > 1 # true if "before" rank is s+
-						
+
 						payload["rank_before"] = full_rank[0]
 						if was_s_plus_before:
 							payload["rank_before_s_plus"] = int(full_rank[1])
