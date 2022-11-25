@@ -5,6 +5,7 @@
 # License: GPLv3
 
 import argparse, base64, datetime, json, os, shutil, re, requests, sys, time, uuid
+from concurrent.futures import ThreadPoolExecutor
 from subprocess import call
 import msgpack
 from packaging import version
@@ -48,6 +49,8 @@ GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64 j
 BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64
 SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
 F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
+
+thread_pool = ThreadPoolExecutor(max_workers=2)
 
 # SET HTTP HEADERS
 DEFAULT_USER_AGENT = 'Mozilla/5.0 (Linux; Android 11; Pixel 5) ' \
@@ -279,23 +282,9 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				ink_list.extend(battle_ids)
 				salmon_list.extend(job_ids)
 			else: # ALL DATA - TAKES A LONG TIME
-				for bid in battle_ids:
-					query2_b = requests.post(utils.GRAPHQL_URL,
-						data=utils.gen_graphql_body(utils.translate_rid["VsHistoryDetailQuery"], "vsResultId", bid),
-						headers=headbutt(),
-						cookies=dict(_gtoken=GTOKEN))
-					query2_resp_b = json.loads(query2_b.text)
-					ink_list.append(query2_resp_b)
-					swim()
+				ink_list.extend(thread_pool.map(fetch_detailed_result, [True]*len(battle_ids), battle_ids, [swim]*len(battle_ids)))
 
-				for jid in job_ids:
-					query2_j = requests.post(utils.GRAPHQL_URL,
-						data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", jid),
-						headers=headbutt(forcelang='en-US'),
-						cookies=dict(_gtoken=GTOKEN))
-					query2_resp_j = json.loads(query2_j.text)
-					salmon_list.append(query2_resp_j)
-					swim()
+				salmon_list.extend(thread_pool.map(fetch_detailed_result, [False]*len(job_ids), job_ids, [swim]*len(job_ids)))
 
 				if needs_sorted: # put regular, bankara, and private in order, since they were exported in sequential chunks
 					try:
@@ -320,6 +309,22 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 		else:
 			combined = ink_list + salmon_list
 			return combined
+
+def fetch_detailed_result(is_vs_history, history_id, swim):
+	'''Helper function for fetch_json().'''
+
+	sha = "VsHistoryDetailQuery" if is_vs_history else "CoopHistoryDetailQuery"
+	varname = "vsResultId" if is_vs_history else "coopHistoryDetailId"
+	lang = None if is_vs_history else 'en-US'
+
+	query2 = requests.post(utils.GRAPHQL_URL,
+		data=utils.gen_graphql_body(utils.translate_rid[sha], varname, history_id),
+		headers=headbutt(forcelang=lang),
+		cookies=dict(_gtoken=GTOKEN))
+	query2_resp = json.loads(query2.text)
+
+	swim()
+	return query2_resp
 
 
 def update_salmon_profile():
@@ -642,7 +647,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
 						was_s_plus_before = len(full_rank) > 1 # true if "before" rank is s+
-						
+
 						payload["rank_before"] = full_rank[0]
 						if was_s_plus_before:
 							payload["rank_before_s_plus"] = int(full_rank[1])
@@ -1753,6 +1758,8 @@ def main():
 		noun = utils.set_noun(which)
 		for hash in results:
 			fetch_and_upload_single_result(hash, noun, blackout, test_run) # not monitoring mode
+
+	thread_pool.shutdown(wait=True)
 
 
 if __name__ == "__main__":
