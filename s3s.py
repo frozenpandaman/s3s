@@ -769,13 +769,6 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	if payload["clear_waves"] < 0: # player dc'd
 		payload["clear_waves"] = None
 
-	elif payload["clear_waves"] != 3: # job defeat only
-		underperformed = False
-		for wave in job["waveResults"]:
-			if wave["teamDeliverCount"] < wave["deliverNorm"]:
-				underperformed = True
-		payload["fail_reason"] = "time_limit" if underperformed else "wipe_out"
-
 	# xtrawave only
 	# https://stat.ink/api-info/boss-salmonid3
 	if job["bossResult"]:
