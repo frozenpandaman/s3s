@@ -953,7 +953,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	payload["bosses"] = bosses
 
 	payload["start_at"] = utils.epoch_time(job["playedTime"])
-	payload["private"] = "yes" if not job["jobPoint"] else "no"
+	payload["private"] = "yes" if job["jobPoint"] is None else "no"
 
 	payload["big_run"] = "no" # SR TODO
 
