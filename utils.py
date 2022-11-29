@@ -26,6 +26,7 @@ translate_rid = {
 	'RegularBattleHistoriesQuery':       'd5b795d09e67ce153e622a184b7e7dfa', # INK / blank vars - query1
 	'BankaraBattleHistoriesQuery':       'de4754588109b77dbcb90fbe44b612ee', # INK / blank vars - query1
 	'PrivateBattleHistoriesQuery':       '1d6ed57dc8b801863126ad4f351dfb9a', # INK / blank vars - query1
+	'XBattleHistoriesQuery':             '45c74fefb45a49073207229ca65f0a62', # INK / blank vars - query1
 	'VsHistoryDetailQuery':              '291295ad311b99a6288fc95a5c4cb2d2', # INK / req "vsResultId" - query2
 	'CoopHistoryQuery':                  '6ed02537e4a65bbb5e7f4f23092f6154', # SR  / blank vars - query1
 	'CoopHistoryDetailQuery':            '3cc5f826a6646b85f3ae45db51bd0707', # SR  / req "coopHistoryDetailId" - query2

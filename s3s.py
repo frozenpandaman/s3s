@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.1"
+A_VERSION = "0.2.2"
 
 DEBUG = False
 
@@ -217,6 +217,8 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			queries.append("RegularBattleHistoriesQuery")
 		if specific in (True, "anarchy"):
 			queries.append("BankaraBattleHistoriesQuery")
+		if specific in (True, "x"):
+			queries.append("XBattleHistoriesQuery")
 		if specific in (True, "private") and not utils.custom_key_exists("ignore_private", CONFIG_DATA):
 			queries.append("PrivateBattleHistoriesQuery")
 		else:
@@ -496,6 +498,10 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 			payload["lobby"] = "splatfest_open"
 		elif utils.b64d(battle["vsMode"]["id"]) == 7:
 			payload["lobby"] = "splatfest_challenge" # pro
+	elif mode == "X_MATCH":
+		pass # TODO
+	elif mode == "LEAGUE":
+		pass # TODO
 
 	## RULE ##
 	##########
@@ -954,9 +960,15 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	payload["bosses"] = bosses
 
 	payload["start_at"] = utils.epoch_time(job["playedTime"])
-	payload["private"] = "yes" if not job["jobPoint"] else "no"
 
-	payload["big_run"] = "no" # SR TODO
+	job_rule = job["rule"]
+	if job_rule in ("PRIVATE_CUSTOM", "PRIVATE_SCENARIO"):
+		payload["private"] = "yes"
+	else:
+		payload["private"] = "no"
+
+	# payload["big_run"] = "yes" if job_rule == "BIG_RUN" else "no"
+	payload["big_run"] = "no" # TODO once stat.ink supports it
 
 	if isblackout:
 		# fix payload
@@ -1150,8 +1162,8 @@ def get_num_results(which):
 
 	noun = utils.set_noun(which)
 	try:
-		if which == "ink": # TODO update '150' numbers when x battles & league released
-			print("Note: 50 recent battles of each type (up to 150 total) may be uploaded by instead manually exporting data with " \
+		if which == "ink": # TODO update '200' number when league released
+			print("Note: 50 recent battles of each type (up to 200 total) may be uploaded by instead manually exporting data with " \
 				'\033[91m' + "-o" + '\033[0m' + ".\n")
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
 	except ValueError:
@@ -1166,7 +1178,7 @@ def get_num_results(which):
 		elif which == "ink":
 			print("\nIn this mode, s3s can only fetch the 50 most recent battles (of any type) at once. " \
 				"To export & upload the 50 most recent battles of each type " \
-				"(Regular, Anarchy, and Private) for up to 150 results total, run the script with " \
+				"(Regular, Anarchy, X, and Private) for up to 200 results total, run the script with " \
 				'\033[91m' + "-o" + '\033[0m' + " and then " \
 				'\033[91m' + "-i results.json overview.json" + '\033[0m' + ".")
 		sys.exit(0)
