@@ -310,6 +310,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			combined = ink_list + salmon_list
 			return combined
 
+
 def fetch_detailed_result(is_vs_history, history_id, swim):
 	'''Helper function for fetch_json().'''
 
@@ -871,9 +872,9 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	for teammate in job["memberResults"]:
 		players_json.append(teammate)
 
-	for player in players_json:
+	for i, player in enumerate(players_json):
 		player_info = {}
-		player_info["me"] = "yes" if player["player"]["isMyself"] else "no"
+		player_info["me"] = "yes" if i == 0 else "no"
 		player_info["name"] = player["player"]["name"]
 		player_info["number"] = player["player"]["nameId"]
 		player_info["splashtag_title"] = player["player"]["byname"]
@@ -906,8 +907,8 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 		player_info["uniform"] = translate_slop[slop_num]
 
 		try:
-			special_id = utils.b64d(player["specialWeapon"]["id"])
-			player_info["special"] = translate_special[special_id]
+			special_id =
+			player_info["special"] = translate_special[player["specialWeapon"]["weaponId"]]
 		except TypeError: # player.specialWeapon is null - player dc'd
 			pass
 		except KeyError: # invalid special weapon - likely defaulted to '1' before it could be assigned
