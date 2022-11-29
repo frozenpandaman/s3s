@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.0"
+A_VERSION = "0.2.2"
 
 DEBUG = False
 
@@ -768,6 +768,11 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 
 	if payload["clear_waves"] < 0: # player dc'd
 		payload["clear_waves"] = None
+
+	elif payload["clear_waves"] != 3: # job failure
+		last_wave = job["waveResults"][payload["clear_waves"]]
+		if last_wave["teamDeliverCount"] >= last_wave["deliverNorm"]: # delivered more than quota, but still failed
+			payload["fail_reason"] = "wipe_out"
 
 	# xtrawave only
 	# https://stat.ink/api-info/boss-salmonid3
