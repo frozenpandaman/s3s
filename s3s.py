@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.0"
+A_VERSION = "0.2.1"
 
 DEBUG = False
 
@@ -757,7 +757,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	job = job["coopHistoryDetail"]
 
 	full_id = utils.b64d(job["id"])
-	payload["uuid"] = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id[-52:]))
+	payload["uuid"] = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id))
 
 	payload["stage"] = utils.b64d(job["coopStage"]["id"])
 
@@ -1244,9 +1244,13 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 							continue
 
 				elif which == "salmon":
-					job_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id[-52:]))
-					if job_uuid in statink_uploads:
+					old_job_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id[-52:])) # used to do it incorrectly
+					new_job_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id))
+					if new_job_uuid in statink_uploads:
 						continue
+					if old_job_uuid in statink_uploads: # extremely low chance of conflicts... but allow force uploading if so
+						if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
+							continue
 
 				if not printed:
 					printed = True
