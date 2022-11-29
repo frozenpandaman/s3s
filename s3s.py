@@ -907,8 +907,8 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 		player_info["uniform"] = translate_slop[slop_num]
 
 		try:
-			special_id =
-			player_info["special"] = translate_special[player["specialWeapon"]["weaponId"]]
+			special_id = player["specialWeapon"]["weaponId"]
+			player_info["special"] = translate_special[special_id]
 		except TypeError: # player.specialWeapon is null - player dc'd
 			pass
 		except KeyError: # invalid special weapon - likely defaulted to '1' before it could be assigned
