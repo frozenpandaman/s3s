@@ -10,7 +10,7 @@ S3S_VERSION           = "unknown"
 NSOAPP_VERSION        = "unknown"
 NSOAPP_VER_FALLBACK   = "2.3.1"
 WEB_VIEW_VERSION      = "unknown"
-WEB_VIEW_VER_FALLBACK = "1.0.0-433ec0e8" # fallback for current splatnet 3 ver
+WEB_VIEW_VER_FALLBACK = "2.0.0-8a061f6c" # fallback for current splatnet 3 ver
 SPLATNET3_URL         = "https://api.lp1.av5ja.srv.nintendo.net"
 
 # functions in this file & call stack:
@@ -101,7 +101,7 @@ def get_web_view_ver(bhead=[], gtoken=""):
 		if main_js_body.status_code != 200:
 			return WEB_VIEW_VER_FALLBACK
 
-		pattern = r"\b(?P<revision>[0-9a-f]{40})\b.*revision_info_not_set\"\),.*?=\"(?P<version>\d+\.\d+\.\d+)"
+		pattern = r"\b(?P<revision>[0-9a-f]{40})\b[\S]*?void 0[\S]*?\"revision_info_not_set\"\}`,.*?=`(?P<version>\d+\.\d+\.\d+)-"
 		match = re.search(pattern, main_js_body.text)
 		if match is None:
 			return WEB_VIEW_VER_FALLBACK
