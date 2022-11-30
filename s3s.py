@@ -1084,7 +1084,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 		if postbattle.status_code != 201: # Created (or already exists)
 			print(f"Error uploading {utils.set_noun(which)[:-1]}.")
 			detail_type = "vsHistoryDetail" if which == "ink" else "coopHistoryDetail"
-			result_id = data["data"][detail_type]["id"]
+			result_id = results[i]["data"][detail_type]["id"]
 			print(f"{utils.set_noun(which)[:-1].capitalize()} ID: {result_id}")
 			print("Message from server:")
 			print(postbattle.content.decode('utf-8'))
