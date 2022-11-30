@@ -1307,7 +1307,7 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 					foundany = True
 					if result["data"]["vsHistoryDetail"]["myTeam"]["judgement"] == "WIN":
 						outcome = "Victory"
-					elif result["data"]["vsHistoryDetail"]["myTeam"]["judgement"] == "LOSE":
+					elif result["data"]["vsHistoryDetail"]["myTeam"]["judgement"] in ("LOSE", "DEEMED_LOSE", "EXEMPTED_LOSE"):
 						outcome = "Defeat"
 					else:
 						outcome = "Draw"
