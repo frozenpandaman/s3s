@@ -769,6 +769,13 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	full_id = utils.b64d(job["id"])
 	payload["uuid"] = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id))
 
+	job_rule = job["rule"]
+	if job_rule in ("PRIVATE_CUSTOM", "PRIVATE_SCENARIO"):
+		payload["private"] = "yes"
+	else:
+		payload["private"] = "yes" if job["jobPoint"] is None else "no"
+	is_private = True if payload["private"] == "yes" else False
+
 	payload["stage"] = utils.b64d(job["coopStage"]["id"])
 
 	payload["danger_rate"] = job["dangerRate"] * 100
@@ -795,8 +802,9 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 		payload["clear_extra"] = "yes" if job["bossResult"]["hasDefeatBoss"] else "no"
 
 	# https://stat.ink/api-info/salmon-title3
-	payload["title_after"]     = utils.b64d(job["afterGrade"]["id"])
-	payload["title_exp_after"] = job["afterGradePoint"]
+	if not is_private:
+		payload["title_after"]     = utils.b64d(job["afterGrade"]["id"])
+		payload["title_exp_after"] = job["afterGradePoint"]
 
 	point_diff = 20 if payload["clear_waves"] == 3 else -30 + (10 * job["resultWave"]) # +20 for win or -(30-10w) for loss
 	if payload["title_exp_after"] - point_diff >= 0: # before exp isn't negative, i.e. no title change
@@ -914,13 +922,15 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 		}
 		player_info["uniform"] = translate_slop[slop_num]
 
-		try:
-			special_id = player["specialWeapon"]["weaponId"]
-			player_info["special"] = translate_special[special_id]
-		except TypeError: # player.specialWeapon is null - player dc'd
-			pass
-		except KeyError: # invalid special weapon - likely defaulted to '1' before it could be assigned
-			pass
+		if player["specialWeapon"]: # if null, player dc'd
+			try:
+				special_id = player["specialWeapon"]["weaponId"] # post-v2.0.0 key
+			except KeyError:
+				special_id = utils.b64d(player["specialWeapon"]["id"])
+			try:
+				player_info["special"] = translate_special[special_id]
+			except KeyError: # invalid special weapon - likely defaulted to '1' before it could be assigned
+				pass
 
 		weapons = []
 		for weapon in player["weapons"]: # should always be returned in in english due to headbutt() using forcelang
@@ -962,12 +972,6 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	payload["bosses"] = bosses
 
 	payload["start_at"] = utils.epoch_time(job["playedTime"])
-
-	job_rule = job["rule"]
-	if job_rule in ("PRIVATE_CUSTOM", "PRIVATE_SCENARIO"):
-		payload["private"] = "yes"
-	else:
-		payload["private"] = "yes" if job["jobPoint"] is None else "no"
 
 	# payload["big_run"] = "yes" if job_rule == "BIG_RUN" else "no"
 	payload["big_run"] = "no" # TODO once stat.ink supports it
