@@ -967,7 +967,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 	if job_rule in ("PRIVATE_CUSTOM", "PRIVATE_SCENARIO"):
 		payload["private"] = "yes"
 	else:
-		payload["private"] = "no"
+		payload["private"] = "yes" if job["jobPoint"] is None else "no"
 
 	# payload["big_run"] = "yes" if job_rule == "BIG_RUN" else "no"
 	payload["big_run"] = "no" # TODO once stat.ink supports it
