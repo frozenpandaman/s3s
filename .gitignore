@@ -1,2 +1,5 @@
 config.txt
 *.pyc
+.DS_Store
+dist
+.venv
