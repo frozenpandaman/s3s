@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "s3s"
+version = "0.2.2"
+description = "s3s is a script that uploads Splatoon 3 battle data from the SplatNet 3 service (part of the Nintendo Switch Online app) to stat.ink, a site for recording, visualizing, and aggregating statistics from the Splatoon series of games."
+authors = ["frozenpanda"]
+license = "GPL3"
+readme = "README.md"
+
+[tool.poetry.scripts]
+s3s = "s3s.s3s:main"
+
+[tool.poetry.dependencies]
+python = "^3.7"
+beautifulsoup4 = "^4.11.1"
+msgpack-python = "^0.5.6"
+packaging = "^21.3"
+pymmh3 = "^0.0.5"
+requests = "^2.28.1"
+
+[tool.poetry.group.dev.dependencies]
+autopep8 = "^2.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
