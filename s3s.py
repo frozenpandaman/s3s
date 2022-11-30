@@ -806,13 +806,13 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 		payload["title_after"]     = utils.b64d(job["afterGrade"]["id"])
 		payload["title_exp_after"] = job["afterGradePoint"]
 
-	point_diff = 20 if payload["clear_waves"] == 3 else -30 + (10 * job["resultWave"]) # +20 for win or -(30-10w) for loss
-	if payload["title_exp_after"] - point_diff >= 0: # before exp isn't negative, i.e. no title change
-		payload["title_before"]     = payload["title_after"]
-		payload["title_exp_before"] = payload["title_exp_after"] - point_diff
-	else: # ranked up
-		payload["title_before"]     = payload["title_after"] - 1
-		# exp...
+		point_diff = 20 if payload["clear_waves"] == 3 else -30 + (10 * job["resultWave"]) # +20 for win or -(30-10w) for loss
+		if payload["title_exp_after"] - point_diff >= 0: # before exp isn't negative, i.e. no title change
+			payload["title_before"]     = payload["title_after"]
+			payload["title_exp_before"] = payload["title_exp_after"] - point_diff
+		else: # ranked up
+			payload["title_before"]     = payload["title_after"] - 1
+			# exp...
 
 	geggs = job["myResult"]["goldenDeliverCount"]
 	peggs = job["myResult"]["deliverCount"]
