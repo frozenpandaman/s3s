@@ -395,8 +395,8 @@ def get_bullet(web_service_token, app_user_agent, user_lang, user_country):
 		bullet_token = bullet_resp["bulletToken"]
 	except (json.decoder.JSONDecodeError, TypeError):
 		print("Got non-JSON response from Nintendo (in api/bullet_tokens step):")
-		print(bullet_resp)
-		sys.exit(1)
+		print(r.text)
+		bullet_token = ""
 	except:
 		print("Error from Nintendo (in api/bullet_tokens step):")
 		print(json.dumps(bullet_resp, indent=2))

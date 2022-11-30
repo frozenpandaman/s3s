@@ -170,7 +170,7 @@ def gen_new_tokens(reason, force=False):
 		print("Attempting to generate new gtoken and bulletToken...")
 		new_gtoken, acc_name, acc_lang, acc_country = iksm.get_gtoken(F_GEN_URL, SESSION_TOKEN, A_VERSION)
 		new_bullettoken = iksm.get_bullet(new_gtoken, APP_USER_AGENT, acc_lang, acc_country)
-	CONFIG_DATA["gtoken"] = new_gtoken # valid for 2 hours
+	CONFIG_DATA["gtoken"] = new_gtoken # valid for 6 hours
 	CONFIG_DATA["bullettoken"] = new_bullettoken # valid for 2 hours
 
 	global USER_LANG
@@ -180,6 +180,10 @@ def gen_new_tokens(reason, force=False):
 
 	write_config(CONFIG_DATA)
 
+	if new_bullettoken == "":
+		print("Wrote gtoken to config.txt, but could not generate bulletToken.")
+		print("Is SplatNet 3 undergoing maintenance?")
+		sys.exit(1)
 	if manual_entry:
 		print("Wrote tokens to config.txt.\n") # and updates acc_country if necessary...
 	else:
