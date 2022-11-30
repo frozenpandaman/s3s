@@ -1726,18 +1726,24 @@ def main():
 						continue
 					if old_uuid in statink_uploads:
 						if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
-							print("Skipping already-uploaded battle.")
+							print("Skipping already-uploaded battle (use the `force_uploads` config key to override).")
 							continue
 					to_upload.append(result)
 
 			except KeyError: # salmon run job
 				if result["data"]["coopHistoryDetail"] is not None:
 					full_id = utils.b64d(result["data"]["coopHistoryDetail"]["id"])
-					the_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id[-52:]))
+					old_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id[-52:]))
+					new_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id))
 
-					if the_uuid in statink_uploads:
+					if new_uuid in statink_uploads:
 						print("Skipping already-uploaded job.")
 						continue
+					if old_uuid in statink_uploads:
+						if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
+							print("Skipping already-uploaded job (use the `force_uploads` config key to override).")
+							continue
+
 					to_upload.append(result)
 
 		post_result(to_upload, False, blackout, test_run, overview_data=overview_file) # one or multiple; monitoring mode = False
