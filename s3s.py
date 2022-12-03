@@ -283,6 +283,12 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
 					for job in shift["historyDetails"]["nodes"]:
 						job_ids.append(job["id"])
+			# ink battles - latest 50 x battles
+			elif "xBattleHistories" in query1_resp["data"]:
+				needs_sorted = True
+				for battle_group in query1_resp["data"]["xBattleHistories"]["historyGroups"]["nodes"]:
+					for battle in battle_group["historyDetails"]["nodes"]:
+						battle_ids.append(battle["id"])
 
 			if numbers_only:
 				ink_list.extend(battle_ids)
@@ -503,7 +509,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		elif utils.b64d(battle["vsMode"]["id"]) == 7:
 			payload["lobby"] = "splatfest_challenge" # pro
 	elif mode == "X_MATCH":
-		pass # TODO
+		payload["lobby"] = "xmatch"
 	elif mode == "LEAGUE":
 		pass # TODO
 
@@ -705,6 +711,55 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 									print(f'* rank_exp_change: {parent["bankaraMatchChallenge"]["earnedUdemaePoint"]}')
 								else:
 									print(f'* rank_exp_change: 0')
+
+						break # found the child ID, no need to continue
+
+	if mode == "X_MATCH":
+		try:
+			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
+			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
+		except: # draw - 'result' is null
+			pass
+
+		if battle["xMatch"]["lastXPower"] is not None:
+			payload["x_power_before"] = battle["xMatch"]["lastXPower"]
+
+		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
+
+		battle_id         = base64.b64decode(battle["id"]).decode('utf-8')
+		battle_id_mutated = battle_id.replace("XMATCH", "RECENT")
+
+		if overview_data is None: # no passed in file with -i
+			overview_post = requests.post(utils.GRAPHQL_URL,
+				data=utils.gen_graphql_body(utils.translate_rid["XBattleHistoriesQuery"]),
+				headers=headbutt(),
+				cookies=dict(_gtoken=GTOKEN))
+			try:
+				overview_data = [json.loads(overview_post.text)] # make the request in real-time in attempt to get rank, etc.
+			except:
+				overview_data = None
+				print("Failed to get recent X battles. Proceeding without information on current rank.")
+		if overview_data is not None:
+			for screen in overview_data:
+				if "xBattleHistories" in screen["data"]:
+					x_list = screen["data"]["xBattleHistories"]["historyGroups"]["nodes"]
+					break
+			for parent in x_list: # groups in overview (x) JSON/screen
+				for idx, child in enumerate(parent["historyDetails"]["nodes"]):
+
+					overview_battle_id         = base64.b64decode(child["id"]).decode('utf-8')
+					overview_battle_id_mutated = overview_battle_id.replace("XMATCH", "RECENT") # same battle, different screens
+
+					if overview_battle_id_mutated == battle_id_mutated: # found the battle ID in the other file
+
+						if parent["xMatchMeasurement"]["state"] == "COMPLETED" and idx == 0:
+							payload["x_power_after"] = parent["xMatchMeasurement"]["xPowerAfter"]
+
+						if DEBUG:
+							print(f'* {battle["myTeam"]["judgement"]} {idx}')
+							print(f'* x_power_before: {payload["x_power_before"] if "x_power_before" in payload else None}')
+							if "x_power_after" in payload:
+								print(f'* x_power_after: {payload["x_power_after"]}')
 
 						break # found the child ID, no need to continue
 
