@@ -860,8 +860,11 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 
 			if overview_data: # passed in a file, so no web request needed
 				if prevresult:
-					payload["title_before"] = utils.b64d(prevresult["coopHistoryDetail"]["afterGrade"]["id"])
-					payload["title_exp_before"] = prevresult["coopHistoryDetail"]["afterGradePoint"]
+					try:
+						payload["title_before"] = utils.b64d(prevresult["coopHistoryDetail"]["afterGrade"]["id"])
+						payload["title_exp_before"] = prevresult["coopHistoryDetail"]["afterGradePoint"]
+					except KeyError:
+						pass # private job or disconnect
 			else:
 				prev_job_post = requests.post(utils.GRAPHQL_URL,
 					data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", prev_job_id),
@@ -869,8 +872,11 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 					cookies=dict(_gtoken=GTOKEN))
 				prev_job = json.loads(prev_job_post.text)
 
-				payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
-				payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
+				try:
+					payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
+					payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
+				except:
+					pass # private job or disconnect, or the json was invalid (expired job) or something
 
 	geggs = job["myResult"]["goldenDeliverCount"]
 	peggs = job["myResult"]["deliverCount"]
@@ -1427,7 +1433,7 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 				result = json.loads(result_post.text)
 
 				if result["data"]["coopHistoryDetail"]["jobPoint"] == None \
-				and utils.custom_key_exists("ignore_private", CONFIG_DATA):
+				and utils.custom_key_exists("ignore_private", CONFIG_DATA): # works pre- and post-2.0.0
 					pass
 				else:
 					foundany = True
