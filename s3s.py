@@ -855,21 +855,22 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 		payload["title_exp_after"] = job["afterGradePoint"]
 
 		# we're never certain of points gained - could be 20, but also 0 if playing w/ different titled friends
-		prev_job_id = job["previousHistoryDetail"]["id"]
+		if job.get("previousHistoryDetail") != None:
+			prev_job_id = job["previousHistoryDetail"]["id"]
 
-		if overview_data: # passed in a file, so no web request needed
-			if prevresult:
-				payload["title_before"] = utils.b64d(prevresult["coopHistoryDetail"]["afterGrade"]["id"])
-				payload["title_exp_before"] = prevresult["coopHistoryDetail"]["afterGradePoint"]
-		else:
-			prev_job_post = requests.post(utils.GRAPHQL_URL,
-				data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", prev_job_id),
-				headers=headbutt(forcelang='en-US'),
-				cookies=dict(_gtoken=GTOKEN))
-			prev_job = json.loads(prev_job_post.text)
+			if overview_data: # passed in a file, so no web request needed
+				if prevresult:
+					payload["title_before"] = utils.b64d(prevresult["coopHistoryDetail"]["afterGrade"]["id"])
+					payload["title_exp_before"] = prevresult["coopHistoryDetail"]["afterGradePoint"]
+			else:
+				prev_job_post = requests.post(utils.GRAPHQL_URL,
+					data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", prev_job_id),
+					headers=headbutt(forcelang='en-US'),
+					cookies=dict(_gtoken=GTOKEN))
+				prev_job = json.loads(prev_job_post.text)
 
-			payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
-			payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
+				payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
+				payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
 
 	geggs = job["myResult"]["goldenDeliverCount"]
 	peggs = job["myResult"]["deliverCount"]
