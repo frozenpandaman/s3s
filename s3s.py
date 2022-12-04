@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.2"
+A_VERSION = "0.2.3"
 
 DEBUG = False
 
@@ -271,6 +271,12 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				for battle_group in query1_resp["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
+			# ink battles - latest 50 x battles
+			elif "xBattleHistories" in query1_resp["data"]:
+				needs_sorted = True
+				for battle_group in query1_resp["data"]["xBattleHistories"]["historyGroups"]["nodes"]:
+					for battle in battle_group["historyDetails"]["nodes"]:
+						battle_ids.append(battle["id"])
 			# ink battles - latest 50 private battles
 			elif "privateBattleHistories" in query1_resp["data"] \
 			and not utils.custom_key_exists("ignore_private", CONFIG_DATA):
@@ -278,17 +284,12 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				for battle_group in query1_resp["data"]["privateBattleHistories"]["historyGroups"]["nodes"]:
 					for battle in battle_group["historyDetails"]["nodes"]:
 						battle_ids.append(battle["id"])
+
 			# salmon run jobs - latest 50
 			elif "coopResult" in query1_resp["data"]:
 				for shift in query1_resp["data"]["coopResult"]["historyGroups"]["nodes"]:
 					for job in shift["historyDetails"]["nodes"]:
 						job_ids.append(job["id"])
-			# ink battles - latest 50 x battles
-			elif "xBattleHistories" in query1_resp["data"]:
-				needs_sorted = True
-				for battle_group in query1_resp["data"]["xBattleHistories"]["historyGroups"]["nodes"]:
-					for battle in battle_group["historyDetails"]["nodes"]:
-						battle_ids.append(battle["id"])
 
 			if numbers_only:
 				ink_list.extend(battle_ids)
@@ -608,7 +609,8 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		payload["their_team_inked"] = their_team_inked
 
 	if mode == "PRIVATE": # these don't get sent otherwise
-		try: # could be anarchy, maybe not
+		# could be a ranked mode
+		try:
 			payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
 		except:
 			pass
@@ -617,6 +619,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
 		except:
 			pass
+		# could also be tw
 		try:
 			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
 			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
@@ -645,7 +648,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				overview_data = [json.loads(overview_post.text)] # make the request in real-time in attempt to get rank, etc.
 			except:
 				overview_data = None
-				print("Failed to get recent Anarchy battles. Proceeding without information on current rank.")
+				print("Failed to get recent Anarchy Battles. Proceeding without information on current rank.")
 		if overview_data is not None:
 			for screen in overview_data:
 				if "bankaraBattleHistories" in screen["data"]:
@@ -661,7 +664,6 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 					overview_battle_id_mutated = overview_battle_id.replace("BANKARA", "RECENT") # same battle, different screens
 
 					if overview_battle_id_mutated == battle_id_mutated: # found the battle ID in the other file
-
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
 						was_s_plus_before = len(full_rank) > 1 # true if "before" rank is s+
 
@@ -711,14 +713,13 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 									print(f'* rank_exp_change: {parent["bankaraMatchChallenge"]["earnedUdemaePoint"]}')
 								else:
 									print(f'* rank_exp_change: 0')
-
 						break # found the child ID, no need to continue
 
 	if mode == "X_MATCH":
 		try:
 			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
 			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
-		except: # draw - 'result' is null
+		except: # draw
 			pass
 
 		if battle["xMatch"]["lastXPower"] is not None:
@@ -738,7 +739,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				overview_data = [json.loads(overview_post.text)] # make the request in real-time in attempt to get rank, etc.
 			except:
 				overview_data = None
-				print("Failed to get recent X battles. Proceeding without information on current rank.")
+				print("Failed to get recent X Battles. Proceeding without some information on X Power.")
 		if overview_data is not None:
 			for screen in overview_data:
 				if "xBattleHistories" in screen["data"]:
@@ -748,20 +749,12 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				for idx, child in enumerate(parent["historyDetails"]["nodes"]):
 
 					overview_battle_id         = base64.b64decode(child["id"]).decode('utf-8')
-					overview_battle_id_mutated = overview_battle_id.replace("XMATCH", "RECENT") # same battle, different screens
+					overview_battle_id_mutated = overview_battle_id.replace("XMATCH", "RECENT")
 
-					if overview_battle_id_mutated == battle_id_mutated: # found the battle ID in the other file
-
+					if overview_battle_id_mutated == battle_id_mutated:
 						if parent["xMatchMeasurement"]["state"] == "COMPLETED" and idx == 0:
 							payload["x_power_after"] = parent["xMatchMeasurement"]["xPowerAfter"]
-
-						if DEBUG:
-							print(f'* {battle["myTeam"]["judgement"]} {idx}')
-							print(f'* x_power_before: {payload["x_power_before"] if "x_power_before" in payload else None}')
-							if "x_power_after" in payload:
-								print(f'* x_power_after: {payload["x_power_after"]}')
-
-						break # found the child ID, no need to continue
+						break
 
 	## MEDALS ##
 	############
