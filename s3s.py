@@ -807,7 +807,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	return payload
 
 
-def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
+def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevresult=None):
 	'''Converts the Nintendo JSON format for a Salmon Run job to the stat.ink one.'''
 
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Salmon-%EF%BC%8D-Post
@@ -854,13 +854,22 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None):
 		payload["title_after"]     = utils.b64d(job["afterGrade"]["id"])
 		payload["title_exp_after"] = job["afterGradePoint"]
 
-		point_diff = 20 if payload["clear_waves"] == 3 else -30 + (10 * job["resultWave"]) # +20 for win or -(30-10w) for loss
-		if payload["title_exp_after"] - point_diff >= 0: # before exp isn't negative, i.e. no title change
-			payload["title_before"]     = payload["title_after"]
-			payload["title_exp_before"] = payload["title_exp_after"] - point_diff
-		else: # ranked up
-			payload["title_before"]     = payload["title_after"] - 1
-			# exp...
+		# we're never certain of points gained - could be 20, but also 0 if playing w/ different titled friends
+		prev_job_id = job["previousHistoryDetail"]["id"]
+
+		if overview_data: # passed in a file, so no web request needed
+			if prevresult:
+				payload["title_before"] = utils.b64d(prevresult["coopHistoryDetail"]["afterGrade"]["id"])
+				payload["title_exp_before"] = prevresult["coopHistoryDetail"]["afterGradePoint"]
+		else:
+			prev_job_post = requests.post(utils.GRAPHQL_URL,
+				data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", prev_job_id),
+				headers=headbutt(forcelang='en-US'),
+				cookies=dict(_gtoken=GTOKEN))
+			prev_job = json.loads(prev_job_post.text)
+
+			payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
+			payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
 
 	geggs = job["myResult"]["goldenDeliverCount"]
 	peggs = job["myResult"]["deliverCount"]
@@ -1074,7 +1083,8 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			payload = prepare_battle_result(results[i]["data"], ismonitoring, isblackout, overview_data)
 			which = "ink"
 		elif "coopHistoryDetail" in results[i]["data"]: # salmon run job
-			payload = prepare_job_result(results[i]["data"], ismonitoring, isblackout, overview_data)
+			prevresult = results[i-1]["data"] if i > 0 else None
+			payload = prepare_job_result(results[i]["data"], ismonitoring, isblackout, overview_data, prevresult=prevresult)
 			which = "salmon"
 		else: # shouldn't happen
 			print("Ill-formatted JSON while uploading. Exiting.")
