@@ -991,10 +991,20 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 				pass
 
 		weapons = []
+		gave_warning = False
 		for weapon in player["weapons"]: # should always be returned in in english due to headbutt() using forcelang
 			wep_string = weapon["name"].lower().replace(" ", "_").replace("-", "_").replace(".", "").replace("'", "")
 			if wep_string == "random": # NINTENDOOOOOOO
 				wep_string = None
+			else:
+				try:
+					wep_string.encode(encoding='utf-8').decode('ascii')
+				except UnicodeDecodeError: # detect non-latin characters... not all non-english strings, but many
+					wep_string = None
+					if not gave_warning:
+						gave_warning = True
+						print("(!) Proceeding without weapon names. See https://github.com/frozenpandaman/s3s/issues/80 for more information.")
+
 			weapons.append(wep_string)
 		player_info["weapons"] = weapons
 
