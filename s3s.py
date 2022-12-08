@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.3"
+A_VERSION = "0.2.4"
 
 DEBUG = False
 
@@ -854,17 +854,22 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 		payload["title_after"]     = utils.b64d(job["afterGrade"]["id"])
 		payload["title_exp_after"] = job["afterGradePoint"]
 
-		# we're never certain of points gained - could be 20, but also 0 if playing w/ different titled friends
+		# never sure of points gained unless first job of rot - wave 3 clear is usu. +20, but 0 if playing w/ diff-titled friends
 		if job.get("previousHistoryDetail") != None:
 			prev_job_id = job["previousHistoryDetail"]["id"]
 
 			if overview_data: # passed in a file, so no web request needed
 				if prevresult:
-					try:
-						payload["title_before"] = utils.b64d(prevresult["coopHistoryDetail"]["afterGrade"]["id"])
-						payload["title_exp_before"] = prevresult["coopHistoryDetail"]["afterGradePoint"]
-					except KeyError:
-						pass # private job or disconnect
+					# compare stage - if different, this is the first job of a rotation, where you start at 40
+					if job["coopStage"]["id"] != prevresult["coopHistoryDetail"]["coopStage"]["id"]:
+						payload["title_before"]     = payload["title_after"] # can't go up or down from just one job
+						payload["title_exp_before"] = "40"
+					else:
+						try:
+							payload["title_before"]     = utils.b64d(prevresult["coopHistoryDetail"]["afterGrade"]["id"])
+							payload["title_exp_before"] = prevresult["coopHistoryDetail"]["afterGradePoint"]
+						except KeyError: # prev job was private or disconnect
+							pass
 			else:
 				prev_job_post = requests.post(utils.GRAPHQL_URL,
 					data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", prev_job_id),
@@ -872,11 +877,16 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 					cookies=dict(_gtoken=GTOKEN))
 				prev_job = json.loads(prev_job_post.text)
 
-				try:
-					payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
-					payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
-				except:
-					pass # private job or disconnect, or the json was invalid (expired job) or something
+				# do stage comparison again
+				if job["coopStage"]["id"] != prev_job["data"]["coopHistoryDetail"]["coopStage"]["id"]:
+					payload["title_before"]     = payload["title_after"]
+					payload["title_exp_before"] = "40"
+				else:
+					try:
+						payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
+						payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
+					except: # private or disconnect, or the json was invalid (expired job >50 ago) or something
+						pass
 
 	geggs = job["myResult"]["goldenDeliverCount"]
 	peggs = job["myResult"]["deliverCount"]
