@@ -10,7 +10,7 @@ S3S_VERSION           = "unknown"
 NSOAPP_VERSION        = "unknown"
 NSOAPP_VER_FALLBACK   = "2.4.0"
 WEB_VIEW_VERSION      = "unknown"
-WEB_VIEW_VER_FALLBACK = "2.0.0-18810d39" # fallback for current splatnet 3 ver
+WEB_VIEW_VER_FALLBACK = "2.0.0-bd36a652" # fallback for current splatnet 3 ver
 SPLATNET3_URL         = "https://api.lp1.av5ja.srv.nintendo.net"
 
 # functions in this file & call stack:
