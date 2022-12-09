@@ -875,18 +875,21 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 					data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", prev_job_id),
 					headers=headbutt(forcelang='en-US'),
 					cookies=dict(_gtoken=GTOKEN))
-				prev_job = json.loads(prev_job_post.text)
+				try:
+					prev_job = json.loads(prev_job_post.text)
 
-				# do stage comparison again
-				if job["coopStage"]["id"] != prev_job["data"]["coopHistoryDetail"]["coopStage"]["id"]:
-					payload["title_before"]     = payload["title_after"]
-					payload["title_exp_before"] = 40
-				else:
-					try:
-						payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
-						payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
-					except KeyError: # private or disconnect, or the json was invalid (expired job >50 ago) or something
-						pass
+					# do stage comparison again
+					if job["coopStage"]["id"] != prev_job["data"]["coopHistoryDetail"]["coopStage"]["id"]:
+						payload["title_before"]     = payload["title_after"]
+						payload["title_exp_before"] = 40
+					else:
+						try:
+							payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
+							payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
+						except KeyError: # private or disconnect, or the json was invalid (expired job >50 ago) or something
+							pass
+				except json.decoder.JSONDecodeError:
+					pass
 
 	geggs = job["myResult"]["goldenDeliverCount"]
 	peggs = job["myResult"]["deliverCount"]
