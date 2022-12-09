@@ -22,14 +22,14 @@ SUPPORTED_KEYS = [
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
 translate_rid = {
 	'HomeQuery':                         'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
-	'LatestBattleHistoriesQuery':        '4f5f26e64bca394b45345a65a2f383bd', # INK / blank vars - query1
-	'RegularBattleHistoriesQuery':       'd5b795d09e67ce153e622a184b7e7dfa', # INK / blank vars - query1
-	'BankaraBattleHistoriesQuery':       'de4754588109b77dbcb90fbe44b612ee', # INK / blank vars - query1
-	'PrivateBattleHistoriesQuery':       '1d6ed57dc8b801863126ad4f351dfb9a', # INK / blank vars - query1
-	'XBattleHistoriesQuery':             '45c74fefb45a49073207229ca65f0a62', # INK / blank vars - query1
+	'LatestBattleHistoriesQuery':        '0176a47218d830ee447e10af4a287b3f', # INK / blank vars - query1
+	'RegularBattleHistoriesQuery':       '3baef04b095ad8975ea679d722bc17de', # INK / blank vars - query1
+	'BankaraBattleHistoriesQuery':       '0438ea6978ae8bd77c5d1250f4f84803', # INK / blank vars - query1
+	'PrivateBattleHistoriesQuery':       '8e5ae78b194264a6c230e262d069bd28', # INK / blank vars - query1
+	'XBattleHistoriesQuery':             '6796e3cd5dc3ebd51864dc709d899fc5', # INK / blank vars - query1
 	'VsHistoryDetailQuery':              '291295ad311b99a6288fc95a5c4cb2d2', # INK / req "vsResultId" - query2
-	'CoopHistoryQuery':                  '6ed02537e4a65bbb5e7f4f23092f6154', # SR  / blank vars - query1
-	'CoopHistoryDetailQuery':            '3cc5f826a6646b85f3ae45db51bd0707', # SR  / req "coopHistoryDetailId" - query2
+	'CoopHistoryQuery':                  '2fd21f270d381ecf894eb975c5f6a716', # SR  / blank vars - query1
+	'CoopHistoryDetailQuery':            '9ade2aa3656324870ccec023636aed32', # SR  / req "coopHistoryDetailId" - query2
 	'MyOutfitCommonDataEquipmentsQuery': 'd29cd0c2b5e6bac90dd5b817914832f8'  # for Lean's seed checker
 }
 
