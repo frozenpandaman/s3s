@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.4"
+A_VERSION = "0.2.5"
 
 DEBUG = False
 
@@ -1060,8 +1060,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 
 	payload["start_at"] = utils.epoch_time(job["playedTime"])
 
-	# payload["big_run"] = "yes" if job_rule == "BIG_RUN" else "no"
-	payload["big_run"] = "no" # TODO once stat.ink supports it
+	payload["big_run"] = "yes" if job_rule == "BIG_RUN" else "no"
 
 	if isblackout:
 		# fix payload
