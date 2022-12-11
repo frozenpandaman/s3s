@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.5"
+A_VERSION = "0.2.6"
 
 DEBUG = False
 
@@ -891,11 +891,12 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 				except json.decoder.JSONDecodeError:
 					pass
 
-	geggs = job["myResult"]["goldenDeliverCount"]
+	geggs = 0
 	peggs = job["myResult"]["deliverCount"]
 	for player in job["memberResults"]:
-		geggs += player["goldenDeliverCount"]
 		peggs += player["deliverCount"]
+	for wave in job["waveResults"]:
+		geggs += wave["teamDeliverCount"]
 	payload["golden_eggs"] = geggs
 	payload["power_eggs"]  = peggs
 
