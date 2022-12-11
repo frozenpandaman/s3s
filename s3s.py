@@ -216,16 +216,18 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 	parent_files = []
 
 	queries = []
-	if which == "both" or which == "ink":
+	if which in ("both", "ink"):
 		if specific in (True, "regular"):
 			queries.append("RegularBattleHistoriesQuery")
 		if specific in (True, "anarchy"):
 			queries.append("BankaraBattleHistoriesQuery")
 		if specific in (True, "x"):
 			queries.append("XBattleHistoriesQuery")
+		# if specific in (True, "league"):
+			# queries.append("LeagueBattleHistoriesQuery") # LEAGUE TODO & check query name
 		if specific in (True, "private") and not utils.custom_key_exists("ignore_private", CONFIG_DATA):
 			queries.append("PrivateBattleHistoriesQuery")
-		else:
+		if not specific: # False
 			if DEBUG:
 				print("* not specific, just looking at latest")
 			queries.append("LatestBattleHistoriesQuery")
@@ -1317,7 +1319,7 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 		urls.append("https://stat.ink/api/v3/s3s/uuid-list") # max 200 entries
 	else:
 		urls.append(None)
-	if which == "both" or which == "salmon":
+	if which in ("both", "salmon"):
 		urls.append("https://stat.ink/api/v3/salmon/uuid-list")
 	else:
 		urls.append(None)
