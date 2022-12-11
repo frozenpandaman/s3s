@@ -896,7 +896,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 	for player in job["memberResults"]:
 		peggs += player["deliverCount"]
 	for wave in job["waveResults"]:
-		geggs += wave["teamDeliverCount"]
+		geggs += wave["teamDeliverCount"] if wave["teamDeliverCount"] != None else 0
 	payload["golden_eggs"] = geggs
 	payload["power_eggs"]  = peggs
 
