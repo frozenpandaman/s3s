@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.6"
+A_VERSION = "0.2.7"
 
 DEBUG = False
 
@@ -436,6 +436,7 @@ def set_scoreboard(battle):
 			p_dict["special"]        = player["result"]["special"]
 			# noroshiTry
 			p_dict["disconnected"]   = "no"
+			p_dict["crown"]          = "yes" if player["crown"] == True else "no"
 
 			# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Battle-%EF%BC%8D-Post#gears-structure
 			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
@@ -468,6 +469,7 @@ def set_scoreboard(battle):
 			p_dict["special"]        = player["result"]["special"]
 			# noroshiTry
 			p_dict["disconnected"]   = "no"
+			p_dict["crown"]          = "yes" if player["crown"] == True else "no"
 
 			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
 			h_main, h_subs, c_main, c_subs, s_main, s_subs = populate_gear_abilities(player)
