@@ -83,6 +83,25 @@ def set_noun(which):
 		return "battles"
 
 
+def convert_color(rgbadict):
+	'''Given a dict of numbers from 0.0 - 1.0, converts these into a RGBA hex color format (without the leading #).'''
+
+	r = int(255 * rgbadict["r"])
+	g = int(255 * rgbadict["g"])
+	b = int(255 * rgbadict["b"])
+	a = int(255 * rgbadict["a"])
+	return f"{r:02x}{g:02x}{b:02x}{a:02x}"
+
+
+def convert_tricolor_role(string):
+	'''Given a SplatNet 3 Tricolor Turf War team role, convert it to the stat.ink string format.'''
+
+	if string == "DEFENSE":
+		return "defender"
+	else: # ATTACK1 or ATTACK2
+		return "attacker"
+
+
 def b64d(string):
 	'''Base64-decodes a string and cuts off the SplatNet prefix.'''
 

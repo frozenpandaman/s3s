@@ -11,6 +11,7 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
  - [x] Full automation of SplatNet token generation via user log-in
  - [x] Ability to parse & upload complete battle/job stats to stat.ink ([example profile](https://stat.ink/@frozenpandaman/spl3))
  - [x] Support for Salmon Run Next Wave (including Big Run)
+ - [x] Support for Splatfest & Tricolor Turf War battles
  - [x] Monitoring for new results in real-time & checking for missing/unuploaded results
  - [x] Flag to remove other players' names from results
  - [x] File exporting function for use with Lean's [gear & Shell-Out Machine seed checker](https://leanny.github.io/splat3seedchecker/)
@@ -18,7 +19,6 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
  - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
 
 ### What's coming?
- - [ ] Support for Tricolor Turf War battles (as soon as stat.ink supports it!)
  - [ ] Downloadable, pre-packaged program executables
 
 ---
@@ -79,7 +79,6 @@ To access SplatNet 3 in a language other than English, go to `https://api.lp1.av
 You can even enter QR codes on the web version of SplatNet 3 via the list of available ones [here](https://github.com/frozenpandaman/s3s/wiki/list-of-qr-codes)!
 
 *Splatoon 3* stage rotation information and current SplatNet gear are viewable at [splatoon3.ink](https://splatoon3.ink/).
-
 
 ## Token generation 🪙
 

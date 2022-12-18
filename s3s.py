@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.2.7"
+A_VERSION = "0.3.0"
 
 DEBUG = False
 
@@ -410,12 +410,13 @@ def populate_gear_abilities(player):
 	return h_main, h_subs, c_main, c_subs, s_main, s_subs
 
 
-def set_scoreboard(battle):
-	'''Returns two lists of player dictionaries, for our_team_players and their_team_players.'''
+def set_scoreboard(battle, tricolor=False):
+	'''Returns lists of player dictionaries: our_team_players, their_team_players, and optionally third_team_players.'''
 
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Battle-%EF%BC%8D-Post#player-structure
-	our_team_players, their_team_players = [], []
+	our_team_players, their_team_players, third_team_players = [], [], []
 
+	# not supported yet: species, festDragonCert
 	for i, player in enumerate(battle["myTeam"]["players"]):
 		p_dict = {}
 		p_dict["me"]              = "yes" if player["isMyself"] else "no"
@@ -434,9 +435,9 @@ def set_scoreboard(battle):
 			p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
 			p_dict["death"]          = player["result"]["death"]
 			p_dict["special"]        = player["result"]["special"]
-			# noroshiTry
+			p_dict["signal"]         = player["result"]["noroshiTry"]
 			p_dict["disconnected"]   = "no"
-			p_dict["crown"]          = "yes" if player["crown"] == True else "no"
+			p_dict["crown"]          = "yes" if player.get("crown") == True else "no"
 
 			# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Battle-%EF%BC%8D-Post#gears-structure
 			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
@@ -449,39 +450,47 @@ def set_scoreboard(battle):
 			p_dict["disconnected"]   = "yes"
 		our_team_players.append(p_dict)
 
-	for i, player in enumerate(battle["otherTeams"][0]["players"]): # no support for tricolor TW yet
-		p_dict = {}
-		p_dict["me"]              = "no"
-		p_dict["name"]            = player["name"]
-		try:
-			p_dict["number"]      = str(player["nameId"])
-		except:
-			pass
-		p_dict["splashtag_title"] = player["byname"]
-		p_dict["weapon"]          = utils.b64d(player["weapon"]["id"])
-		p_dict["inked"]           = player["paint"]
-		p_dict["rank_in_team"]    = i+1
-		if "result" in player and player["result"] is not None:
-			p_dict["kill_or_assist"] = player["result"]["kill"]
-			p_dict["assist"]         = player["result"]["assist"]
-			p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
-			p_dict["death"]          = player["result"]["death"]
-			p_dict["special"]        = player["result"]["special"]
-			# noroshiTry
-			p_dict["disconnected"]   = "no"
-			p_dict["crown"]          = "yes" if player["crown"] == True else "no"
+	team_nums = [0, 1] if tricolor else [0]
+	for team_num in team_nums:
+		for i, player in enumerate(battle["otherTeams"][team_num]["players"]):
+			p_dict = {}
+			p_dict["me"]              = "no"
+			p_dict["name"]            = player["name"]
+			try:
+				p_dict["number"]      = str(player["nameId"])
+			except:
+				pass
+			p_dict["splashtag_title"] = player["byname"]
+			p_dict["weapon"]          = utils.b64d(player["weapon"]["id"])
+			p_dict["inked"]           = player["paint"]
+			p_dict["rank_in_team"]    = i+1
+			if "result" in player and player["result"] is not None:
+				p_dict["kill_or_assist"] = player["result"]["kill"]
+				p_dict["assist"]         = player["result"]["assist"]
+				p_dict["kill"]           = p_dict["kill_or_assist"] - p_dict["assist"]
+				p_dict["death"]          = player["result"]["death"]
+				p_dict["special"]        = player["result"]["special"]
+				p_dict["signal"]         = player["result"]["noroshiTry"]
+				p_dict["disconnected"]   = "no"
+				p_dict["crown"]          = "yes" if player.get("crown") == True else "no"
 
-			gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
-			h_main, h_subs, c_main, c_subs, s_main, s_subs = populate_gear_abilities(player)
-			gear_struct["headgear"] = {"primary_ability": h_main, "secondary_abilities": h_subs}
-			gear_struct["clothing"] = {"primary_ability": c_main, "secondary_abilities": c_subs}
-			gear_struct["shoes"]    = {"primary_ability": s_main, "secondary_abilities": s_subs}
-			p_dict["gears"] = gear_struct
-		else:
-			p_dict["disconnected"]   = "yes"
-		their_team_players.append(p_dict)
+				gear_struct = {"headgear": {}, "clothing": {}, "shoes": {}}
+				h_main, h_subs, c_main, c_subs, s_main, s_subs = populate_gear_abilities(player)
+				gear_struct["headgear"] = {"primary_ability": h_main, "secondary_abilities": h_subs}
+				gear_struct["clothing"] = {"primary_ability": c_main, "secondary_abilities": c_subs}
+				gear_struct["shoes"]    = {"primary_ability": s_main, "secondary_abilities": s_subs}
+				p_dict["gears"] = gear_struct
+			else:
+				p_dict["disconnected"]   = "yes"
+			if team_num == 0:
+				their_team_players.append(p_dict)
+			elif team_num == 1:
+				third_team_players.append(p_dict)
 
-	return our_team_players, their_team_players
+	if tricolor:
+		return our_team_players, their_team_players, third_team_players
+	else:
+		return our_team_players, their_team_players
 
 
 def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
@@ -509,7 +518,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	elif mode == "PRIVATE":
 		payload["lobby"] = "private"
 	elif mode == "FEST":
-		if utils.b64d(battle["vsMode"]["id"]) == 6:
+		if utils.b64d(battle["vsMode"]["id"]) in (6, 8): # open or tricolor
 			payload["lobby"] = "splatfest_open"
 		elif utils.b64d(battle["vsMode"]["id"]) == 7:
 			payload["lobby"] = "splatfest_challenge" # pro
@@ -532,8 +541,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	elif rule == "CLAM":
 		payload["rule"] = "asari"
 	elif rule == "TRI_COLOR":
-		print("Tricolor Turf War Splatfest battles are not yet supported - skipping.")
-		return {}
+		payload["rule"] = "tricolor"
 
 	## STAGE ##
 	###########
@@ -554,7 +562,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				payload["kill"]           = payload["kill_or_assist"] - payload["assist"]
 				payload["death"]          = player["result"]["death"]
 				payload["special"]        = player["result"]["special"]
-				# ...        = player["result"]["noroshiTry"] = ultra signal attempts - splatfest tricolor tw
+				payload["signal"]        = player["result"]["noroshiTry"] # ultra signal attempts in tricolor TW
 				break
 
 	## RESULT ##
@@ -574,9 +582,16 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	payload["start_at"] = utils.epoch_time(battle["playedTime"])
 	payload["end_at"]   = payload["start_at"] + battle["duration"]
 
-	## SCOREBOARD ##
-	################
-	payload["our_team_players"], payload["their_team_players"] = set_scoreboard(battle)
+	## SCOREBOARD & COLOR ##
+	########################
+	payload["our_team_color"]   = utils.convert_color(battle["myTeam"]["color"])
+	payload["their_team_color"] = utils.convert_color(battle["otherTeams"][0]["color"])
+
+	if rule != "TRI_COLOR":
+		payload["our_team_players"], payload["their_team_players"] = set_scoreboard(battle)
+	else:
+		payload["our_team_players"], payload["their_team_players"], payload["third_team_players"] = set_scoreboard(battle, tricolor=True)
+		payload["third_team_color"] = utils.convert_color(battle["otherTeams"][1]["color"])
 
 	## SPLATFEST ##
 	###############
@@ -591,12 +606,9 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 
 		payload["clout_change"] = battle["festMatch"]["contribution"]
 		payload["fest_power"]   = battle["festMatch"]["myFestPower"] # pro only
-		# if rule == "TRI_COLOR":
-			# ...
 
-		# no support for splatfest fest_title
-
-	# turf war only - not tricolor
+	## TURF WAR ##
+	##############
 	if mode in ("REGULAR", "FEST"):
 		try:
 			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
@@ -612,7 +624,32 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		payload["our_team_inked"] = our_team_inked
 		payload["their_team_inked"] = their_team_inked
 
-	if mode == "PRIVATE": # these don't get sent otherwise
+		if mode == "FEST":
+			payload["our_team_theme"]   = battle["myTeam"]["festTeamName"]
+			payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"]
+
+	## TRICOLOR TW ##
+	#################
+	if mode == "FEST" and rule == "TRI_COLOR":
+		try:
+			payload["third_team_percent"] = float(battle["otherTeams"][1]["result"]["paintRatio"]) * 100
+		except TypeError:
+			pass
+
+		third_team_inked = 0
+		for player in battle["otherTeams"][1]["players"]:
+			third_team_inked += player["paint"]
+		payload["third_team_inked"] = third_team_inked
+
+		payload["third_team_theme"] = battle["otherTeams"][1]["festTeamName"]
+
+		payload["our_team_role"]   = utils.convert_tricolor_role(battle["myTeam"]["tricolorRole"])
+		payload["their_team_role"] = utils.convert_tricolor_role(battle["otherTeams"][0]["tricolorRole"])
+		payload["third_team_role"] = utils.convert_tricolor_role(battle["otherTeams"][1]["tricolorRole"])
+
+	## PRIVATE BATTLES ##
+	#####################
+	if mode == "PRIVATE": # these don't get sent otherwise. no support for private tricolor battles atm
 		# could be a ranked mode
 		try:
 			payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
@@ -630,6 +667,8 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		except:
 			pass
 
+	## ANARCHY BATTLES ##
+	#####################
 	if mode == "BANKARA":
 		try:
 			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
@@ -719,6 +758,8 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 									print(f'* rank_exp_change: 0')
 						break # found the child ID, no need to continue
 
+	## X BATTLES ##
+	###############
 	if mode == "X_MATCH":
 		try:
 			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
@@ -1180,7 +1221,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			print(f"{utils.set_noun(which)[:-1].capitalize()} ID: {result_id}")
 			print("Message from server:")
 			print(postbattle.content.decode('utf-8'))
-		elif time_uploaded <= time_now - 5: # give some leeway
+		elif time_uploaded <= time_now - 7: # give some leeway
 			print(f"{utils.set_noun(which)[:-1].capitalize()} already uploaded - {headerloc}")
 		else: # 200 OK
 			print(f"{utils.set_noun(which)[:-1].capitalize()} uploaded to {headerloc}")
