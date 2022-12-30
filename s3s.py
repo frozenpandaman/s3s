@@ -931,7 +931,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 						try:
 							payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
 							payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
-						except KeyError: # private or disconnect, or the json was invalid (expired job >50 ago) or something
+						except KeyError and TypeError: # private or disconnect, or the json was invalid (expired job >50 ago) or something
 							pass
 				except json.decoder.JSONDecodeError:
 					pass
