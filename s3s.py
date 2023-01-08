@@ -1589,11 +1589,11 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 			if splatfest_wins + splatfest_losses + splatfest_draws > 0:
 				if splatfest_draws == 0:
 					print(f"Splatfest: {splatfest_wins} win{'' if splatfest_wins == 1 else 's'} and " \
-						f"{splatfest_losses} loss{'' if splatfest_losses == 1 else 'es'} against the other Splatfest team.")
+						f"{splatfest_losses} loss{'' if splatfest_losses == 1 else 'es'} against the other Splatfest teams.")
 				else:
 					print(f"Splatfest: {splatfest_wins} win{'' if splatfest_wins == 1 else 's'}, " \
 						f"{splatfest_losses} loss{'' if splatfest_losses == 1 else 'es'}, and " \
-						f"{splatfest_draws} draw{'' if splatfest_draws == 1 else 's'} against the other Splatfest team.")
+						f"{splatfest_draws} draw{'' if splatfest_draws == 1 else 's'} against the other Splatfest teams.")
 
 				print(f"{mirror_matches} mirror match{'' if mirror_matches == 1 else 'es'} against your Splatfest team.")
 
