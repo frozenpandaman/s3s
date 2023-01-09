@@ -1345,8 +1345,11 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 			data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
 			headers=headbutt(forcelang=lang),
 			cookies=dict(_gtoken=GTOKEN))
-	result = json.loads(result_post.text)
-	post_result(result, False, isblackout, istestrun) # not monitoring mode
+	try:
+		result = json.loads(result_post.text)
+		post_result(result, False, isblackout, istestrun) # not monitoring mode
+	except json.decoder.JSONDecodeError:
+		pass
 
 
 def check_if_missing(which, isblackout, istestrun, skipprefetch):
