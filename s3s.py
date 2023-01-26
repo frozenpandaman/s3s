@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.3.0"
+A_VERSION = "0.3.1"
 
 DEBUG = False
 
@@ -931,7 +931,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 						try:
 							payload["title_before"] = utils.b64d(prev_job["data"]["coopHistoryDetail"]["afterGrade"]["id"])
 							payload["title_exp_before"] = prev_job["data"]["coopHistoryDetail"]["afterGradePoint"]
-						except KeyError and TypeError: # private or disconnect, or the json was invalid (expired job >50 ago) or something
+						except (KeyError, TypeError): # private or disconnect, or the json was invalid (expired job >50 ago) or something
 							pass
 				except json.decoder.JSONDecodeError:
 					pass
@@ -1171,8 +1171,8 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			continue
 
 		# should have been taken care of in fetch_json() but just in case...
-		if payload.get("lobby") == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA) or \
-			payload.get("private") == "yes" and utils.custom_key_exists("ignore_private", CONFIG_DATA): # SR version
+		if payload.get("lobby") == "privatƒe" and utils.custom_key_exists("ignore_private", CONFIG_DATA) or \
+			payload.get("private") == "yes" and utils.custom_key_exists("ignore_private_jobs", CONFIG_DATA): # SR version
 			continue
 
 		s3s_values = {'agent': '\u0073\u0033\u0073', 'agent_version': f'v{A_VERSION}'} # lol
@@ -1495,7 +1495,7 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 				result = json.loads(result_post.text)
 
 				if result["data"]["coopHistoryDetail"]["jobPoint"] == None \
-				and utils.custom_key_exists("ignore_private", CONFIG_DATA): # works pre- and post-2.0.0
+				and utils.custom_key_exists("ignore_private_jobs", CONFIG_DATA): # works pre- and post-2.0.0
 					pass
 				else:
 					foundany = True

@@ -14,6 +14,7 @@ SALMON_NAMESPACE = uuid.UUID('f1911910-605e-11ed-a622-7085c2057a9d')
 
 SUPPORTED_KEYS = [
 	"ignore_private",
+	"ignore_private_jobs",
 	"app_user_agent",
 	"force_uploads"
 ]
