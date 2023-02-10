@@ -1707,7 +1707,7 @@ def parse_arguments():
 		help="only check for Salmon Run jobs")
 	parser.add_argument("--blackout", required=False, action="store_true",
 		help="remove player names from uploaded scoreboard data")
-	parser.add_argument("-o", required=False, action="store_true",
+	parser.add_argument("-o", dest="dir", nargs="?", const="", required=False,
 		help="export all possible results to local files")
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
 		help="upload local results: `-i (coop_)results.json overview.json`")
@@ -1745,7 +1745,7 @@ def main():
 	# testing/dev stuff
 	test_run     = parser_result.t            # send to stat.ink as dry run
 	filenames    = parser_result.file         # intended for results.json AND overview.json
-	outfile      = parser_result.o            # output to local files
+	outfile      = parser_result.dir          # output to local files
 	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
 	# i/o checks
@@ -1762,7 +1762,8 @@ def main():
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(0)
 
-	elif outfile and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
+	elif ((outfile == "" and len(sys.argv) > 2) or (outfile and len(sys.argv) > 3)) \
+	    and "--skipprefetch" not in sys.argv:
 		print("Cannot use -o with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1782,14 +1783,14 @@ def main():
 
 	# export results to file: -o flag
 	#################################
-	if outfile:
+	if outfile is not None:
 		if not skipprefetch:
 			prefetch_checks(printout=True)
 		print("Fetching your JSON files to export locally. This might take a while...")
 		# fetch_json() calls prefetch_checks() to gen or check tokens
 		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True, skipprefetch=True)
 
-		cwd = os.getcwd()
+		cwd = outfile if outfile else os.getcwd()
 		export_dir = os.path.join(cwd, f'export-{int(time.time())}')
 		if not os.path.exists(export_dir):
 			os.makedirs(export_dir)
