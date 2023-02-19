@@ -1171,7 +1171,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			continue
 
 		# should have been taken care of in fetch_json() but just in case...
-		if payload.get("lobby") == "privatƒe" and utils.custom_key_exists("ignore_private", CONFIG_DATA) or \
+		if payload.get("lobby") == "private" and utils.custom_key_exists("ignore_private", CONFIG_DATA) or \
 			payload.get("private") == "yes" and utils.custom_key_exists("ignore_private_jobs", CONFIG_DATA): # SR version
 			continue
 
