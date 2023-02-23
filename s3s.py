@@ -1708,7 +1708,7 @@ def parse_arguments():
 	parser.add_argument("--blackout", required=False, action="store_true",
 		help="remove player names from uploaded scoreboard data")
 	parser.add_argument("-o", dest="dir", nargs="?", const="", required=False,
-		help="export all possible results to local files")
+		help="export all possible results to local files on DIR (default: current directory)")
 	parser.add_argument("-i", dest="file", nargs=2, required=False,
 		help="upload local results: `-i (coop_)results.json overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
