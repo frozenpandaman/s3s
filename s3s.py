@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# s3s (ↄ) 2022 eli fessler (frozenpandaman), clovervidia
-# Based on splatnet2statink (ↄ) 2017-2022 eli fessler (frozenpandaman), clovervidia
+# s3s (ↄ) 2022-2023 eli fessler (frozenpandaman), clovervidia
+# Based on splatnet2statink (ↄ) 2017-2023 eli fessler (frozenpandaman), clovervidia
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
