@@ -747,7 +747,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 									payload["rank_exp_change"] = parent["bankaraMatchChallenge"]["earnedUdemaePoint"]
 
 							if DEBUG:
-								print(f'* {battle["myTeam"]["judgement"]} {idx}')
+								print(f'* {battle["judgement"]} {idx}')
 								print(f'* rank_before: {payload["rank_before"]}')
 								print(f'* rank_after: {payload["rank_after"]}')
 								print(f'* rank up battle: {parent["bankaraMatchChallenge"]["isPromo"]}')
@@ -1443,9 +1443,9 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 					pass
 				else:
 					foundany = True
-					if result["data"]["vsHistoryDetail"]["myTeam"]["judgement"] == "WIN":
+					if result["data"]["vsHistoryDetail"]["judgement"] == "WIN":
 						outcome = "Victory"
-					elif result["data"]["vsHistoryDetail"]["myTeam"]["judgement"] in ("LOSE", "DEEMED_LOSE", "EXEMPTED_LOSE"):
+					elif result["data"]["vsHistoryDetail"]["judgement"] in ("LOSE", "DEEMED_LOSE", "EXEMPTED_LOSE"):
 						outcome = "Defeat"
 					else:
 						outcome = "Draw"
