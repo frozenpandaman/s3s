@@ -200,7 +200,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			f"exportall={exportall}, specific={specific}, numbers_only={numbers_only}")
 
 	if exportall and not separate:
-		print("fetch_json() must be called with separate=True if using exportall.")
+		print("* fetch_json() must be called with separate=True if using exportall.")
 		sys.exit(1)
 
 	if not skipprefetch:
@@ -1165,7 +1165,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			print("Ill-formatted JSON while uploading. Exiting.")
 			print('\nDebug info:')
 			print(json.dumps(results))
-			sys.exit(1)
+			sys.exit(1) # always exit here - something is seriously wrong
 
 		if len(payload) == 0: # received blank payload from prepare_job_result() - skip unsupported battle
 			continue
@@ -1345,8 +1345,24 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 			data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
 			headers=headbutt(forcelang=lang),
 			cookies=dict(_gtoken=GTOKEN))
-	result = json.loads(result_post.text)
-	post_result(result, False, isblackout, istestrun) # not monitoring mode
+	try:
+		result = json.loads(result_post.text)
+		post_result(result, False, isblackout, istestrun) # not monitoring mode
+	except json.decoder.JSONDecodeError: # retry once, hopefully avoid a few errors
+		result_post = requests.post(utils.GRAPHQL_URL,
+				data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
+				headers=headbutt(forcelang=lang),
+				cookies=dict(_gtoken=GTOKEN))
+		try:
+			result = json.loads(result_post.text)
+			post_result(result, False, isblackout, istestrun)
+		except json.decoder.JSONDecodeError:
+			if utils.custom_key_exists("errors_pass_silently", CONFIG_DATA):
+				print("Error uploading one of your battles. Continuing...")
+				pass
+			else:
+				print("Error uploading one of your battles. Please try running s3s again.")
+				sys.exit(1)
 
 
 def check_if_missing(which, isblackout, istestrun, skipprefetch):
@@ -1377,8 +1393,11 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 			try:
 				statink_uploads = json.loads(resp.text)
 			except:
-				print(f"Encountered an error while checking recently-uploaded {noun}. Is stat.ink down?")
-				sys.exit(1)
+				if utils.custom_key_exists("errors_pass_silently", CONFIG_DATA):
+					print(f"Error while checking recently-uploaded {noun}. Continuing...")
+				else:
+					print(f"Error while checking recently-uploaded {noun}. Is stat.ink down?")
+					sys.exit(1)
 
 			# ! fetch from online
 			# specific - check ALL possible battles; printout - to show tokens are being checked at program start
