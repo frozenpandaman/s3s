@@ -700,7 +700,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				elif "latestBattleHistories" in screen["data"]: # early exports used this, and no bankaraMatchChallenge below
 					ranked_list = screen["data"]["latestBattleHistories"]["historyGroups"]["nodes"]
 					break
-			for parent in ranked_list: # groups in overview (ranked) JSON/screen
+			for parent in ranked_list: # groups in overview (anarchy tab) JSON/screen
 				for idx, child in enumerate(parent["historyDetails"]["nodes"]):
 
 					overview_battle_id         = base64.b64decode(child["id"]).decode('utf-8')
@@ -737,7 +737,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 									if len(full_rank_after) > 1:
 										payload["rank_after_s_plus"] = int(full_rank_after[1])
 
-							if idx == 0: # for the last battle in the series only
+							if idx == 0: # for the most recent battle in the series only
 								# send overall win/lose count
 								payload["challenge_win"] = parent["bankaraMatchChallenge"]["winCount"]
 								payload["challenge_lose"] = parent["bankaraMatchChallenge"]["loseCount"]
@@ -790,16 +790,21 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				if "xBattleHistories" in screen["data"]:
 					x_list = screen["data"]["xBattleHistories"]["historyGroups"]["nodes"]
 					break
-			for parent in x_list: # groups in overview (x) JSON/screen
+			for parent in x_list: # groups in overview (x tab) JSON/screen
 				for idx, child in enumerate(parent["historyDetails"]["nodes"]):
 
 					overview_battle_id         = base64.b64decode(child["id"]).decode('utf-8')
 					overview_battle_id_mutated = overview_battle_id.replace("XMATCH", "RECENT")
 
 					if overview_battle_id_mutated == battle_id_mutated:
-						if parent["xMatchMeasurement"]["state"] == "COMPLETED" and idx == 0:
-							payload["x_power_after"] = parent["xMatchMeasurement"]["xPowerAfter"]
-						break
+						if idx == 0:
+							# best of 5 for getting x power at season start, best of 3 after
+							payload["challenge_win"] = parent["xMatchMeasurement"]["winCount"]
+							payload["challenge_lose"] = parent["xMatchMeasurement"]["loseCount"]
+
+							if parent["xMatchMeasurement"]["state"] == "COMPLETED":
+								payload["x_power_after"] = parent["xMatchMeasurement"]["xPowerAfter"]
+							break
 
 	## MEDALS ##
 	############
