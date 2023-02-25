@@ -17,7 +17,8 @@ SUPPORTED_KEYS = [
 	"ignore_private_jobs",
 	"app_user_agent",
 	"force_uploads",
-	"errors_pass_silently"
+	"errors_pass_silently",
+	"old_export_format"
 ]
 
 # SHA256 hash database for SplatNet 3 GraphQL queries

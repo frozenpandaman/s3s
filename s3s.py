@@ -1733,8 +1733,8 @@ def parse_arguments():
 		help="remove player names from uploaded scoreboard data")
 	parser.add_argument("-o", required=False, action="store_true",
 		help="export all possible results to local files")
-	parser.add_argument("-i", dest="file", nargs=2, required=False,
-		help="upload local results: `-i (coop_)results.json overview.json`")
+	parser.add_argument("-i", dest="path", nargs=2, required=False,
+		help="upload local results: `-i (coop_)results/ overview.json`")
 	parser.add_argument("-t", required=False, action="store_true",
 		help="dry run for testing (won't post to stat.ink)")
 	parser.add_argument("--getseed", required=False, action="store_true",
@@ -1768,7 +1768,7 @@ def main():
 
 	# testing/dev stuff
 	test_run     = parser_result.t            # send to stat.ink as dry run
-	filenames    = parser_result.file         # intended for results.json AND overview.json
+	file_paths   = parser_result.path         # intended for results/ or coop_results/ AND overview.json
 	outfile      = parser_result.o            # output to local files
 	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
@@ -1814,53 +1814,99 @@ def main():
 		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True, skipprefetch=True)
 
 		cwd = os.getcwd()
-		export_dir = os.path.join(cwd, f'export-{int(time.time())}')
+		if utils.custom_key_exists("old_export_format", CONFIG_DATA):
+			export_dir = os.path.join(cwd, f'export-{int(time.time())}')
+			overview_filename = "overview.json"
+		else:
+			export_dir = os.path.join(cwd, 'exports')
+			utc_time = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+			overview_filename = f'overview-{utc_time}.json'
 		if not os.path.exists(export_dir):
 			os.makedirs(export_dir)
 
 		print()
 		if parents is not None:
-			with open(os.path.join(cwd, export_dir, "overview.json"), "x") as fout:
+			with open(os.path.join(cwd, export_dir, overview_filename), "x") as fout:
 				json.dump(parents, fout)
-				print("Created overview.json with general info about your battle and job stats.")
+				print(f'Created {overview_filename} with general info about battle/job stats.')
 
 		if results is not None:
-			with open(os.path.join(cwd, export_dir, "results.json"), "x") as fout:
-				json.dump(results, fout)
-				print("Created results.json with detailed recent battle stats (up to 50 of each type).")
+			if utils.custom_key_exists("old_export_format", CONFIG_DATA):
+				with open(os.path.join(cwd, export_dir, "results.json"), "x") as fout:
+					json.dump(results, fout)
+					print("Created results.json with recent battles (up to 50 per type).")
+			else:
+				results_dir = os.path.join(export_dir, 'results')
+				if not os.path.exists(results_dir):
+					os.makedirs(results_dir)
+
+				for result in results:
+					filename = result["data"]["vsHistoryDetail"]["playedTime"].replace("-", "").replace(":", "") + ".json"
+					out_path = os.path.join(results_dir, filename)
+					if not os.path.exists(out_path):
+						with open(out_path, "x") as fout:
+							json.dump(result, fout)
+				print("Updated results directory with recent battles (up to 50 per type).")
 
 		if coop_results is not None:
-			with open(os.path.join(cwd, export_dir, "coop_results.json"), "x") as fout:
-				json.dump(coop_results, fout)
-				print("Created coop_results.json with detailed recent Salmon Run job stats (up to 50).")
+			if utils.custom_key_exists("old_export_format", CONFIG_DATA):
+				with open(os.path.join(cwd, export_dir, "coop_results.json"), "x") as fout:
+					json.dump(coop_results, fout)
+					print("Created coop_results.json with recent Salmon Run jobs (up to 50).")
+			else:
+				coop_results_dir = os.path.join(export_dir, 'coop_results')
+				if not os.path.exists(coop_results_dir):
+					os.makedirs(coop_results_dir)
+
+				for coop_result in coop_results:
+					filename = coop_result["data"]["coopHistoryDetail"]["playedTime"].replace("-", "").replace(":", "") + ".json"
+					out_path = os.path.join(coop_results_dir, filename)
+					if not os.path.exists(out_path):
+						with open(out_path, "x") as fout:
+							json.dump(coop_result, fout)
+				print("Updated coop_results directory with recent Salmon Run jobs (up to 50).")
 
 		print("\nHave fun playing Splatoon 3! :) Bye!")
 		sys.exit(0)
 
 	# manual json upload: -i flag
 	#############################
-	if filenames: # 2 files in list
-		if (os.path.basename(filenames[0]) != "results.json" \
-		and os.path.basename(filenames[0]) != "coop_results.json") \
-		or os.path.basename(filenames[1]) != "overview.json":
-			print("Must use the format " \
-				'\033[91m' + "-i path/to/(coop_)results.json path/to/overview.json" + '\033[0m' + ". Exiting.")
-			sys.exit(1)
-		for filename in filenames:
-			if not os.path.exists(filename):
-				print(f"File {filename} does not exist!") # exit
+	if file_paths: # 2 paths in list
+		if not utils.custom_key_exists("old_export_format", CONFIG_DATA):
+			if os.path.dirname(file_paths[0])[-7:] != "results" \
+			or os.path.basename(file_paths[1])[:8] != "overview":
+				print("Must pass in " + '\033[91m' + "results/" + '\033[0m' + " or " + \
+					'\033[91m' + "coop_results/" + '\033[0m' + " followed by an " +
+					'\033[91m' + "overview.json" + '\033[0m' + ". Exiting.")
 				sys.exit(1)
-		with open(filenames[0]) as data_file:
-			try:
-				data = json.load(data_file)
-			except ValueError:
-				print(f"Could not decode JSON object in {os.path.basename(filenames[0])}.")
+		for file_path in file_paths:
+			if not os.path.exists(file_path):
+				path_type = "File" if file_path.endswith(".json") else "Directory"
+				print(f"{path_type} {file_path} does not exist!")
 				sys.exit(1)
-		with open(filenames[1]) as data_file:
+
+		# argument #1 - results folder or file
+		if not utils.custom_key_exists("old_export_format", CONFIG_DATA):
+			data = []
+			for json_file in os.listdir(file_paths[0]):
+				if json_file.endswith('.json'): # just in case
+					with open(os.path.join(file_paths[0], json_file)) as data_file:
+						contents = json.load(data_file)
+						data.append(contents)
+		else: #old method
+			with open(file_paths[0]) as data_file:
+				try:
+					data = json.load(data_file)
+				except ValueError:
+					print(f"Could not decode JSON object in {os.path.basename(file_paths[0])}.")
+					sys.exit(1)
+
+		# argument #2 - overview.json
+		with open(file_paths[1]) as data_file:
 			try:
 				overview_file = json.load(data_file)
 			except ValueError:
-				print("Could not decode JSON object in overview.json.")
+				print("Could not decode JSON object in your overview.json.")
 				sys.exit(1)
 		data.reverse()
 
@@ -1908,7 +1954,10 @@ def main():
 
 					to_upload.append(result)
 
-		post_result(to_upload, False, blackout, test_run, overview_data=overview_file) # one or multiple; monitoring mode = False
+		if len(to_upload) == 0:
+			print("Nothing to upload that isn't already on stat.ink.")
+		else:
+			post_result(to_upload, False, blackout, test_run, overview_data=overview_file) # one or multiple; monitoring mode = False
 		sys.exit(0)
 
 	# regular run
