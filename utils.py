@@ -24,7 +24,7 @@ SUPPORTED_KEYS = [
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
 translate_rid = {
-	'HomeQuery':                         'dba47124d5ec3090c97ba17db5d2f4b3', # blank vars
+	'HomeQuery':                         '22e2fa8294168003c21b00c333c35384', # blank vars
 	'LatestBattleHistoriesQuery':        '0176a47218d830ee447e10af4a287b3f', # INK / blank vars - query1
 	'RegularBattleHistoriesQuery':       '3baef04b095ad8975ea679d722bc17de', # INK / blank vars - query1
 	'BankaraBattleHistoriesQuery':       '0438ea6978ae8bd77c5d1250f4f84803', # INK / blank vars - query1
@@ -32,7 +32,7 @@ translate_rid = {
 	'XBattleHistoriesQuery':             '6796e3cd5dc3ebd51864dc709d899fc5', # INK / blank vars - query1
 	'VsHistoryDetailQuery':              '291295ad311b99a6288fc95a5c4cb2d2', # INK / req "vsResultId" - query2
 	'CoopHistoryQuery':                  '2fd21f270d381ecf894eb975c5f6a716', # SR  / blank vars - query1
-	'CoopHistoryDetailQuery':            '9ade2aa3656324870ccec023636aed32', # SR  / req "coopHistoryDetailId" - query2
+	'CoopHistoryDetailQuery':            '379f0d9b78b531be53044bcac031b34b', # SR  / req "coopHistoryDetailId" - query2
 	'MyOutfitCommonDataEquipmentsQuery': 'd29cd0c2b5e6bac90dd5b817914832f8'  # for Lean's seed checker
 }
 
