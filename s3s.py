@@ -1038,22 +1038,8 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 		]
 		player_info["disconnected"] = "yes" if all(value == 0 for value in dc_indicators) else "no"
 
-		slop_num = utils.b64d(player["player"]["uniform"]["id"])
-		translate_suit = {
-			1: "orange",
-			2: "green",
-			3: "yellow",
-			4: "pink",
-			5: "blue",
-			6: "black",
-			7: "white",
-			# 8: "orange_gloop",
-			# 9: "black_gloop",
-			# 10: "yellow_gloop",
-			# 11: "brown_gloop"
-		}
 		try:
-			player_info["uniform"] = translate_suit[slop_num]
+			player_info["uniform"] = utils.b64d(player["player"]["uniform"]["id"])
 		except KeyError:
 			print("Could not send unsupported Salmon Run gear data to stat.ink. You may want to delete & re-upload this job later.")
 
