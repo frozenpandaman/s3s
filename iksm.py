@@ -6,7 +6,7 @@ import base64, hashlib, json, os, re, sys, urllib
 import requests
 from bs4 import BeautifulSoup
 
-USE_OLD_NSOAPP_VER    = True # Change this to True if you're getting a "9403: Invalid token." error
+USE_OLD_NSOAPP_VER    = False # Change this to True if you're getting a "9403: Invalid token." error
 
 S3S_VERSION           = "unknown"
 NSOAPP_VERSION        = "unknown"
