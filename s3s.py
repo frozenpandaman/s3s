@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.3.3"
+A_VERSION = "0.3.4"
 
 DEBUG = False
 
@@ -893,9 +893,10 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 	# xtrawave only
 	# https://stat.ink/api-info/boss-salmonid3
 	if job["bossResult"]:
-		king_id = utils.b64d(job["bossResult"]["boss"]["id"])
-		if king_id == 23: # cohozuna
-			payload["king_salmonid"] = "yokozuna"
+		try:
+			payload["king_salmonid"] = utils.b64d(job["bossResult"]["boss"]["id"])
+		except KeyError:
+			print("Could not send unsupported King Salmonid data to stat.ink. You may want to delete & re-upload this job later.")
 
 		payload["clear_extra"] = "yes" if job["bossResult"]["hasDefeatBoss"] else "no"
 
