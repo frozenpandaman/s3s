@@ -1384,20 +1384,24 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 
 	noun = "battles" # first (and maybe only)
 	which = "ink"
+	lobbies = ['regular', 'bankara', 'xmatch', 'private', 'splatfest_open', 'splatfest_challenge']
+	statink_uploads = []
 	for url in urls:
 		if url is not None:
 			printed = False
 			auth = {'Authorization': f'Bearer {API_KEY}'}
-			resp = requests.get(url, headers=auth) # no params = all: regular, bankara, private
-			try:
-				statink_uploads = json.loads(resp.text)
-			except:
-				if utils.custom_key_exists("errors_pass_silently", CONFIG_DATA):
-					print(f"Error while checking recently-uploaded {noun}. Continuing...")
-				else:
-					print(f"Error while checking recently-uploaded {noun}. Is stat.ink down?")
-					sys.exit(1)
-
+			for lobby in lobbies:
+				resp = requests.get(url, headers=auth, params={"lobby": lobby}) # no params = all: regular, bankara, private
+				try:
+					statink_uploads.extend(resp.json())
+				except:
+					if utils.custom_key_exists("errors_pass_silently", CONFIG_DATA):
+						print(f"Error while checking recently-uploaded {noun}. Continuing...")
+					else:
+						print(f"Error while checking recently-uploaded {noun}. Is stat.ink down?")
+						sys.exit(1)
+				if "salmon" in url:
+					break
 			# ! fetch from online
 			# specific - check ALL possible battles; printout - to show tokens are being checked at program start
 			splatnet_ids = fetch_json(which, specific=True, numbers_only=True, printout=True, skipprefetch=skipprefetch)
