@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.3.4"
+A_VERSION = "0.4.0"
 
 DEBUG = False
 
@@ -874,18 +874,23 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 		payload["private"] = "yes" if job["jobPoint"] is None else "no"
 	is_private = True if payload["private"] == "yes" else False
 
+	payload["big_run"]      = "yes" if job_rule == "BIG_RUN"      else "no"
+	payload["eggstra_work"] = "yes" if job_rule == "TEAM_CONTEST" else "no"
+
 	payload["stage"] = utils.b64d(job["coopStage"]["id"])
 
-	payload["danger_rate"] = job["dangerRate"] * 100
+	if job_rule != "TEAM_CONTEST": # not present for overall job in eggstra work
+		payload["danger_rate"] = job["dangerRate"] * 100
 	payload["king_smell"] = job["smellMeter"]
 
 	waves_cleared = job["resultWave"] - 1 # resultWave = 0 if all normal waves cleared
-	payload["clear_waves"] = 3 if waves_cleared == -1 else waves_cleared
+	max_waves = 5 if job_rule == "TEAM_CONTEST" else 3
+	payload["clear_waves"] = max_waves if waves_cleared == -1 else waves_cleared
 
 	if payload["clear_waves"] < 0: # player dc'd
 		payload["clear_waves"] = None
 
-	elif payload["clear_waves"] != 3: # job failure
+	elif payload["clear_waves"] != max_waves: # job failure
 		last_wave = job["waveResults"][payload["clear_waves"]]
 		if last_wave["teamDeliverCount"] >= last_wave["deliverNorm"]: # delivered more than quota, but still failed
 			payload["fail_reason"] = "wipe_out"
@@ -901,7 +906,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 		payload["clear_extra"] = "yes" if job["bossResult"]["hasDefeatBoss"] else "no"
 
 	# https://stat.ink/api-info/salmon-title3
-	if not is_private:
+	if not is_private and job_rule != "TEAM_CONTEST": # only in regular, not private or eggstra work
 		payload["title_after"]     = utils.b64d(job["afterGrade"]["id"])
 		payload["title_exp_after"] = job["afterGradePoint"]
 
@@ -962,55 +967,15 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 	payload["job_point"] = job["jobPoint"] # your points = floor((score x rate) + bonus)
 	# note the current bug with "bonus" lol... https://github.com/frozenpandaman/s3s/wiki/%7C-splatnet-bugs
 
-	waves = []
-	for wave in job["waveResults"]:
-		wave_info = {}
-		wave_info["tide"]               = "low" if wave["waterLevel"] == 0 else "high" if wave["waterLevel"] == 2 else "normal"
-		wave_info["golden_quota"]       = wave["deliverNorm"]
-		wave_info["golden_delivered"]   = wave["teamDeliverCount"]
-		wave_info["golden_appearances"] = wave["goldenPopCount"]
-
-		if wave["eventWave"]:
-			event_id = utils.b64d(wave["eventWave"]["id"])
-			translate_occurrence = {
-				1: "rush",
-				2: "goldie_seeking",
-				3: "the_griller",
-				4: "the_mothership",
-				5: "fog",
-				6: "cohock_charge",
-				7: "giant_tornado",
-				8: "mudmouth_eruption"
-			}
-			wave_info["event"] = translate_occurrence[event_id]
-
-		translate_special = {
-			20006: "nicedama",
-			20007: "hopsonar",
-			20009: "megaphone51",
-			20010: "jetpack",
-			20012: "kanitank",
-			20013: "sameride",
-			20014: "tripletornado"
-		}
-		special_uses = {
-			"nicedama": 0,
-			"hopsonar": 0,
-			"megaphone51": 0,
-			"jetpack": 0,
-			"kanitank": 0,
-			"sameride": 0,
-			"tripletornado": 0,
-			"unknown": 0
-		}
-		for wep_use in wave["specialWeapons"]:
-			special_id = utils.b64d(wep_use["id"])
-			special_key = translate_special.get(special_id, "unknown")
-			special_uses[special_key] += 1 # increment value of the key each time it's found
-		wave_info["special_uses"] = special_uses
-
-		waves.append(wave_info)
-	payload["waves"] = waves
+	translate_special = { # used in players and waves below
+		20006: "nicedama",
+		20007: "hopsonar",
+		20009: "megaphone51",
+		20010: "jetpack",
+		20012: "kanitank",
+		20013: "sameride",
+		20014: "tripletornado"
+	}
 
 	players = []
 	players_json = [job["myResult"]]
@@ -1075,6 +1040,81 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 		players.append(player_info)
 	payload["players"] = players
 
+	waves = []
+	for i, wave in enumerate(job["waveResults"]):
+		wave_info = {}
+		wave_info["tide"]               = "low" if wave["waterLevel"] == 0 else "high" if wave["waterLevel"] == 2 else "normal"
+		wave_info["golden_quota"]       = wave["deliverNorm"]
+		wave_info["golden_delivered"]   = wave["teamDeliverCount"]
+		wave_info["golden_appearances"] = wave["goldenPopCount"]
+		if job_rule == "TEAM_CONTEST": # waves only have indiv hazard levels in eggstra work
+			if i == 0:
+				haz_level = 60
+			else:
+				num_players = len(players)
+				quota         = waves[-1]["golden_quota"] # last wave, most recent one added to the list
+				delivered     = waves[-1]["golden_delivered"]
+				added_percent = 0 # default, no increase if less than 1.5x quota delivered
+				if num_players == 4:
+					if delivered >= quota*2:
+						added_percent = 60
+					elif delivered >= quota*1.5:
+						added_percent = 30
+				elif num_players == 3:
+					if delivered >= quota*2:
+						added_percent = 40
+					elif delivered >= quota*1.5:
+						added_percent = 20
+				elif num_players == 2:
+					if delivered >= quota*2:
+						added_percent = 20
+					elif delivered >= quota*1.5:
+						added_percent = 10
+						added_percent = 5
+				elif num_players == 1:
+					if delivered >= quota*2:
+						added_percent = 10
+					elif delivered >= quota*1.5:
+						added_percent = 5
+
+				prev_percent = waves[-1]["danger_rate"]
+
+				haz_level = prev_percent + added_percent
+			wave_info["danger_rate"] = haz_level
+
+		if wave["eventWave"]:
+			event_id = utils.b64d(wave["eventWave"]["id"])
+			translate_occurrence = {
+				1: "rush",
+				2: "goldie_seeking",
+				3: "the_griller",
+				4: "the_mothership",
+				5: "fog",
+				6: "cohock_charge",
+				7: "giant_tornado",
+				8: "mudmouth_eruption"
+			}
+			wave_info["event"] = translate_occurrence[event_id]
+
+		special_uses = {
+			"nicedama": 0,
+			"hopsonar": 0,
+			"megaphone51": 0,
+			"jetpack": 0,
+			"kanitank": 0,
+			"sameride": 0,
+			"tripletornado": 0,
+			"unknown": 0
+		}
+		for wep_use in wave["specialWeapons"]:
+			special_id = utils.b64d(wep_use["id"])
+			special_key = translate_special.get(special_id, "unknown")
+			special_uses[special_key] += 1 # increment value of the key each time it's found
+		wave_info["special_uses"] = special_uses
+
+		waves.append(wave_info)
+	payload["waves"] = waves
+
 	# https://stat.ink/api-info/boss-salmonid3
 	bosses = {}
 	translate_boss = {
@@ -1104,8 +1144,6 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 	payload["bosses"] = bosses
 
 	payload["start_at"] = utils.epoch_time(job["playedTime"])
-
-	payload["big_run"] = "yes" if job_rule == "BIG_RUN" else "no"
 
 	if isblackout:
 		# fix payload
