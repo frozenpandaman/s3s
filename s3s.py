@@ -1412,7 +1412,7 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Battle-%EF%BC%8D-Get-UUID-List-(for-s3s)
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Salmon-%EF%BC%8D-Get-UUID-List
 	if which in ("both", "ink"):
-		urls.append("https://stat.ink/api/v3/s3s/uuid-list") # max 200 entries
+		urls.append("https://stat.ink/api/v3/s3s/uuid-list?lobby=adaptive") # max 200 entries
 	else:
 		urls.append(None)
 	if which in ("both", "salmon"):
@@ -1944,7 +1944,7 @@ def main():
 
 		# only upload unuploaded results
 		auth = {'Authorization': f'Bearer {API_KEY}'}
-		resp_b = requests.get("https://stat.ink/api/v3/s3s/uuid-list", headers=auth)
+		resp_b = requests.get("https://stat.ink/api/v3/s3s/uuid-list?lobby=adaptive", headers=auth)
 		resp_j = requests.get("https://stat.ink/api/v3/salmon/uuid-list", headers=auth)
 		try:
 			statink_uploads = json.loads(resp_b.text)
