@@ -44,7 +44,7 @@ Arguments for advanced usage (e.g. locally exporting data to JSON files) can be 
 
 ### Example usage
 
-Running `python s3s.py -M -r` uploads all recent Turf War/Ranked battles _and_ Salmon Run jobs not already present on stat.ink, and then continues in monitoring mode, checking for new results every 5 minutes.
+Running `python s3s.py -r -M` uploads all recent battles _and_ Salmon Run jobs not already present on stat.ink, and then continues in monitoring mode, checking for new results every 5 minutes.
 
 Running `python s3s.py -M 900 -osr` monitors for new Salmon Run results, checking every 15 minutes.
 
@@ -64,7 +64,7 @@ Running `python s3s.py -M 900 -osr` monitors for new Salmon Run results, checkin
 
 6. You will then be asked to navigate to a specific URL on Nintendo.com, log in, and follow simple instructions to obtain your `session_token`; this will be used to generate a `gtoken` and `bulletToken`. If you are opting against automatic token generation, enter "skip" for this step, at which point you will be asked to manually input your two tokens instead (see the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions)).
 
-    These tokens (used to access your SplatNet battle results) along with your stat.ink API key and language will automatically be saved into `config.txt` for you. You're now ready to upload battles!
+    These tokens (used to access your SplatNet battle results) along with your stat.ink API key & language will be saved into `config.txt` for you. You're now ready to upload battles! (See the "Usage" section above. [→](#usage-))
 
 Have any questions, issues, or suggestions? Feel free to message me on [Twitter](https://twitter.com/frozenpandaman) or create an [issue](https://github.com/frozenpandaman/s3s/issues) here.
 
@@ -82,26 +82,26 @@ You can even enter QR codes on the web version of SplatNet 3 via the list of ava
 
 ## Token generation 🪙
 
-For s3s to work, [tokens](https://en.wikipedia.org/wiki/Access_token) known as `gtoken` and `bulletToken` are required to access SplatNet. These tokens may be obtained automatically, using the script, or manually via the official Nintendo Switch Online app. Please read the following sections carefully to decide whether or not you want to use automatic token generation.
+For s3s to work, [tokens](https://en.wikipedia.org/wiki/Access_token) known as `gtoken` and `bulletToken` are needed to access SplatNet. These tokens may be obtained automatically, using the script, or manually via the official Nintendo Switch Online app. Please read the following sections carefully to decide whether or not you want to use automatic token generation.
 
 ### Automatic
 
 Automatic token generation involves making a *secure request to a non-Nintendo server with minimal, non-identifying information*. We aim to be 100% transparent about this and provide in-depth information on security and privacy. Users who feel uncomfortable with this may opt to manually acquire their tokens instead.
 
-**Privacy statement:** No identifying information is ever sent to the [imink API](https://status.imink.app/). Usernames and passwords are far removed from where the API comes into play and are never readable by anyone but you, and returned hash values do not contain meaningful information about your account. It is not possible to use either sent or stored data to identify which account/user performed a request, to view any identifying information about a user, or to gain access to an account. See the [imink API Privacy Policy](https://github.com/JoneWang/imink/wiki/Privacy-Policy) and [Documentation](https://github.com/JoneWang/imink/wiki/imink-API-Documentation) for more information.
+**Privacy statement:** No identifying information is ever sent to the [imink API](https://status.imink.app/). Usernames and passwords are far removed from where the API comes into play and are never readable by anyone but you, and returned values do not contain any meaningful information about your account. It is not possible to use either sent or stored data to identify which account/user performed a request, to view identifying information about a user, or to gain access to an account. See the [imink API Privacy Policy](https://github.com/JoneWang/imink/wiki/Privacy-Policy) and [Documentation](https://github.com/JoneWang/imink/wiki/imink-API-Documentation) for more information.
 
-Alternatively, you can use [nsotokengen](https://github.com/clovervidia/nsotokengen) or [nxapi-znca-api](https://github.com/samuelthomas2774/nxapi-znca-api) as a drop-in replacement (customizable in `config.txt`) in order to generate tokens locally without calls to a third-party API.
+Alternatively, you can use [nsotokengen](https://github.com/clovervidia/nsotokengen) or [nxapi-znca-api](https://github.com/samuelthomas2774/nxapi-znca-api) as a drop-in replacement (customizable in `config.txt`) to generate tokens locally without calls to a third-party API.
 
 ### Manual
 
-Users who decide against automatic token generation may instead generate/retrieve tokens manually via the SplatNet 3 service.
+Users who decide against automatic token generation may instead generate/retrieve tokens manually via SplatNet 3.
 
-In this case, users must obtain tokens from their phone – or an emulator – by intercepting their device's web traffic and entering the tokens into s3s when prompted (or manually adding them to `config.txt` later). Follow the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions) to obtain your tokens. To opt against automatic acquisition, type "skip" when prompted to enter the "Select this account" URL.
+In this case, users must obtain tokens from their phone – or an emulator – by intercepting their device's web traffic and entering the tokens into s3s when prompted (or manually adding them to `config.txt` later). Follow the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions) to obtain your tokens. To opt for manual token entry, type "skip" when prompted to enter the "Select this account" URL.
 
 ## License & copyleft statement 🏴
 
 s3s is _free software_ licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html). This means that you have _freedom_ – to run, modify, copy, share, and redistribute this work as you see fit, as long as derivative works are also distributed under these same or equivalent terms.
 
-Copyright is a recent, confusing, and often unnecessary human invention. Libraries, for example, predate copyright by thousands of years, and their integral role in the "promotion of science" and "encouragement of learning" was acknowledged even before the first copyright statutes were enacted. If the first human who had the idea of a hammer claimed it as their intellectual property, we wouldn't have gotten very far as a species. Please consider sharing your work openly with the world. _(statement adapted from [here](https://tspace.library.utoronto.ca/bitstream/1807/89456/1/Katz%20Copyright%2C%20Exhaustion.pdf) and [here](https://www2.hawaii.edu/~larkinrt/about/))_
+Copyright is a recent, confusing, and often unnecessary human invention. Libraries, for example, predate copyright by thousands of years, and their integral role in the "promotion of science" and "encouragement of learning" was acknowledged even before the first copyright statutes were enacted. If the first human who had the idea of a hammer claimed it as their intellectual property, we wouldn't have gotten very far as a species. Please consider sharing your work openly with the world. _(statement adapted from [here](https://tspace.library.utoronto.ca/bitstream/1807/89456/1/Katz%20Copyright%2C%20Exhaustion.pdf) and [here](https://rickey.info/about/))_
 
-While this is a free and open-source project, its license does require **attribution**. **If you are using any part of s3s, splatnet2statink, `iksm.py`, etc. in your project, _please provide a link back to this repository_**. I have spent over half a decade and hundreds of hours of my personal time on these projects for the Splatoon community – so, at the least, some credit would be appreciated. :) Thank you! –eli
+While this is a free/libre and open-source project, its license does require **attribution**. **If you are using any part of s3s, splatnet2statink, `iksm.py`, etc. in your project, _please provide a link back to this repository_**. I have spent over half a decade and hundreds of hours of my personal time on these projects for the Splatoon community – so, at the least, some credit would be appreciated. :) Thank you! –eli
