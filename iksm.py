@@ -257,12 +257,13 @@ def get_gtoken(f_gen_url, session_token, ver):
 	user_nickname = user_info["nickname"]
 	user_lang     = user_info["language"]
 	user_country  = user_info["country"]
+	user_id       = user_info["id"]
 
 	# get access token
 	body = {}
 	try:
 		id_token = id_response["id_token"]
-		f, uuid, timestamp = call_f_api(id_token, 1, f_gen_url)
+		f, uuid, timestamp = call_f_api(id_token, 1, f_gen_url, user_id)
 
 		parameter = {
 			'f':          f,
@@ -297,11 +298,12 @@ def get_gtoken(f_gen_url, session_token, ver):
 	splatoon_token = json.loads(r.text)
 
 	try:
-		id_token = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+		access_token  = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+		coral_user_id = splatoon_token["result"]["user"]["id"]
 	except:
 		# retry once if 9403/9599 error from nintendo
 		try:
-			f, uuid, timestamp = call_f_api(id_token, 1, f_gen_url)
+			f, uuid, timestamp = call_f_api(access_token, 1, f_gen_url, user_id)
 			body["parameter"]["f"]         = f
 			body["parameter"]["requestId"] = uuid
 			body["parameter"]["timestamp"] = timestamp
@@ -309,20 +311,21 @@ def get_gtoken(f_gen_url, session_token, ver):
 			url = "https://api-lp1.znc.srv.nintendo.net/v3/Account/Login"
 			r = requests.post(url, headers=app_head, json=body)
 			splatoon_token = json.loads(r.text)
-			id_token = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+			access_token  = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
+			coral_user_id = splatoon_token["result"]["user"]["id"]
 		except:
 			print("Error from Nintendo (in Account/Login step):")
 			print(json.dumps(splatoon_token, indent=2))
 			print("Try re-running the script. Or, if the NSO app has recently been updated, you may temporarily change `USE_OLD_NSOAPP_VER` to True at the top of iksm.py for a workaround.")
 			sys.exit(1)
 
-		f, uuid, timestamp = call_f_api(id_token, 2, f_gen_url)
+		f, uuid, timestamp = call_f_api(access_token, 2, f_gen_url, user_id, coral_user_id=coral_user_id)
 
 	# get web service token
 	app_head = {
 		'X-Platform':       'Android',
 		'X-ProductVersion': nsoapp_version,
-		'Authorization':    f'Bearer {id_token}',
+		'Authorization':    f'Bearer {access_token}',
 		'Content-Type':     'application/json; charset=utf-8',
 		'Content-Length':   '391',
 		'Accept-Encoding':  'gzip',
@@ -333,7 +336,7 @@ def get_gtoken(f_gen_url, session_token, ver):
 	parameter = {
 		'f':                 f,
 		'id':                4834290508791808,
-		'registrationToken': id_token,
+		'registrationToken': access_token,
 		'requestId':         uuid,
 		'timestamp':         timestamp
 	}
@@ -348,7 +351,7 @@ def get_gtoken(f_gen_url, session_token, ver):
 	except:
 		# retry once if 9403/9599 error from nintendo
 		try:
-			f, uuid, timestamp = call_f_api(id_token, 2, f_gen_url)
+			f, uuid, timestamp = call_f_api(access_token, 2, f_gen_url, user_id, coral_user_id=coral_user_id)
 			body["parameter"]["f"]         = f
 			body["parameter"]["requestId"] = uuid
 			body["parameter"]["timestamp"] = timestamp
@@ -410,18 +413,22 @@ def get_bullet(web_service_token, app_user_agent, user_lang, user_country):
 	return bullet_token
 
 
-def call_f_api(id_token, step, f_gen_url):
-	'''Passes an naIdToken to the f generation API (default: imink) & fetches the response (f token, UUID, and timestamp).'''
+def call_f_api(access_token, step, f_gen_url, user_id, coral_user_id=None):
+	'''Passes naIdToken & user ID to f generation API (default: imink) & fetches response (f token, UUID, timestamp).'''
 
 	try:
 		api_head = {
 			'User-Agent':   f's3s/{S3S_VERSION}',
 			'Content-Type': 'application/json; charset=utf-8'
 		}
-		api_body = {
-			'token':       id_token,
-			'hash_method':  step
+		api_body = { # 'timestamp' & 'request_id' (uuid v4) set automatically
+			'token':       access_token,
+			'hash_method': step, # 1 = coral (NSO) token, 2 = webservicetoken
+			'na_id':       user_id
 		}
+		if step == 2 and coral_user_id is not None:
+			api_body["coral_user_id"] = coral_user_id
+
 		api_response = requests.post(f_gen_url, data=json.dumps(api_body), headers=api_head)
 		resp = json.loads(api_response.text)
 
@@ -436,8 +443,7 @@ def call_f_api(id_token, step, f_gen_url):
 			else:
 				print(f"Error during f generation: Error {api_response.status_code}.")
 		except:
-			print(f"Couldn't connect to f generation API ({f_gen_url}). Please try again.")
-
+			print(f"Couldn't connect to f generation API ({f_gen_url}). Please try again later.")
 		sys.exit(1)
 
 
