@@ -31,7 +31,7 @@ translate_rid = {
 	'PrivateBattleHistoriesQuery':       '8e5ae78b194264a6c230e262d069bd28', # INK / blank vars - query1
 	'XBattleHistoriesQuery':             '6796e3cd5dc3ebd51864dc709d899fc5', # INK / blank vars - query1
 	'VsHistoryDetailQuery':              '9ee0099fbe3d8db2a838a75cf42856dd', # INK / req "vsResultId" - query2
-	'CoopHistoryQuery':                  '2fd21f270d381ecf894eb975c5f6a716', # SR  / blank vars - query1
+	'CoopHistoryQuery':                  '91b917becd2fa415890f5b47e15ffb15', # SR  / blank vars - query1
 	'CoopHistoryDetailQuery':            '379f0d9b78b531be53044bcac031b34b', # SR  / req "coopHistoryDetailId" - query2
 	'MyOutfitCommonDataEquipmentsQuery': 'd29cd0c2b5e6bac90dd5b817914832f8'  # for Lean's seed checker
 }
