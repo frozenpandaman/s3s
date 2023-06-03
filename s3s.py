@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.5.0"
+A_VERSION = "0.5.1"
 
 DEBUG = False
 
@@ -557,8 +557,8 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	###########
 	payload["stage"] = utils.b64d(battle["vsStage"]["id"])
 
-	## WEAPON, K/D/A/S, TURF INKED ##
-	#################################
+	## WEAPON, K/D/A/S, PLAYER & TEAM TURF INKED ##
+	###############################################
 	for i, player in enumerate(battle["myTeam"]["players"]): # specified again in set_scoreboard()
 		if player["isMyself"] == True:
 			payload["weapon"]         = utils.b64d(player["weapon"]["id"])
@@ -575,6 +575,17 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				payload["signal"]        = player["result"]["noroshiTry"] # ultra signal attempts in tricolor TW
 				break
 
+	try:
+		our_team_inked, their_team_inked = 0, 0
+		for player in battle["myTeam"]["players"]:
+			our_team_inked += player["paint"]
+		for player in battle["otherTeams"][0]["players"]:
+			their_team_inked += player["paint"]
+		payload["our_team_inked"] = our_team_inked
+		payload["their_team_inked"] = their_team_inked
+	except: # one of these might be able to be null? doubtful but idk lol
+		pass
+
 	## RESULT ##
 	############
 	result = battle["judgement"]
@@ -586,6 +597,22 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		payload["result"] = "exempted_lose" # doesn't count toward stats
 	elif result == "DRAW":
 		payload["result"] = "draw"
+
+	## BASIC INFO & TURF WAR ##
+	###########################
+	if rule == "TURF_WAR" or rule == "TRI_COLOR": # could be turf war
+		try:
+			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
+			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
+		except: # draw - 'result' is null
+			pass
+	else: # could be a ranked mode
+		try:
+			payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
+			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
+			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
+		except: # draw - 'result' is null
+			pass
 
 	## START/END TIMES ##
 	#####################
@@ -606,7 +633,12 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	## SPLATFEST ##
 	###############
 	if mode == "FEST":
-		times_battle = battle["festMatch"]["dragonMatchType"] # NORMAL (1x), DECUPLE (10x), DRAGON (100x), DOUBLE_DRAGON (333x)
+		# paint %ages set in 'basic info'
+		payload["our_team_theme"]   = battle["myTeam"]["festTeamName"]
+		payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"]
+
+		# NORMAL (1x), DECUPLE (10x), DRAGON (100x), DOUBLE_DRAGON (333x)
+		times_battle = battle["festMatch"]["dragonMatchType"]
 		if times_battle == "DECUPLE":
 			payload["fest_dragon"] = "10x"
 		elif times_battle == "DRAGON":
@@ -616,27 +648,6 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 
 		payload["clout_change"] = battle["festMatch"]["contribution"]
 		payload["fest_power"]   = battle["festMatch"]["myFestPower"] # pro only
-
-	## TURF WAR ##
-	##############
-	if mode in ("REGULAR", "FEST"):
-		try:
-			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
-			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
-		except TypeError: # draw - 'result' is null
-			pass
-
-		our_team_inked, their_team_inked = 0, 0
-		for player in battle["myTeam"]["players"]:
-			our_team_inked += player["paint"]
-		for player in battle["otherTeams"][0]["players"]:
-			their_team_inked += player["paint"]
-		payload["our_team_inked"] = our_team_inked
-		payload["their_team_inked"] = their_team_inked
-
-		if mode == "FEST":
-			payload["our_team_theme"]   = battle["myTeam"]["festTeamName"]
-			payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"]
 
 	## TRICOLOR TW ##
 	#################
@@ -657,36 +668,10 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		payload["their_team_role"] = utils.convert_tricolor_role(battle["otherTeams"][0]["tricolorRole"])
 		payload["third_team_role"] = utils.convert_tricolor_role(battle["otherTeams"][1]["tricolorRole"])
 
-	## PRIVATE BATTLES ##
-	#####################
-	if mode == "PRIVATE": # these don't get sent otherwise. no support for private tricolor battles atm
-		# could be a ranked mode
-		try:
-			payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
-		except:
-			pass
-		try:
-			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
-			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
-		except:
-			pass
-		# could also be tw
-		try:
-			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
-			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
-		except:
-			pass
-
 	## ANARCHY BATTLES ##
 	#####################
 	if mode == "BANKARA":
-		try:
-			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
-			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
-		except: # draw - 'result' is null
-			pass
-
-		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
+		# counts & knockout set in 'basic info'
 		payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"]
 
 		battle_id         = base64.b64decode(battle["id"]).decode('utf-8')
@@ -713,8 +698,9 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 			for parent in ranked_list: # groups in overview (anarchy tab) JSON/screen
 				for idx, child in enumerate(parent["historyDetails"]["nodes"]):
 
+					# same battle, different screens
 					overview_battle_id         = base64.b64decode(child["id"]).decode('utf-8')
-					overview_battle_id_mutated = overview_battle_id.replace("BANKARA", "RECENT") # same battle, different screens
+					overview_battle_id_mutated = overview_battle_id.replace("BANKARA", "RECENT")
 
 					if overview_battle_id_mutated == battle_id_mutated: # found the battle ID in the other file
 						full_rank = re.split('([0-9]+)', child["udemae"].lower())
@@ -771,16 +757,9 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	## X BATTLES ##
 	###############
 	if mode == "X_MATCH":
-		try:
-			payload["our_team_count"]   = battle["myTeam"]["result"]["score"]
-			payload["their_team_count"] = battle["otherTeams"][0]["result"]["score"]
-		except: # draw
-			pass
-
+		# counts & knockout set in 'basic info'
 		if battle["xMatch"]["lastXPower"] is not None:
 			payload["x_power_before"] = battle["xMatch"]["lastXPower"]
-
-		payload["knockout"] = "no" if battle["knockout"] is None or battle["knockout"] == "NEITHER" else "yes"
 
 		battle_id         = base64.b64decode(battle["id"]).decode('utf-8')
 		battle_id_mutated = battle_id.replace("XMATCH", "RECENT")
@@ -823,23 +802,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		payload["event_power"] = battle["leagueMatch"]["myLeaguePower"]
 		# luckily no need to look at overview screen for any info
 
-		try:
-			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
-			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
-		except TypeError: # draw - 'result' is null
-			pass
-
-		our_team_inked, their_team_inked = 0, 0
-		for player in battle["myTeam"]["players"]:
-			our_team_inked += player["paint"]
-		for player in battle["otherTeams"][0]["players"]:
-			their_team_inked += player["paint"]
-		payload["our_team_inked"] = our_team_inked
-		payload["their_team_inked"] = their_team_inked
-
-		if mode == "FEST":
-			payload["our_team_theme"]   = battle["myTeam"]["festTeamName"]
-			payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"]
+		# to check: any ranked-specific stuff for challenges in battle.leagueMatch...?
 
 	## MEDALS ##
 	############
@@ -1239,6 +1202,9 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			print(json.dumps(results))
 			sys.exit(1) # always exit here - something is seriously wrong
 
+		if not payload: # empty payload
+			return
+
 		if len(payload) == 0: # received blank payload from prepare_job_result() - skip unsupported battle
 			continue
 
@@ -1583,7 +1549,7 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 					cookies=dict(_gtoken=GTOKEN))
 				result = json.loads(result_post.text)
 
-				if result["data"]["coopHistoryDetail"]["jobPoint"] == None \
+				if result["data"]["coopHistoryDetail"]["jobPoint"] is None \
 				and utils.custom_key_exists("ignore_private_jobs", CONFIG_DATA): # works pre- and post-2.0.0
 					pass
 				else:
