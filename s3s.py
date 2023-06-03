@@ -819,8 +819,8 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	## CHALLENGES ##
 	################
 	if mode == "LEAGUE":
-		payload["event"] = battle["myTeam"]["leagueMatch"]["leagueMatchEvent"]["id"] # send in Base64
-		payload["event_power"] = battle["myTeam"]["leagueMatch"]["myLeaguePower"]
+		payload["event"] = battle["leagueMatch"]["leagueMatchEvent"]["id"] # send in Base64
+		payload["event_power"] = battle["leagueMatch"]["myLeaguePower"]
 		# luckily no need to look at overview screen for any info
 
 	## MEDALS ##
