@@ -823,6 +823,24 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		payload["event_power"] = battle["leagueMatch"]["myLeaguePower"]
 		# luckily no need to look at overview screen for any info
 
+		try:
+			payload["our_team_percent"]   = float(battle["myTeam"]["result"]["paintRatio"]) * 100
+			payload["their_team_percent"] = float(battle["otherTeams"][0]["result"]["paintRatio"]) * 100
+		except TypeError: # draw - 'result' is null
+			pass
+
+		our_team_inked, their_team_inked = 0, 0
+		for player in battle["myTeam"]["players"]:
+			our_team_inked += player["paint"]
+		for player in battle["otherTeams"][0]["players"]:
+			their_team_inked += player["paint"]
+		payload["our_team_inked"] = our_team_inked
+		payload["their_team_inked"] = their_team_inked
+
+		if mode == "FEST":
+			payload["our_team_theme"]   = battle["myTeam"]["festTeamName"]
+			payload["their_team_theme"] = battle["otherTeams"][0]["festTeamName"]
+
 	## MEDALS ##
 	############
 	medals = []
