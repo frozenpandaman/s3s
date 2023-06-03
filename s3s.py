@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.4.2"
+A_VERSION = "0.5.0"
 
 DEBUG = False
 
