@@ -66,7 +66,7 @@ NOTE: Read the "Token generation" section below before proceeding. [→](#token-
 
     These tokens (used to access your SplatNet battle results) along with your stat.ink API key & language will be saved into `config.txt` for you. You're now ready to upload battles! (See the "Usage" section above. [→](#usage-))
 
-Have any questions, problems, or suggestions? [Create an issue](https://github.com/frozenpandaman/s3s/issues) here or message me on [Twitter](https://twitter.com/frozenpandaman). **Please do not raise issues via Discord. It is important for discussion on the internet to be public, indexable, and searchable, able to be shared freely for the benefit for others – not locked behind a private platform.**
+Have any questions, problems, or suggestions? [Create an issue](https://github.com/frozenpandaman/s3s/issues) here or contact me on [Twitter](https://twitter.com/frozenpandaman). **Please do not raise issues via Discord. It is important for discussion on the internet to be public, indexable, and searchable, able to be shared freely and benefit others – not locked behind a private platform. [Here](https://v21.io/blog/how-to-find-things-online)'s a great article about this!**
 
 質問があれば、ツイッター([@frozenpandaman](https://twitter.com/frozenpandaman))で連絡してください。日本語OK。
 
