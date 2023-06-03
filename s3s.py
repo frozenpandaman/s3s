@@ -1433,7 +1433,7 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 	else:
 		urls.append(None)
 	if which in ("both", "salmon"):
-		urls.append("https://stat.ink/api/v3/salmon/uuid-list?lobby=adaptive")
+		urls.append("https://stat.ink/api/v3/salmon/uuid-list")
 	else:
 		urls.append(None)
 
