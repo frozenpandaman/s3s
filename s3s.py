@@ -1344,24 +1344,26 @@ def get_num_results(which):
 	noun = utils.set_noun(which)
 	try:
 		if which == "ink":
-			print("Note: 50 recent battles of each type (up to 250 total) may be uploaded by instead manually exporting data with " \
-				'\033[91m' + "-o" + '\033[0m' + ".\n")
+			print(f"Note: This is an atypical way to run the script for manually uploading recent data. " \
+				"recent battles. Up to 250 results (50 of each type) may be uploaded instead by using " \
+				'\033[91m' + "-r" + '\033[0m' + ".\n")
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
 	except ValueError:
 		print("Please enter an integer between 0 and 50. Exiting.")
 		sys.exit(0)
-	if n < 1:
+	if n == 0:
 		print("Exiting without uploading anything.")
+		sys.exit(0)
+	elif n < 0:
+		print("No.")
 		sys.exit(0)
 	elif n > 50:
 		if which == "salmon":
 			print("SplatNet 3 only stores the 50 most recent jobs. Exiting.")
 		elif which == "ink":
-			print("\nIn this mode, s3s can only fetch the 50 most recent battles (of any type) at once. " \
-				"To export & upload the 50 most recent battles of each type " \
-				"(Regular, Anarchy, X, Challenge, and Private) for up to 2500 results total, run the script with " \
-				'\033[91m' + "-o" + '\033[0m' + " and then " \
-				'\033[91m' + "-i results.json overview.json" + '\033[0m' + ".")
+			print("In this mode, s3s can only fetch the 50 most recent battles (of any type) at once. " \
+				"Run the script with " \
+				'\033[91m' + "-r" + '\033[0m' + " to fetch more than 50 results. Exiting.")
 		sys.exit(0)
 	else:
 		return n
@@ -1460,7 +1462,7 @@ def check_if_missing(which, isblackout, istestrun, skipprefetch):
 					new_job_uuid = str(uuid.uuid5(utils.SALMON_NAMESPACE, full_id))
 					if new_job_uuid in statink_uploads:
 						continue
-					if old_job_uuid in statink_uploads: # extremely low chance of conflicts... but allow force uploading if so
+					if old_job_uuid in statink_uploads: # extremely low chance of conflicts... but force upload if so
 						if not utils.custom_key_exists("force_uploads", CONFIG_DATA):
 							continue
 
@@ -1758,7 +1760,7 @@ def parse_arguments():
 	parser.add_argument("-M", dest="N", required=False, nargs="?", action="store",
 		help="monitoring mode; pull data every N secs (default: 300)", const=300)
 	parser.add_argument("-r", required=False, action="store_true",
-		help="retroactively post unuploaded battles/jobs")
+		help="check for & upload battles/jobs missing from stat.ink")
 	srgroup.add_argument("-nsr", required=False, action="store_true",
 		help="do not check for Salmon Run jobs")
 	srgroup.add_argument("-osr", required=False, action="store_true",
@@ -1782,15 +1784,15 @@ def main():
 
 	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
 
+	# argparse setup
+	################
+	parser_result = parse_arguments()
+
 	# setup
 	#######
 	check_for_updates()
 	check_statink_key()
 	set_language()
-
-	# argparse setup
-	################
-	parser_result = parse_arguments()
 
 	# regular args
 	n_value     = parser_result.N
@@ -1844,7 +1846,7 @@ def main():
 		if not skipprefetch:
 			prefetch_checks(printout=True)
 		print("Fetching your JSON files to export locally. This might take a while...")
-		# fetch_json() calls prefetch_checks() to gen or check tokens
+		# ! fetch from online - fetch_json() calls prefetch_checks() to gen or check tokens
 		parents, results, coop_results = fetch_json("both", separate=True, exportall=True, specific=True, skipprefetch=True)
 
 		cwd = os.getcwd()
