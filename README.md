@@ -14,8 +14,8 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
  - [x] Support for Splatfest & Tricolor Turf War battles and Challenges
  - [x] Monitoring for new results in real-time & checking for missing/unuploaded results
  - [x] Flag to remove other players' names from results
- - [x] File exporting function for use with Lean's [seed checker tools](https://leanny.github.io/splat3seedchecker/)
  - [x] Support for all available game languages
+ - [x] File exporting function for use with Lean's [seed checker tools](https://leanny.github.io/splat3seedchecker/)
  - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
 
 ### What's coming?
@@ -38,13 +38,13 @@ The `-osr` flag, conversely, makes **only** Salmon Run jobs be monitored/uploade
 
 The `--blackout` flag removes other players' names from uploaded scoreboard data.
 
-More flags for advanced usage (e.g. local JSON exports, use with Lean's [seed checker tools](https://leanny.github.io/splat3seedchecker/)) can be viewed using `--help`.
+Arguments for advanced usage (e.g. locally exporting data to JSON files, use with with Lean's [seed checker tools](https://leanny.github.io/splat3seedchecker/)) can be viewed using `--help`.
 
 ### Tips for using s3s
 
-★ **On first run only**, you'll likely want to use `python s3s.py -o` to manually export _all_ available data from SplatNet. The syntax for how to import it to stat.ink (with `-i`) can be viewed by running `python s3s.py --help`.
+★ **On first run**, you'll want to use the `-r` flag to upload _all_ available data from SplatNet to stat.ink, i.e. up to 250 battles (50 of each type: Turf War, Anarchy, X, Challenge, and Private) and up to 50 recent Salmon Run jobs.
 
-The suggested usage of s3s is in monitoring mode, where you run the script as you play the game and exit it once you're done playing. The command **`python s3s.py -r -M`** uploads all recent battles _and_ Salmon Run jobs not already present on stat.ink, and then continues in monitoring mode, checking for new results every 5 minutes.
+The suggested usage of s3s is in monitoring mode, where you run the script as you play the game and exit it once you're done playing. The command **`python s3s.py -r -M`** first looks to ensure there's no data missing from stat.ink (uploading it if so), and then continues in monitoring mode while checking for new results every 5 minutes.
 
 More specific use cases can be specified using other flags (and [config keys](https://github.com/frozenpandaman/s3s/wiki/config-keys)). For example, if you're solely playing Salmon Run and only want to check for new results every 15 minutes, you would use `python s3s.py -osr -M 900`. If not using monitoring mode, `python s3s.py -r` should be run at least once every 50 matches to ensure no data is lost.
 
@@ -58,13 +58,13 @@ More specific use cases can be specified using other flags (and [config keys](ht
 
 4. Navigate to the newly-created directory (type `cd s3s/`) and install the required Python libraries by running `pip install -r requirements.txt`. On Windows, you may have to use `python -m pip` instead.
 
-5. Running the script for the first time will prompt you to enter your stat.ink API Token (available in [settings](https://stat.ink/profile)). If you're playing _Splatoon 3_ in a language other than English, you may enter your language code (locale) as well.
+5. Running the script for the first time (see the "Usage" section above [→](#usage-)) will prompt you to enter your stat.ink API Token (available in [settings](https://stat.ink/profile)). If you're playing the game in a language other than English, you may enter your language code (locale) as well.
 
 NOTE: Read the "Token generation" section below before proceeding. [→](#token-generation-)
 
 6. You will then be asked to navigate to a specific URL on Nintendo.com, log in, and follow simple instructions to obtain your `session_token`; this will be used to generate a `gtoken` and `bulletToken`. If you are opting against automatic token generation, enter "skip" for this step, at which point you will be asked to manually input your two tokens instead (see the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions)).
 
-    These tokens (used to access your SplatNet battle results) along with your stat.ink API key & language will be saved into `config.txt` for you. You're now ready to upload battles! (See the "Usage" section above. [→](#usage-))
+    These tokens (used to access your SplatNet battle results) along with your stat.ink API key & language will be saved into `config.txt` for you. You're now ready to upload battles!
 
 Have any questions, problems, or suggestions? [Create an issue](https://github.com/frozenpandaman/s3s/issues) here or contact me on [Twitter](https://twitter.com/frozenpandaman). **Please do not raise issues via Discord. It is important for discussion on the internet to be public, indexable, and searchable, able to be shared freely and benefit others – not locked behind a private platform. [Here](https://v21.io/blog/how-to-find-things-online)'s a great article about this!**
 
@@ -72,13 +72,13 @@ Have any questions, problems, or suggestions? [Create an issue](https://github.c
 
 ### Accessing SplatNet 3 from your browser
 
-If you wish to access SplatNet 3 from your computer rather than via the phone app, navigate to [https://api.lp1.av5ja.srv.nintendo.net/](https://api.lp1.av5ja.srv.nintendo.net/) (it should show server maintenance). Use your browser or a third-party extension to add a cookie (Chrome instructions [here](https://developer.chrome.com/docs/devtools/storage/cookies/)) named `_gtoken`. Set it to the value you obtained previously (automatically by running the script, or via [mitmproxy](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions) – stored as `gtoken` in `config.txt`) and refresh the page. If you only want to access SplatNet and don't have a stat.ink API key, simply enter "skip" for this step during setup.
+If you wish to access SplatNet 3 from your computer rather than via the phone app, navigate to [https://api.lp1.av5ja.srv.nintendo.net/](https://api.lp1.av5ja.srv.nintendo.net/) (it should show server maintenance). Use your browser or a third-party extension to add a cookie (Chrome instructions [here](https://developer.chrome.com/docs/devtools/storage/cookies/)) named `_gtoken`. Set it to the value you obtained previously (automatically by running the script or via [mitmproxy](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions)) – stored as `gtoken` in `config.txt` – and refresh the page. If you only want to access SplatNet and don't have a stat.ink API key, simply enter "skip" for this step during setup.
 
 To access SplatNet 3 in a language other than English, go to `https://api.lp1.av5ja.srv.nintendo.net/?lang=xx-XX` where `xx-XX` is one of the available [language codes](https://github.com/frozenpandaman/s3s/wiki/languages).
 
 You can even enter QR codes on the web version of SplatNet 3 via the list of available ones [here](https://github.com/frozenpandaman/s3s/wiki/list-of-qr-codes)!
 
-*Splatoon 3* stage rotation information and current SplatNet gear are viewable at [splatoon3.ink](https://splatoon3.ink/).
+*Splatoon 3* stage rotation information, Splatfest data, and current SplatNet gear are viewable at [splatoon3.ink](https://splatoon3.ink/).
 
 ## Token generation 🪙
 
@@ -94,7 +94,7 @@ Alternatively, you can use [nsotokengen](https://github.com/clovervidia/nsotoken
 
 ### Manual
 
-Users who decide against automatic token generation may instead retrieve tokens manually via SplatNet 3.
+Users who decide against using automatic token generation may instead retrieve tokens manually via SplatNet 3.
 
 In this case, users must obtain tokens from their phone – or an emulator – by intercepting their device's web traffic and entering the tokens into s3s when prompted (or manually adding them to `config.txt` later). Follow the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions) to obtain your tokens. To opt for manual token entry, type "skip" when prompted to enter the "Select this account" URL.
 
