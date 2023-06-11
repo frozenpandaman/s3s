@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.5.1"
+A_VERSION = "0.5.2"
 
 DEBUG = False
 
@@ -674,6 +674,11 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		# counts & knockout set in 'basic info'
 		payload["rank_exp_change"] = battle["bankaraMatch"]["earnedUdemaePoint"]
 
+		try: # if playing in anarchy open with 2-4 people, after 5 calibration matches
+			payload["bankara_power_after"] = battle["bankaraMatch"]["bankaraPower"]["power"]
+		except: # could be null in historical data
+			pass
+
 		battle_id         = base64.b64decode(battle["id"]).decode('utf-8')
 		battle_id_mutated = battle_id.replace("BANKARA", "RECENT") # normalize the ID, make work with -M and -r
 
@@ -822,7 +827,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	# gear
 	# payload["image_gear"] = ...
 
-	# no way to get: level_before/after, cash_before/after, rank_after_exp
+	# no way to get: level_before/after, cash_before/after
 
 	payload["automated"] = "yes" # data was not manually entered!
 
