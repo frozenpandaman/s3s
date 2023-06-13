@@ -10,7 +10,7 @@ USE_OLD_NSOAPP_VER    = False # Change this to True if you're getting a "9403: I
 
 S3S_VERSION           = "unknown"
 NSOAPP_VERSION        = "unknown"
-NSOAPP_VER_FALLBACK   = "2.5.1"
+NSOAPP_VER_FALLBACK   = "2.5.2"
 WEB_VIEW_VERSION      = "unknown"
 WEB_VIEW_VER_FALLBACK = "4.0.0-d5178440" # fallback for current splatnet 3 ver
 SPLATNET3_URL         = "https://api.lp1.av5ja.srv.nintendo.net"
