@@ -17,6 +17,7 @@ Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://gi
  - [x] Support for all available game languages
  - [x] File exporting function for use with Lean's [seed checker tools](https://leanny.github.io/splat3seedchecker/)
  - [x] Modular design to support [IkaLog3](https://github.com/hasegaw/IkaLog3) and other tools
+ - [x] Docker container (mount your own config in `/app/config.txt`)
 
 ### What's coming?
  - [ ] Easier setup via downloadable, pre-packaged program executables (soon!)

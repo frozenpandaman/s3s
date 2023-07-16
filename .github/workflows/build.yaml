@@ -1,0 +1,60 @@
+name: Build Container
+
+on:
+  push:
+    branches:
+      - master
+concurrency: build-${{ github.sha }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Create a commit SHA-based tag for the container repositories
+      - name: Create SHA container tag
+        id: sha_tag
+        run: |
+          tag=$(cut -c 1-7 <<< $GITHUB_SHA)
+          echo "::set-output name=tag::$tag"
+
+      # Lowercase the repository name and replace all non-alphanumeric
+      # characters with a dash
+      - name: Create container repository name
+        id: repo_name
+        run: |
+          repo_name=$(echo $GITHUB_REPOSITORY | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9\/]/-/g')
+          echo "::set-output name=repo_name::$repo_name"
+
+      # Check out the current repository in the `app` subdirectory
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          path: app
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to Github Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Build and push the container to the GitHub Container
+      # Repository. The container will be tagged as "latest"
+      # and with the short SHA of the commit.
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: app/
+          file: app/Dockerfile
+          push: true
+          cache-from: type=registry,ref=ghcr.io/${{ steps.repo_name.outputs.repo_name }}:latest
+          cache-to: type=inline
+          tags: |
+            ghcr.io/${{ steps.repo_name.outputs.repo_name }}:latest
+            ghcr.io/${{ steps.repo_name.outputs.repo_name }}:${{ steps.sha_tag.outputs.tag }}
+          build-args: |
+            git_sha=${{ github.sha }}
