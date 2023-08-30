@@ -24,17 +24,17 @@ SUPPORTED_KEYS = [
 # SHA256 hash database for SplatNet 3 GraphQL queries
 # full list: https://github.com/samuelthomas2774/nxapi/discussions/11#discussioncomment-3614603
 translate_rid = {
-	'HomeQuery':                         '7dcc64ea27a08e70919893a0d3f70871', # blank vars
-	'LatestBattleHistoriesQuery':        '0d90c7576f1916469b2ae69f64292c02', # INK / blank vars - query1
-	'RegularBattleHistoriesQuery':       '3baef04b095ad8975ea679d722bc17de', # INK / blank vars - query1
-	'BankaraBattleHistoriesQuery':       '0438ea6978ae8bd77c5d1250f4f84803', # INK / blank vars - query1
-	'PrivateBattleHistoriesQuery':       '8e5ae78b194264a6c230e262d069bd28', # INK / blank vars - query1
-	'XBattleHistoriesQuery':             '6796e3cd5dc3ebd51864dc709d899fc5', # INK / blank vars - query1
-	'EventBattleHistoriesQuery':         'e7bbaf1fa255305d607351da434b2d0f', # INK / blank vars - query1
-	'VsHistoryDetailQuery':              '9ee0099fbe3d8db2a838a75cf42856dd', # INK / req "vsResultId" - query2
-	'CoopHistoryQuery':                  '01fb9793ad92f91892ea713410173260', # SR  / blank vars - query1
-	'CoopHistoryDetailQuery':            '379f0d9b78b531be53044bcac031b34b', # SR  / req "coopHistoryDetailId" - query2
-	'MyOutfitCommonDataEquipmentsQuery': 'd29cd0c2b5e6bac90dd5b817914832f8'  # for Lean's seed checker
+	'HomeQuery':                   '51fc56bbf006caf37728914aa8bc0e2c86a80cf195b4d4027d6822a3623098a8', # vars: blank
+	'LatestBattleHistoriesQuery':  'b24d22fd6cb251c515c2b90044039698aa27bc1fab15801d83014d919cd45780', # blank (query1)
+	'RegularBattleHistoriesQuery': '2fe6ea7a2de1d6a888b7bd3dbeb6acc8e3246f055ca39b80c4531bbcd0727bba', # blank (query1)
+	'BankaraBattleHistoriesQuery': '9863ea4744730743268e2940396e21b891104ed40e2286789f05100b45a0b0fd', # blank (query1)
+	'PrivateBattleHistoriesQuery': 'fef94f39b9eeac6b2fac4de43bc0442c16a9f2df95f4d367dd8a79d7c5ed5ce7', # blank (query1)
+	'XBattleHistoriesQuery':       'eb5996a12705c2e94813a62e05c0dc419aad2811b8d49d53e5732290105559cb', # blank (query1)
+	'EventBattleHistoriesQuery':   'e47f9aac5599f75c842335ef0ab8f4c640e8bf2afe588a3b1d4b480ee79198ac', # blank (query1)
+	'VsHistoryDetailQuery':        'f893e1ddcfb8a4fd645fd75ced173f18b2750e5cfba41d2669b9814f6ceaec46', # vsResultId (query2)
+	'CoopHistoryQuery':            '0f8c33970a425683bb1bdecca50a0ca4fb3c3641c0b2a1237aedfde9c0cb2b8f', # blank (query1)
+	'CoopHistoryDetailQuery':      '824a1e22c4ad4eece7ad94a9a0343ecd76784be4f77d8f6f563c165afc8cf602', # coopHistoryDetailId (query2)
+	'MyOutfitCommonDataEquipmentsQuery': '45a4c343d973864f7bb9e9efac404182be1d48cf2181619505e9b7cd3b56a6e8'  # for lean's seed checker
 }
 
 

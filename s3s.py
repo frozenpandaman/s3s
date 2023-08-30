@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.5.2"
+A_VERSION = "0.5.3"
 
 DEBUG = False
 
@@ -1349,10 +1349,15 @@ def get_num_results(which):
 	noun = utils.set_noun(which)
 	try:
 		if which == "ink":
-			print(f"Note: This is an atypical way to run the script for manually uploading recent data. " \
-				"recent battles. Up to 250 results (50 of each type) may be uploaded instead by using " \
-				'\033[91m' + "-r" + '\033[0m' + ".\n")
+			print(f"Note: This is an atypical way to run the script for manually specifying the number of recent " \
+				"battles to upload, with a maximum of 50. Up to 250 recent battles (50 of each type) can be " \
+				"uploaded automatically by appending the " + '\033[91m' + "-r" + '\033[0m' + " flag.\n")
+		elif which == "salmon":
+			print(f"Note: This is an atypical way to run the script for manually specifying the number of recent " \
+				"Salmon Run jobs to upload. All 50 recent jobs can be uploaded automatically by appending the " \
+				'\033[91m' + "-r" + '\033[0m' + " flag.\n")
 		n = int(input(f"Number of recent {noun} to upload (0-50)? "))
+		print()
 	except ValueError:
 		print("Please enter an integer between 0 and 50. Exiting.")
 		sys.exit(0)
