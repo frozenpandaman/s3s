@@ -1543,6 +1543,8 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 					shortname = stagename.split(" ")[-1]
 					if shortname == "d'Alfonsino": # lol franch
 						shortname = "Museum"
+					elif shortname == "Co.":
+						shortname = "Cargo"
 					endtime = utils.epoch_time(result["data"]["vsHistoryDetail"]["playedTime"]) + \
 						result["data"]["vsHistoryDetail"]["duration"]
 					dt = datetime.datetime.fromtimestamp(endtime).strftime('%I:%M:%S %p').lstrip("0")
