@@ -5,6 +5,8 @@ s3s 🦑
 
 (ja) 日本語版セットアップ手順は[こちら](https://nerune-jp.com/splatoon3-statink/)、または[こちら](https://vanillasalt.net/2022/10/10/how-to-use-s3s/)。
 
+(ko) 한국어 가이드는 [여기](https://github.com/cake-monotone/s3s)를 참조해 주세요.
+
 Looking to track your _Splatoon 2_ gameplay? See **[splatnet2statink](https://github.com/frozenpandaman/splatnet2statink)**.
 
 ### Features
