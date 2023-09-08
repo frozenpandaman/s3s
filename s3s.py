@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.5.3"
+A_VERSION = "0.5.4"
 
 DEBUG = False
 
@@ -426,7 +426,6 @@ def set_scoreboard(battle, tricolor=False):
 	# https://github.com/fetus-hina/stat.ink/wiki/Spl3-API:-Battle-%EF%BC%8D-Post#player-structure
 	our_team_players, their_team_players, third_team_players = [], [], []
 
-	# not supported yet: species, festDragonCert
 	for i, player in enumerate(battle["myTeam"]["players"]):
 		p_dict = {}
 		p_dict["me"]              = "yes" if player["isMyself"] else "no"
@@ -438,7 +437,17 @@ def set_scoreboard(battle, tricolor=False):
 		p_dict["splashtag_title"] = player["byname"] # splashtag title
 		p_dict["weapon"]          = utils.b64d(player["weapon"]["id"])
 		p_dict["inked"]           = player["paint"]
+		p_dict["species"]         = player["species"].lower()
 		p_dict["rank_in_team"]    = i+1
+
+		if player.get("crown"):
+			p_dict["crown_type"] = "x"
+		if "DRAGON" in player.get("festDragonCert", ""):
+			if player["festDragonCert"] == "DRAGON":
+				p_dict["crown_type"] = "100x"
+			elif player["festDragonCert"] == "DOUBLE_DRAGON":
+				p_dict["crown_type"] = "333x"
+
 		if "result" in player and player["result"] is not None:
 			p_dict["kill_or_assist"] = player["result"]["kill"]
 			p_dict["assist"]         = player["result"]["assist"]
@@ -563,9 +572,10 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		if player["isMyself"] == True:
 			payload["weapon"]         = utils.b64d(player["weapon"]["id"])
 			payload["inked"]          = player["paint"]
-			payload["species"]        = player["species"].lower() # not supported for now
+			payload["species"]        = player["species"].lower()
 			payload["rank_in_team"]   = i+1
-			# ...        = player["result"]["festDragonCert"] NONE, DRAGON, or DOUBLE_DRAGON - splatfest
+			# crowns (x rank and splatfest 'dragon') set in set_scoreboard()
+
 			if player["result"] is not None: # null if player disconnect
 				payload["kill_or_assist"] = player["result"]["kill"]
 				payload["assist"]         = player["result"]["assist"]
@@ -970,6 +980,8 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 	payload["job_point"] = job["jobPoint"] # your points = floor((score x rate) + bonus)
 	# note the current bug with "bonus" lol... https://github.com/frozenpandaman/s3s/wiki/%7C-splatnet-bugs
 
+	# species sent in player struct
+
 	translate_special = { # used in players and waves below
 		20006: "nicedama",
 		20007: "hopsonar",
@@ -987,16 +999,17 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 
 	for i, player in enumerate(players_json):
 		player_info = {}
-		player_info["me"] = "yes" if i == 0 else "no"
-		player_info["name"] = player["player"]["name"]
-		player_info["number"] = player["player"]["nameId"]
+		player_info["me"]              = "yes" if i == 0 else "no"
+		player_info["name"]            = player["player"]["name"]
+		player_info["number"]          = player["player"]["nameId"]
 		player_info["splashtag_title"] = player["player"]["byname"]
-		player_info["golden_eggs"] = player["goldenDeliverCount"]
-		player_info["golden_assist"] = player["goldenAssistCount"]
-		player_info["power_eggs"] = player["deliverCount"]
-		player_info["rescue"] = player["rescueCount"]
-		player_info["rescued"] = player["rescuedCount"]
-		player_info["defeat_boss"] = player["defeatEnemyCount"]
+		player_info["golden_eggs"]     = player["goldenDeliverCount"]
+		player_info["golden_assist"]   = player["goldenAssistCount"]
+		player_info["power_eggs"]      = player["deliverCount"]
+		player_info["rescue"]          = player["rescueCount"]
+		player_info["rescued"]         = player["rescuedCount"]
+		player_info["defeat_boss"]     = player["defeatEnemyCount"]
+		player_info["species"]         = player["player"]["species"].lower()
 
 		dc_indicators = [
 			player_info["golden_eggs"],
