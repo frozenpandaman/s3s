@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.5.4"
+A_VERSION = "0.5.5"
 
 DEBUG = False
 
@@ -482,6 +482,7 @@ def set_scoreboard(battle, tricolor=False):
 			p_dict["splashtag_title"] = player["byname"]
 			p_dict["weapon"]          = utils.b64d(player["weapon"]["id"])
 			p_dict["inked"]           = player["paint"]
+			p_dict["species"]         = player["species"].lower()
 			p_dict["rank_in_team"]    = i+1
 			if "result" in player and player["result"] is not None:
 				p_dict["kill_or_assist"] = player["result"]["kill"]
