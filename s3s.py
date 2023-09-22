@@ -252,7 +252,20 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 				data=utils.gen_graphql_body(sha),
 				headers=headbutt(forcelang=lang),
 				cookies=dict(_gtoken=GTOKEN))
-			query1_resp = json.loads(query1.text)
+			try: query1_resp = json.loads(query1.text)
+			except json.decoder.JSONDecodeError or query1.status_code != 200: # fallback for expired tokens and nintendo being bad
+				print("\nYour tokens have likely expired. Attempting to regenerate them...")
+				prefetch_checks()
+				query1 = requests.post(utils.GRAPHQL_URL,
+					data=utils.gen_graphql_body(sha),
+					headers=headbutt(forcelang=lang),
+					cookies=dict(_gtoken=GTOKEN))
+				if query1.status_code != 200: 
+					print("\nSomething's wrong with one of the query hashes. Ensure s3s is up-to-date, and if this message persists, please open an issue on GitHub.")
+					if DEBUG:
+						print(f"* status_code = {query1.status_code}\n{query1.text}")
+					sys.exit(1)
+				query1_resp = json.loads(query1.text)
 			swim()
 
 			if not query1_resp.get("data"): # catch error
