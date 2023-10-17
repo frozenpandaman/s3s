@@ -77,7 +77,12 @@ def get_web_view_ver(bhead=[], gtoken=""):
 		if gtoken:
 			app_cookies["_gtoken"] = gtoken # X-GameWebToken
 
-		home = requests.get(SPLATNET3_URL, headers=app_head, cookies=app_cookies)
+		try:
+			home = requests.get(SPLATNET3_URL, headers=app_head, cookies=app_cookies)
+		except requests.exceptions.ConnectionError:
+				print("Could not connect to network. Please try again.")
+				sys.exit(1)
+
 		if home.status_code != 200:
 			return WEB_VIEW_VER_FALLBACK
 
