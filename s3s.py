@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.5.6"
+A_VERSION = "0.5.7"
 
 DEBUG = False
 
@@ -1277,20 +1277,26 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 			except:
 				print("Error with stat.ink. Please try again.")
 
+		detail_type = "vsHistoryDetail" if which == "ink" else "coopHistoryDetail"
+		result_id = results[i]["data"][detail_type]["id"]
+		noun = utils.set_noun(which)[:-1]
+
 		if DEBUG:
 			print(f"* time uploaded: {time_uploaded}; time now: {time_now}")
 
-		if postbattle.status_code != 201: # Created (or already exists)
-			print(f"Error uploading {utils.set_noun(which)[:-1]}.")
-			detail_type = "vsHistoryDetail" if which == "ink" else "coopHistoryDetail"
-			result_id = results[i]["data"][detail_type]["id"]
-			print(f"{utils.set_noun(which)[:-1].capitalize()} ID: {result_id}")
+		if istestrun and postbattle.status_code == 200:
+			print(f"Successfully validated {noun} ID {result_id} with stat.ink.")
+
+		elif postbattle.status_code != 201: # Created (or already exists)
+			print(f"Error uploading {noun}. (ID: {result_id})")
 			print("Message from server:")
 			print(postbattle.content.decode('utf-8'))
+
 		elif time_uploaded <= time_now - 7: # give some leeway
-			print(f"{utils.set_noun(which)[:-1].capitalize()} already uploaded - {headerloc}")
+			print(f"{noun.capitalize()} already uploaded - {headerloc}")
+
 		else: # 200 OK
-			print(f"{utils.set_noun(which)[:-1].capitalize()} uploaded to {headerloc}")
+			print(f"{noun.capitalize()} uploaded to {headerloc}")
 
 
 def check_for_updates():
