@@ -999,7 +999,9 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 		20010: "jetpack",
 		20012: "kanitank",
 		20013: "sameride",
-		20014: "tripletornado"
+		20014: "tripletornado",
+                20017: "teioika",
+                20018: "ultra_chakuchi"
 	}
 
 	players = []
@@ -1130,6 +1132,8 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 			"kanitank": 0,
 			"sameride": 0,
 			"tripletornado": 0,
+                        "teioika": 0,
+                        "ultra_chakuchi": 0,
 			"unknown": 0
 		}
 		for wep_use in wave["specialWeapons"]:
