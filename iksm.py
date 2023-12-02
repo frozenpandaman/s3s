@@ -5,6 +5,8 @@
 import base64, hashlib, json, os, re, sys, urllib
 import requests
 from bs4 import BeautifulSoup
+from s3s import F_GEN_URL as f_token_gen_url
+from s3s import A_VERSION as s3s_ver
 
 USE_OLD_NSOAPP_VER    = False # Change this to True if you're getting a "9403: Invalid token." error
 
@@ -26,7 +28,7 @@ SPLATNET3_URL         = "https://api.lp1.av5ja.srv.nintendo.net"
 session = requests.Session()
 
 def get_nsoapp_version():
-	'''Fetches the current Nintendo Switch Online app version from the Apple App Store and sets it globally.'''
+	'''Fetches the current Nintendo Switch Online app version from f token genaration provider or the Apple App Store and sets it globally.'''
 
 	if USE_OLD_NSOAPP_VER:
 		return NSOAPP_VER_FALLBACK
@@ -35,16 +37,29 @@ def get_nsoapp_version():
 	if NSOAPP_VERSION != "unknown": # already set
 		return NSOAPP_VERSION
 	else:
-		try:
-			page = requests.get("https://apps.apple.com/us/app/nintendo-switch-online/id1234806557")
-			soup = BeautifulSoup(page.text, 'html.parser')
-			elt = soup.find("p", {"class": "whats-new__latest__version"})
-			ver = elt.get_text().replace("Version ", "").strip()
+		try: # prefer to use NSO version from F_GEN
+			f_token_conf_url = f_token_gen_url[:-1] + "config"
+			f_token_conf_header = {'User-Agent':   f's3s/{s3s_ver}'}
+			f_token_conf_rsp = requests.get(f_token_conf_url,headers=f_token_conf_header)
+			f_token_conf_json = json.loads(f_token_conf_rsp.text)
+			ver = f_token_conf_json["nso_version"]
 
 			NSOAPP_VERSION = ver
 
 			return NSOAPP_VERSION
-		except: # error with web request
+		except: # error with get version from F_GEN fallback to APP Store Update version
+			try:
+				page = requests.get("https://apps.apple.com/us/app/nintendo-switch-online/id1234806557")
+				soup = BeautifulSoup(page.text, 'html.parser')
+				elt = soup.find("p", {"class": "whats-new__latest__version"})
+				ver = elt.get_text().replace("Version ", "").strip()
+
+				NSOAPP_VERSION = ver
+
+				return NSOAPP_VERSION
+			except: # error with web request
+				pass
+				
 			return NSOAPP_VER_FALLBACK
 
 
