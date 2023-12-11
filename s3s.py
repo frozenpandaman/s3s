@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.5.7"
+A_VERSION = "0.6.0"
 
 DEBUG = False
 
@@ -351,40 +351,6 @@ def fetch_detailed_result(is_vs_history, history_id, swim):
 
 	swim()
 	return query2_resp
-
-
-def update_salmon_profile():
-	''' Updates stat.ink Salmon Run stats/profile.'''
-
-	pass
-	# prefetch_checks()
-
-	# results_list = requests.post(utils.GRAPHQL_URL,
-	# 	data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryQuery"]),
-	# 	headers=headbutt(forcelang='en-US'),
-	# 	cookies=dict(_gtoken=GTOKEN))
-	# data = json.loads(results_list.text)
-	# profile = data["..."]
-
-	# payload:
-	# current points
-	# jobs (shifts) worked
-	# golden eggs collected
-	# power eggs colleted
-	# king salmonids defeated
-	# crew members rescued
-	# total points
-	# current number of scales
-
-	# url = "https://stat.ink/api/v2/salmon-stats"
-	# auth = {'Authorization': f'Bearer {API_KEY}'}
-	# updateprofile = requests.post(url, headers=auth, data=payload)
-
-	# if updateprofile.ok:
-	# 	print("Successfully updated your Salmon Run profile.")
-	# else:
-	# 	print("Could not update your Salmon Run profile. Error from stat.ink:")
-	# 	print(updateprofile.text)
 
 
 def populate_gear_abilities(player):
@@ -835,17 +801,6 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 	for medal in battle["awards"]:
 		medals.append(medal["name"])
 	payload["medals"] = medals
-
-	## SCREENSHOTS ##
-	#################
-	# TODO - change to require -ss option?
-	# im = utils_ss.screenshot(battle["id"])
-
-	# scoreboard
-	# payload["image_result"] = BytesIO(im.content).getvalue()
-
-	# gear
-	# payload["image_gear"] = ...
 
 	# no way to get: level_before/after, cash_before/after
 
@@ -1683,8 +1638,6 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 		else:
 			print(f"No remaining {noun} found.")
 
-		# SR TODO - update_salmon_profile()
-
 		print("\n== SESSION REPORT ==")
 		if which in ("ink", "both"):
 			if battle_draws == 0:
@@ -2049,8 +2002,8 @@ def main():
 	#############
 	which = "ink" if only_ink else "salmon" if only_salmon else "both"
 
-	if which in ("salmon", "both"):
-		update_salmon_profile()
+	# if which in ("salmon", "both"):
+	# 	update_salmon_profile() # not a thing for spl3, done on stat.ink's end
 
 	if check_old:
 		if which == "both":
