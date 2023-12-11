@@ -1527,7 +1527,11 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 
 	# ! fetch from online
 	# check only numbers (quicker); specific=False since checks recent (latest) only
-	ink_results, salmon_results = fetch_json(which, separate=True, numbers_only=True)
+	try:
+		ink_results, salmon_results = fetch_json(which, separate=True, numbers_only=True)
+	except: # e.g. JSONDecodeError - tokens have probably expired
+		gen_new_tokens("expiry") # we don't have to do prefetch_checks(), we know they're expired. gen new ones and try again
+		ink_results, salmon_results = fetch_json(which, separate=True, numbers_only=True)
 	foundany = False
 
 	if which in ("both", "ink"):
@@ -1658,7 +1662,7 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 				job_successes, job_failures,
 				isblackout, istestrun
 			]
-			which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, foundany = check_for_new_results(*input_params)
+			which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, foundany=check_for_new_results(*input_params)
 
 	except KeyboardInterrupt:
 		print(f"\n\nChecking to see if there are unuploaded {utils.set_noun(which)} before exiting...")
@@ -1671,7 +1675,7 @@ def monitor_battles(which, secs, isblackout, istestrun, skipprefetch):
 			job_successes, job_failures,
 			isblackout, istestrun
 		]
-		which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, foundany = check_for_new_results(*input_params)
+		which, cached_battles, cached_jobs, battle_wins, battle_losses, battle_draws, splatfest_wins, splatfest_losses, splatfest_draws, mirror_matches, job_successes, job_failures, foundany=check_for_new_results(*input_params)
 
 		noun = utils.set_noun(which)
 		if foundany:
