@@ -5,7 +5,7 @@
 import base64, hashlib, json, os, re, sys, urllib
 import requests
 from bs4 import BeautifulSoup
-from s3s import F_GEN_URL as f_token_gen_url
+from s3s import F_GEN_URL as f_gen_url
 from s3s import A_VERSION as s3s_ver
 
 USE_OLD_NSOAPP_VER    = False # Change this to True if you're getting a "9403: Invalid token." error
@@ -37,17 +37,17 @@ def get_nsoapp_version():
 	if NSOAPP_VERSION != "unknown": # already set
 		return NSOAPP_VERSION
 	else:
-		try: # prefer to use NSO version from F_GEN
-			f_token_conf_url = f_token_gen_url[:-1] + "config"
-			f_token_conf_header = {'User-Agent':   f's3s/{s3s_ver}'}
-			f_token_conf_rsp = requests.get(f_token_conf_url,headers=f_token_conf_header)
-			f_token_conf_json = json.loads(f_token_conf_rsp.text)
-			ver = f_token_conf_json["nso_version"]
+		try: # try to get NSO version from f API
+			f_conf_url = os.path.dirname(f_gen_url) + "/config" # default endpoint for imink API
+			f_conf_header = {'User-Agent': f's3s/{s3s_ver}'}
+			f_conf_rsp = requests.get(f_conf_url, headers=f_conf_header)
+			f_conf_json = json.loads(f_conf_rsp.text)
+			ver = f_conf_json["nso_version"]
 
 			NSOAPP_VERSION = ver
 
 			return NSOAPP_VERSION
-		except: # error with get version from F_GEN fallback to APP Store Update version
+		except: # fallback to apple app store
 			try:
 				page = requests.get("https://apps.apple.com/us/app/nintendo-switch-online/id1234806557")
 				soup = BeautifulSoup(page.text, 'html.parser')
