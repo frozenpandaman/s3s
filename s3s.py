@@ -123,7 +123,7 @@ def prefetch_checks(printout=False):
 		gen_new_tokens("blank")
 
 	sha = utils.translate_rid["HomeQuery"]
-	test = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+	test = requests.post(iksm.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 	if test.status_code != 200:
 		if printout:
 			print("\n")
@@ -248,7 +248,7 @@ def fetch_json(which, separate=False, exportall=False, specific=False, numbers_o
 			sha = utils.translate_rid[sha]
 			battle_ids, job_ids = [], []
 
-			query1 = requests.post(utils.GRAPHQL_URL,
+			query1 = requests.post(iksm.GRAPHQL_URL,
 				data=utils.gen_graphql_body(sha),
 				headers=headbutt(forcelang=lang),
 				cookies=dict(_gtoken=GTOKEN))
@@ -343,7 +343,7 @@ def fetch_detailed_result(is_vs_history, history_id, swim):
 	varname = "vsResultId" if is_vs_history else "coopHistoryDetailId"
 	lang = None if is_vs_history else 'en-US'
 
-	query2 = requests.post(utils.GRAPHQL_URL,
+	query2 = requests.post(iksm.GRAPHQL_URL,
 		data=utils.gen_graphql_body(utils.translate_rid[sha], varname, history_id),
 		headers=headbutt(forcelang=lang),
 		cookies=dict(_gtoken=GTOKEN))
@@ -669,7 +669,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		battle_id_mutated = battle_id.replace("BANKARA", "RECENT") # normalize the ID, make work with -M and -r
 
 		if overview_data is None: # no passed in file with -i
-			overview_post = requests.post(utils.GRAPHQL_URL,
+			overview_post = requests.post(iksm.GRAPHQL_URL,
 				data=utils.gen_graphql_body(utils.translate_rid["BankaraBattleHistoriesQuery"]),
 				headers=headbutt(),
 				cookies=dict(_gtoken=GTOKEN))
@@ -756,7 +756,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		battle_id_mutated = battle_id.replace("XMATCH", "RECENT")
 
 		if overview_data is None: # no passed in file with -i
-			overview_post = requests.post(utils.GRAPHQL_URL,
+			overview_post = requests.post(iksm.GRAPHQL_URL,
 				data=utils.gen_graphql_body(utils.translate_rid["XBattleHistoriesQuery"]),
 				headers=headbutt(),
 				cookies=dict(_gtoken=GTOKEN))
@@ -905,7 +905,7 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 						except KeyError: # prev job was private or disconnect
 							pass
 			else:
-				prev_job_post = requests.post(utils.GRAPHQL_URL,
+				prev_job_post = requests.post(iksm.GRAPHQL_URL,
 					data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", prev_job_id),
 					headers=headbutt(forcelang='en-US'),
 					cookies=dict(_gtoken=GTOKEN))
@@ -1379,7 +1379,7 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 		dict_key2 = "coopHistoryDetailId"
 		lang = 'en-US'
 
-	result_post = requests.post(utils.GRAPHQL_URL,
+	result_post = requests.post(iksm.GRAPHQL_URL,
 			data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
 			headers=headbutt(forcelang=lang),
 			cookies=dict(_gtoken=GTOKEN))
@@ -1387,7 +1387,7 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 		result = json.loads(result_post.text)
 		post_result(result, False, isblackout, istestrun) # not monitoring mode
 	except json.decoder.JSONDecodeError: # retry once, hopefully avoid a few errors
-		result_post = requests.post(utils.GRAPHQL_URL,
+		result_post = requests.post(iksm.GRAPHQL_URL,
 				data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
 				headers=headbutt(forcelang=lang),
 				cookies=dict(_gtoken=GTOKEN))
@@ -1493,7 +1493,7 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 		for num in reversed(ink_results):
 			if num not in cached_battles:
 				# get the full battle data
-				result_post = requests.post(utils.GRAPHQL_URL,
+				result_post = requests.post(iksm.GRAPHQL_URL,
 					data=utils.gen_graphql_body(utils.translate_rid["VsHistoryDetailQuery"], "vsResultId", num),
 					headers=headbutt(),
 					cookies=dict(_gtoken=GTOKEN))
@@ -1549,7 +1549,7 @@ def check_for_new_results(which, cached_battles, cached_jobs, battle_wins, battl
 		for num in reversed(salmon_results):
 			if num not in cached_jobs:
 				# get the full job data
-				result_post = requests.post(utils.GRAPHQL_URL,
+				result_post = requests.post(iksm.GRAPHQL_URL,
 					data=utils.gen_graphql_body(utils.translate_rid["CoopHistoryDetailQuery"], "coopHistoryDetailId", num),
 					headers=headbutt(forcelang='en-US'),
 					cookies=dict(_gtoken=GTOKEN))
@@ -1700,11 +1700,11 @@ def export_seed_json(skipprefetch=False):
 		prefetch_checks(printout=True)
 
 	sha = utils.translate_rid["MyOutfitCommonDataEquipmentsQuery"]
-	outfit_post = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
+	outfit_post = requests.post(iksm.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
 		headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 
 	sha = utils.translate_rid["LatestBattleHistoriesQuery"]
-	history_post = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
+	history_post = requests.post(iksm.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
 		headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 
 	if outfit_post.status_code != 200 or history_post.status_code != 200:
@@ -1725,7 +1725,7 @@ def export_seed_json(skipprefetch=False):
 	except KeyError: # no recent battles (mr. grizz is pleased)
 		try:
 			sha = utils.translate_rid["CoopHistoryQuery"]
-			history_post = requests.post(utils.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
+			history_post = requests.post(iksm.GRAPHQL_URL, data=utils.gen_graphql_body(sha),
 				headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 
 			if history_post.status_code != 200:

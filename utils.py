@@ -5,10 +5,7 @@
 import base64, datetime, json, re, sys, uuid
 import requests
 from bs4 import BeautifulSoup
-import iksm
 
-SPLATNET3_URL    = iksm.SPLATNET3_URL
-GRAPHQL_URL      = f'{SPLATNET3_URL}/api/graphql'
 S3S_NAMESPACE    = uuid.UUID('b3a2dbf5-2c09-4792-b78c-00b548b70aeb')
 SALMON_NAMESPACE = uuid.UUID('f1911910-605e-11ed-a622-7085c2057a9d')
 
