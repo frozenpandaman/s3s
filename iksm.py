@@ -28,7 +28,7 @@ SPLATNET3_URL         = "https://api.lp1.av5ja.srv.nintendo.net"
 session = requests.Session()
 
 def get_nsoapp_version():
-	'''Fetches the current Nintendo Switch Online app version from f token genaration provider or the Apple App Store and sets it globally.'''
+	'''Fetches the current Nintendo Switch Online app version from f API or the Apple App Store and sets it globally.'''
 
 	if USE_OLD_NSOAPP_VER:
 		return NSOAPP_VER_FALLBACK
