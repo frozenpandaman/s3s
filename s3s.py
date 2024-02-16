@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.6.0"
+A_VERSION = "0.6.1"
 
 DEBUG = False
 
@@ -1792,12 +1792,6 @@ def main():
 	################
 	parser_result = parse_arguments()
 
-	# setup
-	#######
-	check_for_updates()
-	check_statink_key()
-	set_language()
-
 	# regular args
 	n_value     = parser_result.N
 	check_old   = parser_result.r
@@ -1811,6 +1805,13 @@ def main():
 	file_paths   = parser_result.path         # intended for results/ or coop_results/ AND overview.json
 	outfile      = parser_result.o            # output to local files
 	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
+
+	# setup
+	#######
+	check_for_updates()
+	if not getseed:
+		check_statink_key()
+	set_language()
 
 	# i/o checks
 	############
