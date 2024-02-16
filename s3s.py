@@ -1761,6 +1761,8 @@ def parse_arguments():
 	srgroup = parser.add_mutually_exclusive_group()
 	parser.add_argument("-M", dest="N", required=False, nargs="?", action="store",
 		help="monitoring mode; pull data every N secs (default: 300)", const=300)
+	parser.add_argument("-m", dest="N", required=False, nargs="?", action="store",
+		help=argparse.SUPPRESS, const=300)
 	parser.add_argument("-r", required=False, action="store_true",
 		help="check for & upload battles/jobs missing from stat.ink")
 	srgroup.add_argument("-nsr", required=False, action="store_true",
