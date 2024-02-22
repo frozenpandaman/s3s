@@ -1,4 +1,4 @@
-# (ↄ) 2017-2023 eli fessler (frozenpandaman), clovervidia
+# (ↄ) 2017-2024 eli fessler (frozenpandaman), clovervidia
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
