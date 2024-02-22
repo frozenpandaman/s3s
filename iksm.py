@@ -338,7 +338,7 @@ def get_gtoken(f_gen_url, session_token, ver):
 
 	try:
 		access_token  = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
-		coral_user_id = splatoon_token["result"]["user"]["id"]
+		coral_user_id = str(splatoon_token["result"]["user"]["id"])
 	except:
 		# retry once if 9403/9599 error from nintendo
 		try:
@@ -351,7 +351,7 @@ def get_gtoken(f_gen_url, session_token, ver):
 			r = requests.post(url, headers=app_head, json=body)
 			splatoon_token = json.loads(r.text)
 			access_token  = splatoon_token["result"]["webApiServerCredential"]["accessToken"]
-			coral_user_id = splatoon_token["result"]["user"]["id"]
+			coral_user_id = str(splatoon_token["result"]["user"]["id"])
 		except:
 			print("Error from Nintendo (in Account/Login step):")
 			print(json.dumps(splatoon_token, indent=2))
@@ -460,9 +460,12 @@ def call_f_api(access_token, step, f_gen_url, user_id, coral_user_id=None):
 	'''Passes naIdToken & user ID to f generation API (default: imink) & fetches response (f token, UUID, timestamp).'''
 
 	try:
+		nsoapp_version = get_nsoapp_version()
 		api_head = {
-			'User-Agent':   f's3s/{S3S_VERSION}',
-			'Content-Type': 'application/json; charset=utf-8'
+			'User-Agent':      f's3s/{S3S_VERSION}',
+			'Content-Type':    'application/json; charset=utf-8',
+			'X-znca-Platform': 'Android',
+			'X-znca-Version':  nsoapp_version
 		}
 		api_body = { # 'timestamp' & 'request_id' (uuid v4) set automatically
 			'token':       access_token,
