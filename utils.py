@@ -154,11 +154,11 @@ def gen_graphql_body(sha256hash, varname=None, varvalue=None):
 
 
 def custom_key_exists(key, config_data, value=True):
-	'''Checks if a given custom key exists in config.txt and is set to the specified value (true by default).'''
+	'''Checks if a given config key exists in config.txt and is set to the specified value (true by default).'''
 
 	# https://github.com/frozenpandaman/s3s/wiki/config-keys
 	if key not in SUPPORTED_KEYS:
-		print("(!) Checking unexpected custom key")
+		print("(!) Checking unexpected config key")
 	return str(config_data.get(key, None)).lower() == str(value).lower()
 
 
