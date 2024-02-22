@@ -11,7 +11,7 @@ import msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.6.1"
+A_VERSION = "0.6.2"
 
 DEBUG = False
 
@@ -123,7 +123,7 @@ def prefetch_checks(printout=False):
 		gen_new_tokens("blank")
 
 	sha = utils.translate_rid["HomeQuery"]
-	test = requests.post(iksm.GRAPHQL_URL, data=utils.gen_graphql_body(sha), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
+	test = requests.post(iksm.GRAPHQL_URL, data=utils.gen_graphql_body(sha, "naCountry", USER_COUNTRY), headers=headbutt(), cookies=dict(_gtoken=GTOKEN))
 	if test.status_code != 200:
 		if printout:
 			print("\n")
