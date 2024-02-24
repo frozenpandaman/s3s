@@ -148,7 +148,7 @@ def gen_new_tokens(reason, force=False):
 
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
-		new_token = iksm.log_in(A_VERSION, APP_USER_AGENT)
+		new_token = iksm.log_in(A_VERSION, APP_USER_AGENT, F_GEN_URL)
 		if new_token is None:
 			print("There was a problem logging you in. Please try again later.")
 		elif new_token == "skip":
