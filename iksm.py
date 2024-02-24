@@ -37,11 +37,14 @@ def get_nsoapp_version():
 	if NSOAPP_VERSION != "unknown": # already set
 		return NSOAPP_VERSION
 	else:
-		# We should have a S3S_VERSION and F_GEN_URL already (from log_in or get_gtoken).
-		# Let's check it before send actual request to f generation API...
-		global S3S_VERSION, F_GEN_URL
-		assert S3S_VERSION != "unknown"
-		assert F_GEN_URL != "unknown"
+		# should exist already - from log_in() or get_gtoken() - but check to make sure
+		try:
+			global S3S_VERSION, F_GEN_URL
+			assert S3S_VERSION != "unknown"
+			assert F_GEN_URL != "unknown"
+		except AssertionError:
+			print("Cannot determine s3s version or f generation API.")
+			sys.exit(1)
 
 		try: # try to get NSO version from f API
 			f_conf_url = os.path.dirname(F_GEN_URL) + "/config" # default endpoint for imink API
