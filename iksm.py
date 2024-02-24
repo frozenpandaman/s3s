@@ -5,8 +5,6 @@
 import base64, hashlib, json, os, re, sys, urllib
 import requests
 from bs4 import BeautifulSoup
-from s3s import F_GEN_URL as f_gen_url
-from s3s import A_VERSION as s3s_ver
 
 USE_OLD_NSOAPP_VER    = False # Change this to True if you're getting a "9403: Invalid token." error
 
@@ -17,6 +15,7 @@ WEB_VIEW_VERSION      = "unknown"
 WEB_VIEW_VER_FALLBACK = "6.0.0-eb33aadc" # fallback for current splatnet 3 ver
 SPLATNET3_URL         = "https://api.lp1.av5ja.srv.nintendo.net"
 GRAPHQL_URL           = SPLATNET3_URL + "/api/graphql"
+F_GEN_URL             = "unknown"
 
 # functions in this file & call stack:
 # - get_nsoapp_version()
@@ -38,9 +37,18 @@ def get_nsoapp_version():
 	if NSOAPP_VERSION != "unknown": # already set
 		return NSOAPP_VERSION
 	else:
+		# should exist already - from log_in() or get_gtoken() - but check to make sure
+		try:
+			global S3S_VERSION, F_GEN_URL
+			assert S3S_VERSION != "unknown"
+			assert F_GEN_URL != "unknown"
+		except AssertionError:
+			print("Cannot determine s3s version or f generation API.")
+			sys.exit(1)
+
 		try: # try to get NSO version from f API
-			f_conf_url = os.path.dirname(f_gen_url) + "/config" # default endpoint for imink API
-			f_conf_header = {'User-Agent': f's3s/{s3s_ver}'}
+			f_conf_url = os.path.dirname(F_GEN_URL) + "/config" # default endpoint for imink API
+			f_conf_header = {'User-Agent': f's3s/{S3S_VERSION}'}
 			f_conf_rsp = requests.get(f_conf_url, headers=f_conf_header)
 			f_conf_json = json.loads(f_conf_rsp.text)
 			ver = f_conf_json["nso_version"]
@@ -140,11 +148,12 @@ def get_web_view_ver(bhead=[], gtoken=""):
 		return WEB_VIEW_VERSION
 
 
-def log_in(ver, app_user_agent):
+def log_in(ver, app_user_agent, f_gen_url):
 	'''Logs in to a Nintendo Account and returns a session_token.'''
 
-	global S3S_VERSION
+	global S3S_VERSION, F_GEN_URL
 	S3S_VERSION = ver
+	F_GEN_URL = f_gen_url
 
 	auth_state = base64.urlsafe_b64encode(os.urandom(36))
 
@@ -235,10 +244,11 @@ def get_session_token(session_token_code, auth_code_verifier):
 def get_gtoken(f_gen_url, session_token, ver):
 	'''Provided the session_token, returns a GameWebToken JWT and account info.'''
 
-	nsoapp_version = get_nsoapp_version()
-
-	global S3S_VERSION
+	global S3S_VERSION, F_GEN_URL
 	S3S_VERSION = ver
+	F_GEN_URL = f_gen_url
+
+	nsoapp_version = get_nsoapp_version()
 
 	app_head = {
 		'Host':            'accounts.nintendo.com',
