@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # s3s (ↄ) 2022-2024 eli fessler (frozenpandaman), clovervidia
-# Based on splatnet2statink (ↄ) 2017-2023 eli fessler (frozenpandaman), clovervidia
+# Based on splatnet2statink (ↄ) 2017-2024 eli fessler (frozenpandaman), clovervidia
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import argparse, base64, datetime, json, os, shutil, re, requests, sys, time, uuid
+import argparse, base64, datetime, json, os, shutil, re, sys, time, uuid
 from concurrent.futures import ThreadPoolExecutor
 from subprocess import call
-import msgpack
+import requests, msgpack
 from packaging import version
 import iksm, utils
 
@@ -1154,7 +1154,7 @@ def post_result(data, ismonitoring, isblackout, istestrun, overview_data=None):
 	'''Uploads battle/job JSON to stat.ink, and prints the returned URL or error message.'''
 
 	if len(API_KEY) != 43:
-		print("\nCannot post to stat.ink without a valid API key set in config.txt. Exiting.")
+		print("Cannot post to stat.ink without a valid API key set in config.txt. Exiting.")
 		sys.exit(0)
 
 	if isinstance(data, list): # -o export format
@@ -1914,7 +1914,7 @@ def main():
 	#############################
 	if file_paths: # 2 paths in list
 		if not utils.custom_key_exists("old_export_format", CONFIG_DATA):
-			if os.path.dirname(file_paths[0])[-7:] != "results" \
+			if os.path.dirname(os.path.join(file_paths[0], ''))[-7:] != "results" \
 			or os.path.basename(file_paths[1])[:8] != "overview":
 				print("Must pass in " + '\033[91m' + "results/" + '\033[0m' + " or " + \
 					'\033[91m' + "coop_results/" + '\033[0m' + " followed by an " +
