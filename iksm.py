@@ -202,8 +202,6 @@ def log_in(ver, app_user_agent, f_gen_url):
 		except AttributeError:
 			print("Malformed URL. Please try again, or press Ctrl+C to exit.")
 			print("URL:", end=' ')
-		except KeyError: # session_token not found
-			print("\nThe URL has expired. Please log out and back into your Nintendo Account and try again.")
 			sys.exit(1)
 
 
@@ -233,9 +231,15 @@ def get_session_token(session_token_code, auth_code_verifier):
 
 	r = session.post(url, headers=app_head, data=body)
 	try:
-		s_t = json.loads(r.text)["session_token"]
+		container = json.loads(r.text)
+		s_t       = container["session_token"]
 	except json.decoder.JSONDecodeError:
 		print("Got non-JSON response from Nintendo (in api/session_token step). Please try again.")
+		sys.exit(1)
+	except KeyError:
+		print("\nThe URL has expired. Logging out & back in to your Nintendo Account and retrying may fix this.")
+		print("Error from Nintendo (in api/session_token step):")
+		print(json.dumps(container, indent=2))
 		sys.exit(1)
 
 	return s_t
