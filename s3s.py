@@ -817,6 +817,10 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 			player["name"] = None
 			player["number"] = None
 			player["splashtag_title"] = None
+		for player in payload["third_team_players"]:
+			player["name"] = None
+			player["number"] = None
+			player["splashtag_title"] = None
 
 		# fix battle json
 		for player in battle["myTeam"]["players"]:
