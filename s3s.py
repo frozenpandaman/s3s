@@ -679,6 +679,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				overview_data = None
 				print("Failed to get recent Anarchy Battles. Proceeding without information on current rank.")
 		if overview_data is not None:
+			ranked_list = []
 			for screen in overview_data:
 				if "bankaraBattleHistories" in screen["data"]:
 					ranked_list = screen["data"]["bankaraBattleHistories"]["historyGroups"]["nodes"]
@@ -766,6 +767,7 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 				overview_data = None
 				print("Failed to get recent X Battles. Proceeding without some information on X Power.")
 		if overview_data is not None:
+			x_list = []
 			for screen in overview_data:
 				if "xBattleHistories" in screen["data"]:
 					x_list = screen["data"]["xBattleHistories"]["historyGroups"]["nodes"]
