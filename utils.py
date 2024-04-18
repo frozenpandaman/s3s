@@ -30,7 +30,7 @@ translate_rid = {
 	'EventBattleHistoriesQuery':   'e47f9aac5599f75c842335ef0ab8f4c640e8bf2afe588a3b1d4b480ee79198ac', # blank (query1)
 	'VsHistoryDetailQuery':        'f893e1ddcfb8a4fd645fd75ced173f18b2750e5cfba41d2669b9814f6ceaec46', # vsResultId (query2)
 	'CoopHistoryQuery':            '0f8c33970a425683bb1bdecca50a0ca4fb3c3641c0b2a1237aedfde9c0cb2b8f', # blank (query1)
-	'CoopHistoryDetailQuery':      '824a1e22c4ad4eece7ad94a9a0343ecd76784be4f77d8f6f563c165afc8cf602', # coopHistoryDetailId (query2)
+	'CoopHistoryDetailQuery':      '42262d241291d7324649e21413b29da88c0314387d8fdf5f6637a2d9d29954ae', # coopHistoryDetailId (query2)
 	'MyOutfitCommonDataEquipmentsQuery': '45a4c343d973864f7bb9e9efac404182be1d48cf2181619505e9b7cd3b56a6e8'  # for lean's seed checker
 }
 
