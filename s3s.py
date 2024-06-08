@@ -885,8 +885,6 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 	if job["bossResult"]:
 		try:
 			payload["king_salmonid"] = utils.b64d(job["bossResult"]["boss"]["id"])
-			if payload["king_salmonid"] == 30:
-				payload["king_salmonid"] = "rengo"
 		except KeyError:
 			print("Could not send unsupported King Salmonid data to stat.ink. You may want to delete & re-upload this job later.")
 
