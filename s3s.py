@@ -11,7 +11,7 @@ import requests, msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.6.5"
+A_VERSION = "0.6.6"
 
 DEBUG = False
 
@@ -631,6 +631,12 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 			payload["fest_dragon"] = "100x"
 		elif times_battle == "DOUBLE_DRAGON":
 			payload["fest_dragon"] = "333x"
+		elif times_battle == "CONCH_SHELL_SCRAMBLE":
+			payload["conch_clash"] = "1x"
+		elif times_battle == "CONCH_SHELL_SCRAMBLE_10":
+			payload["conch_clash"] = "10x"
+		elif times_battle == "CONCH_SHELL_SCRAMBLE_33": # presumed
+			payload["conch_clash"] = "33x"
 
 		payload["clout_change"] = battle["festMatch"]["contribution"]
 		payload["fest_power"]   = battle["festMatch"]["myFestPower"] # pro only
