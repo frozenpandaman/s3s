@@ -1374,7 +1374,7 @@ def get_num_results(which):
 		return n
 
 
-def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
+def fetch_and_upload_single_result(hash_, noun, isblackout, istestrun):
 	'''Performs a GraphQL request for a single vsResultId/coopHistoryDetailId and call post_result().'''
 
 	if noun in ("battles", "battle"):
@@ -1387,7 +1387,7 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 		lang = 'en-US'
 
 	result_post = requests.post(iksm.GRAPHQL_URL,
-			data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
+			data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash_),
 			headers=headbutt(forcelang=lang),
 			cookies=dict(_gtoken=GTOKEN))
 	try:
@@ -1395,7 +1395,7 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 		post_result(result, False, isblackout, istestrun) # not monitoring mode
 	except json.decoder.JSONDecodeError: # retry once, hopefully avoid a few errors
 		result_post = requests.post(iksm.GRAPHQL_URL,
-				data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash),
+				data=utils.gen_graphql_body(utils.translate_rid[dict_key], dict_key2, hash_),
 				headers=headbutt(forcelang=lang),
 				cookies=dict(_gtoken=GTOKEN))
 		try:
@@ -1406,7 +1406,7 @@ def fetch_and_upload_single_result(hash, noun, isblackout, istestrun):
 				print("Error uploading one of your battles. Continuing...")
 				pass
 			else:
-				print("Error uploading one of your battles. Please try running s3s again.")
+				print(f"(!) Error uploading one of your battles. Please try running s3s again. This may also be an error on Nintendo's end. See https://github.com/frozenpandaman/s3s/issues/189 for more info. Use the `errors_pass_silently` config key to skip this {noun} and continue running the script.")
 				sys.exit(1)
 
 
@@ -2044,8 +2044,8 @@ def main():
 		results = results[:n] # limit to n uploads
 		results.reverse() # sort from oldest to newest
 		noun = utils.set_noun(which)
-		for hash in results:
-			fetch_and_upload_single_result(hash, noun, blackout, test_run) # not monitoring mode
+		for hash_ in results:
+			fetch_and_upload_single_result(hash_, noun, blackout, test_run) # not monitoring mode
 
 	thread_pool.shutdown(wait=True)
 
