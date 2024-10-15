@@ -497,8 +497,14 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 
 	## UUID ##
 	##########
-	full_id = utils.b64d(battle["id"])
-	payload["uuid"] = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:])) # input format: <YYYYMMDD>T<HHMMSS>_<uuid>
+	try:
+		full_id = utils.b64d(battle["id"])
+		payload["uuid"] = str(uuid.uuid5(utils.S3S_NAMESPACE, full_id[-52:])) # input format: <YYYYMMDD>T<HHMMSS>_<uuid>
+	except TypeError:
+		print("Couldn't get the battle ID. This is likely an error on Nintendo's end; running the script again may fix it. Exiting.")
+		print('\nDebug info:')
+		print(json.dumps(battle))
+		sys.exit(1)
 
 	## MODE ##
 	##########
