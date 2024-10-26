@@ -4,7 +4,7 @@
 # https://github.com/frozenpandaman/s3s
 # License: GPLv3
 
-import argparse, base64, datetime, json, os, shutil, re, sys, time, uuid
+import argparse, base64, datetime, json, os, shutil, signal, re, sys, time, types, uuid
 from concurrent.futures import ThreadPoolExecutor
 from subprocess import call
 import requests, msgpack
@@ -1801,12 +1801,28 @@ def parse_arguments():
 	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
+def terminate(sigterm: signal.SIGTERM, frame: types.FrameType) -> None:
+	'''Terminate cleanly. Needed for stopping swiftly when docker sends the command to stop.
+
+	Args:
+	----
+	sigterm (signal.Signal): The termination signal.
+	frame: The execution frame.
+
+	'''
+	print(f"Termination signal sent: {datetime.datetime.now()}")
+	sys.exit(0)
+
+
 
 def main():
 	'''Main process, including I/O and setup.'''
 
 	print('\033[93m\033[1m' + "s3s" + '\033[0m\033[93m' + f" v{A_VERSION}" + '\033[0m')
 
+	signal.signal(signal.SIGTERM, terminate)  # Process termination signals, allowing cleanly stopping when run as a docker container
+
+	
 	# argparse setup
 	################
 	parser_result = parse_arguments()
