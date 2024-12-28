@@ -10,6 +10,7 @@ import json
 import os
 import sys
 from mitmproxy import ctx
+from mitmproxy.tools.main import mitmdump
 
 config_path = os.path.join(os.path.dirname(__file__), "config.txt")
 
@@ -60,3 +61,9 @@ class Splatoon3TokenExtractor:
             ctx.master.shutdown()
 
 addons = [Splatoon3TokenExtractor()]
+
+def main():
+	mitmdump(['-s', __file__, '~u GetWebServiceToken | ~u bullet_tokens', '--view-filter', '~u GetWebServiceToken | ~u bullet_tokens'])
+
+if __name__ == "__main__":
+	main()
