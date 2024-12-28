@@ -1,8 +1,6 @@
 """
 Extract gToken and bulletToken for Splatoon 3 NSO.
 The result will be saved in config.txt.
-
-Run as follows: mitmdump -s s3_token_extractor.py '~u GetWebServiceToken | ~u bullet_tokens'
 """
 
 import logging
