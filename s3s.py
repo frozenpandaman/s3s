@@ -11,7 +11,7 @@ import requests, msgpack
 from packaging import version
 import iksm, utils
 
-A_VERSION = "0.6.6"
+A_VERSION = "0.6.7"
 
 DEBUG = False
 
