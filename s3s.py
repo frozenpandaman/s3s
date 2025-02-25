@@ -12,7 +12,7 @@ from packaging import version
 import iksm, utils
 import s3_token_extractor
 
-A_VERSION = "0.6.6"
+A_VERSION = "0.6.7"
 
 DEBUG = False
 
@@ -1079,7 +1079,6 @@ def prepare_job_result(job, ismonitoring, isblackout, overview_data=None, prevre
 						added_percent = 20
 					elif delivered >= quota*1.5:
 						added_percent = 10
-						added_percent = 5
 				elif num_players == 1:
 					if delivered >= quota*2:
 						added_percent = 10
