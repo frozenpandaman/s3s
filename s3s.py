@@ -32,7 +32,7 @@ try:
 	config_file.close()
 except (IOError, ValueError):
 	print("Generating new config file.")
-	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://api.imink.app/f"}
+	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://nxapi-znca-api.fancy.org.uk/api/znca"}
 	config_file = open(config_path, "w")
 	config_file.seek(0)
 	config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=False, separators=(',', ': ')))
@@ -48,7 +48,7 @@ USER_COUNTRY  = CONFIG_DATA["acc_loc"][-2:]  # nintendo account info
 GTOKEN        = CONFIG_DATA["gtoken"]        # for accessing splatnet - base64 json web token
 BULLETTOKEN   = CONFIG_DATA["bullettoken"]   # for accessing splatnet - base64
 SESSION_TOKEN = CONFIG_DATA["session_token"] # for nintendo login
-F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (imink API by default)
+F_GEN_URL     = CONFIG_DATA["f_gen"]         # endpoint for generating f (nxapi-znca-api by default)
 
 thread_pool = ThreadPoolExecutor(max_workers=2)
 

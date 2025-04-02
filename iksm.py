@@ -47,7 +47,7 @@ def get_nsoapp_version():
 			sys.exit(1)
 
 		try: # try to get NSO version from f API
-			f_conf_url = os.path.dirname(F_GEN_URL) + "/config" # default endpoint for imink API
+			f_conf_url = os.path.dirname(F_GEN_URL) + "/config" # default endpoint for imink API but also works with nxapi-znca-api
 			f_conf_header = {'User-Agent': f's3s/{S3S_VERSION}'}
 			f_conf_rsp = requests.get(f_conf_url, headers=f_conf_header)
 			f_conf_json = json.loads(f_conf_rsp.text)
@@ -477,7 +477,8 @@ def call_f_api(access_token, step, f_gen_url, user_id, coral_user_id=None):
 			'User-Agent':      f's3s/{S3S_VERSION}',
 			'Content-Type':    'application/json; charset=utf-8',
 			'X-znca-Platform': 'Android',
-			'X-znca-Version':  nsoapp_version
+			'X-znca-Version':  nsoapp_version,
+			'X-znca-Client-Version': nsoapp_version
 		}
 		api_body = { # 'timestamp' & 'request_id' (uuid v4) set automatically
 			'token':       access_token,
