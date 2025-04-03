@@ -5,6 +5,7 @@
 import base64, hashlib, json, os, re, sys, urllib
 import requests
 from bs4 import BeautifulSoup
+from packaging import version
 
 USE_OLD_NSOAPP_VER    = False # Change this to True if you're getting a "9403: Invalid token." error
 
@@ -55,6 +56,10 @@ def get_nsoapp_version():
 			ver = f_conf_json["nso_version"]
 
 			NSOAPP_VERSION = ver
+
+			if version.parse(NSOAPP_VERSION) < version.parse(NSOAPP_SUPPORTED):
+				print("f generation API is outdated! check config.txt and change f_gen that supports NSO version >= 2.12.0")
+				sys.exit(1)
 
 			return NSOAPP_VERSION
 		except: # fallback to apple app store

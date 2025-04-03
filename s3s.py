@@ -32,7 +32,7 @@ try:
 	config_file.close()
 except (IOError, ValueError):
 	print("Generating new config file.")
-	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://nxapi-znca-api.fancy.org.uk/api/znca"}
+	CONFIG_DATA = {"api_key": "", "acc_loc": "", "gtoken": "", "bullettoken": "", "session_token": "", "f_gen": "https://nxapi-znca-api.fancy.org.uk/api/znca/f"}
 	config_file = open(config_path, "w")
 	config_file.seek(0)
 	config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=False, separators=(',', ': ')))
