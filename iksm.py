@@ -10,7 +10,8 @@ USE_OLD_NSOAPP_VER    = False # Change this to True if you're getting a "9403: I
 
 S3S_VERSION           = "unknown"
 NSOAPP_VERSION        = "unknown"
-NSOAPP_VER_FALLBACK   = "2.10.1"
+NSOAPP_SUPPORTED      = "2.12.0"
+NSOAPP_VER_FALLBACK   = NSOAPP_SUPPORTED
 WEB_VIEW_VERSION      = "unknown"
 WEB_VIEW_VER_FALLBACK = "6.0.0-30a1464a" # fallback for current splatnet 3 ver
 SPLATNET3_URL         = "https://api.lp1.av5ja.srv.nintendo.net"
@@ -478,7 +479,7 @@ def call_f_api(access_token, step, f_gen_url, user_id, coral_user_id=None):
 			'Content-Type':    'application/json; charset=utf-8',
 			'X-znca-Platform': 'Android',
 			'X-znca-Version':  nsoapp_version,
-			'X-znca-Client-Version': nsoapp_version
+			'X-znca-Client-Version': NSOAPP_SUPPORTED
 		}
 		api_body = { # 'timestamp' & 'request_id' (uuid v4) set automatically
 			'token':       access_token,
