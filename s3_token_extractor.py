@@ -38,13 +38,13 @@ class Splatoon3TokenExtractor:
 
     def response(self, flow):
         path = flow.request.path
-        if path.endswith('GetWebServiceToken'):
+        if path.endswith('api/token'):
             logging.info(f"{flow.response}")
             obj = json.loads(flow.response.content.decode('utf-8'))
-            self.web_service_token = obj["result"]["accessToken"]
+            self.web_service_token = obj["access_token"]
             logging.info(self.web_service_token)
         if path.endswith('bullet_tokens'):
-            logging.info(f"{flow.response}")
+            logging.info(f"{flow.response}") 
             obj = json.loads(flow.response.content.decode('utf-8'))
             self.bullet_token = obj["bulletToken"]
             logging.info(self.bullet_token)
@@ -57,6 +57,13 @@ class Splatoon3TokenExtractor:
             config_file.write(json.dumps(CONFIG_DATA, indent=4, sort_keys=False, separators=(',', ': ')))
             config_file.close()
             ctx.master.shutdown()
+
+            # Addon error: 'utf-8' codec can't decode byte 0x83 in position 0: invalid start byte
+# Traceback (most recent call last):
+#   File "/Users/leo/Documents/Games/Splatoon3/s3s-mitm/s3_token_extractor.py", line 43, in response
+#     obj = json.loads(flow.response.content.decode('utf-8'))
+#                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+# UnicodeDecodeError: 'utf-8' codec can't decode byte 0x83 in position 0: invalid start byte
 
 addons = [Splatoon3TokenExtractor()]
 
