@@ -58,13 +58,6 @@ class Splatoon3TokenExtractor:
             config_file.close()
             ctx.master.shutdown()
 
-            # Addon error: 'utf-8' codec can't decode byte 0x83 in position 0: invalid start byte
-# Traceback (most recent call last):
-#   File "/Users/leo/Documents/Games/Splatoon3/s3s-mitm/s3_token_extractor.py", line 43, in response
-#     obj = json.loads(flow.response.content.decode('utf-8'))
-#                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
-# UnicodeDecodeError: 'utf-8' codec can't decode byte 0x83 in position 0: invalid start byte
-
 addons = [Splatoon3TokenExtractor()]
 
 def main():
