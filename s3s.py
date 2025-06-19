@@ -677,6 +677,12 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 		except: # could be null in historical data
 			pass
 
+		if not payload.get("bankara_power_after"):
+			try:
+				payload["series_weapon_power_after"] = battle["bankaraMatch"]["weaponPower"]
+			except: # could be null in historical data
+				pass
+
 		battle_id         = base64.b64decode(battle["id"]).decode('utf-8')
 		battle_id_mutated = battle_id.replace("BANKARA", "RECENT") # normalize the ID, make work with -M and -r
 
