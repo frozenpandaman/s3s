@@ -146,6 +146,10 @@ def gen_new_tokens(reason, force=False):
 			print("Cannot access SplatNet 3 without having played online.")
 			sys.exit(0)
 
+	if (DISABLE_REFRESH):
+		print("Exiting because --disable-refresh is active. Bye!")
+		sys.exit(0)
+
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
 		new_token = iksm.log_in(A_VERSION, APP_USER_AGENT, F_GEN_URL)
@@ -1797,6 +1801,8 @@ def parse_arguments():
 		help="dry run for testing (won't post to stat.ink)")
 	parser.add_argument("--getseed", required=False, action="store_true",
 		help="export JSON for gear & Shell-Out Machine seed checker")
+	parser.add_argument("--disable-refresh", required=False, default=False, action="store_true",
+		help="do not refresh tokens; exit when no valid tokens can be found")
 	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
@@ -1824,6 +1830,9 @@ def main():
 	outfile      = parser_result.o            # output to local files
 	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
+	global DISABLE_REFRESH
+	DISABLE_REFRESH = parser_result.disable_refresh # stop application instead of trying to refresh tokens
+
 	# setup
 	#######
 	check_for_updates()
@@ -1833,7 +1842,7 @@ def main():
 
 	# i/o checks
 	############
-	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
+	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv and "--no-refresh" not in sys.argv:
 		print("Cannot use --getseed with other arguments. Exiting.")
 		sys.exit(0)
 
