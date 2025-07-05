@@ -1842,7 +1842,7 @@ def main():
 
 	# i/o checks
 	############
-	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv and "--no-refresh" not in sys.argv:
+	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv and "--disable-refresh" not in sys.argv:
 		print("Cannot use --getseed with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1854,7 +1854,7 @@ def main():
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(0)
 
-	elif outfile and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
+	elif outfile and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv and "--disable-refresh" not in sys.argv:
 		print("Cannot use -o with other arguments. Exiting.")
 		sys.exit(0)
 
