@@ -146,9 +146,9 @@ def gen_new_tokens(reason, force=False):
 			print("Cannot access SplatNet 3 without having played online.")
 			sys.exit(0)
 
-	if (DISABLE_REFRESH):
-		print("Exiting because --disable-refresh is active. Bye!")
-		sys.exit(0)
+	if (DISABLE_REFRESH_RC is not None):
+		print(f"Token refresh is not possible because --norefresh is active. Exiting with RC {DISABLE_REFRESH_RC}.")
+		sys.exit(DISABLE_REFRESH_RC)
 
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
@@ -1801,8 +1801,8 @@ def parse_arguments():
 		help="dry run for testing (won't post to stat.ink)")
 	parser.add_argument("--getseed", required=False, action="store_true",
 		help="export JSON for gear & Shell-Out Machine seed checker")
-	parser.add_argument("--disable-refresh", required=False, default=False, action="store_true",
-		help="do not refresh tokens; exit when no valid tokens can be found")
+	parser.add_argument("--norefresh", dest="RC", required=False, nargs="?", action="store",
+		help="do not refresh tokens; exit with return code RC when no valid tokens can be found (default: RC 0 = no error)", const=0)
 	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
@@ -1830,8 +1830,8 @@ def main():
 	outfile      = parser_result.o            # output to local files
 	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
-	global DISABLE_REFRESH
-	DISABLE_REFRESH = parser_result.disable_refresh # stop application instead of trying to refresh tokens
+	global DISABLE_REFRESH_RC
+	DISABLE_REFRESH_RC = parser_result.RC # stop application instead of trying to refresh tokens
 
 	# setup
 	#######
@@ -1842,7 +1842,7 @@ def main():
 
 	# i/o checks
 	############
-	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv and "--disable-refresh" not in sys.argv:
+	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv and "--norefresh" not in sys.argv:
 		print("Cannot use --getseed with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1854,7 +1854,7 @@ def main():
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(0)
 
-	elif outfile and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv and "--disable-refresh" not in sys.argv:
+	elif outfile and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv and "--norefresh" not in sys.argv:
 		print("Cannot use -o with other arguments. Exiting.")
 		sys.exit(0)
 
