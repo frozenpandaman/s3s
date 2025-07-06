@@ -147,7 +147,7 @@ def gen_new_tokens(reason, force=False):
 			sys.exit(0)
 
 	if (DISABLE_REFRESH_RC is not None):
-		print(f"Token refresh is not possible because --norefresh is active. Exiting with RC {DISABLE_REFRESH_RC}.")
+		print(f"Token refresh is disabled because --norefresh is active. Exiting with RC {DISABLE_REFRESH_RC}.")
 		sys.exit(DISABLE_REFRESH_RC)
 
 	if SESSION_TOKEN == "":
