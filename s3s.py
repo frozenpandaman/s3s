@@ -1830,8 +1830,7 @@ def main():
 	outfile      = parser_result.o            # output to local files
 	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
-	global DISABLE_REFRESH_RC
-	DISABLE_REFRESH_RC = parser_result.RC # stop application instead of trying to refresh tokens
+	rc_value = parser_result.RC # stop application instead of trying to refresh tokens
 
 	# setup
 	#######
@@ -1871,6 +1870,18 @@ def main():
 		elif secs < 60:
 			print("Minimum number of seconds in monitoring mode is 60. Exiting.")
 			sys.exit(0)
+
+	global DISABLE_REFRESH_RC
+	DISABLE_REFRESH_RC = None
+	if rc_value is not None:
+		try:
+			DISABLE_REFRESH_RC = int(rc_value)
+		except ValueError:
+			print("Number provided for --norefresh must be an integer. Exiting.")
+			sys.exit(1)
+		if DISABLE_REFRESH_RC < 0:
+			print("RC for --norefresh must be 0 or positive! Exiting.")
+			sys.exit(1)
 
 	# export results to file: -o flag
 	#################################
