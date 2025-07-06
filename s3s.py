@@ -1842,7 +1842,7 @@ def main():
 
 	# i/o checks
 	############
-	if getseed and any(re.search("^(--getseed|--skipprefetch|--norefresh|[0-9]*)$", arg) is None for arg in sys.argv[1:]):
+	if getseed and any(re.search("^(--getseed|--skipprefetch|--norefresh|[0-9]+)$", arg) is None for arg in sys.argv[1:]):
 		print("Cannot use --getseed with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1854,7 +1854,7 @@ def main():
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(0)
 
-	elif outfile and any(re.search("^(-o|--skipprefetch|--norefresh|[0-9]*)$", arg) is None for arg in sys.argv[1:]):
+	elif outfile and any(re.search("^(-o|--skipprefetch|--norefresh|[0-9]+)$", arg) is None for arg in sys.argv[1:]):
 		print("Cannot use -o with other arguments. Exiting.")
 		sys.exit(0)
 
