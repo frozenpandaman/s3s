@@ -146,6 +146,10 @@ def gen_new_tokens(reason, force=False):
 			print("Cannot access SplatNet 3 without having played online.")
 			sys.exit(0)
 
+	if (DISABLE_REFRESH_RC is not None):
+		print(f"Token refresh is disabled because --norefresh is active. Exiting with RC {DISABLE_REFRESH_RC}.")
+		sys.exit(DISABLE_REFRESH_RC)
+
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
 		new_token = iksm.log_in(A_VERSION, APP_USER_AGENT, F_GEN_URL)
@@ -1803,6 +1807,8 @@ def parse_arguments():
 		help="dry run for testing (won't post to stat.ink)")
 	parser.add_argument("--getseed", required=False, action="store_true",
 		help="export JSON for gear & Shell-Out Machine seed checker")
+	parser.add_argument("--norefresh", dest="RC", required=False, nargs="?", action="store",
+		help="do not refresh tokens; exit with return code RC when no valid tokens can be found (default: RC 0 = no error)", const=0)
 	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
@@ -1830,6 +1836,8 @@ def main():
 	outfile      = parser_result.o            # output to local files
 	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
+	rc_value = parser_result.RC # stop application instead of trying to refresh tokens
+
 	# setup
 	#######
 	check_for_updates()
@@ -1839,7 +1847,7 @@ def main():
 
 	# i/o checks
 	############
-	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
+	if getseed and any(re.search("^(--getseed|--skipprefetch|--norefresh|[0-9]+)$", arg) is None for arg in sys.argv[1:]):
 		print("Cannot use --getseed with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1851,7 +1859,7 @@ def main():
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(0)
 
-	elif outfile and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
+	elif outfile and any(re.search("^(-o|--skipprefetch|--norefresh|[0-9]+)$", arg) is None for arg in sys.argv[1:]):
 		print("Cannot use -o with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1868,6 +1876,18 @@ def main():
 		elif secs < 60:
 			print("Minimum number of seconds in monitoring mode is 60. Exiting.")
 			sys.exit(0)
+
+	global DISABLE_REFRESH_RC
+	DISABLE_REFRESH_RC = None
+	if rc_value is not None:
+		try:
+			DISABLE_REFRESH_RC = int(rc_value)
+		except ValueError:
+			print("Number provided for --norefresh must be an integer. Exiting.")
+			sys.exit(1)
+		if DISABLE_REFRESH_RC < 0:
+			print("RC for --norefresh must be 0 or positive! Exiting.")
+			sys.exit(1)
 
 	# export results to file: -o flag
 	#################################
