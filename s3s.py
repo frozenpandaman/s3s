@@ -1807,8 +1807,7 @@ def parse_arguments():
 		help="dry run for testing (won't post to stat.ink)")
 	parser.add_argument("--getseed", required=False, action="store_true",
 		help="export JSON for gear & Shell-Out Machine seed checker")
-	parser.add_argument("--norefresh", dest="RC", required=False, nargs="?", action="store",
-		help="do not refresh tokens; exit with return code RC when no valid tokens can be found (default: RC 0 = no error)", const=0)
+	parser.add_argument("--norefresh", dest="RC", required=False, nargs="?", action="store", help=argparse.SUPPRESS, const=0)
 	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
