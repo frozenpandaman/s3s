@@ -1878,7 +1878,7 @@ def main():
 			overview_filename = "overview.json"
 		else:
 			export_dir = os.path.join(cwd, 'exports')
-			utc_time = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+			utc_time = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).strftime('%Y%m%dT%H%M%SZ')
 			overview_filename = f'overview-{utc_time}.json'
 		if not os.path.exists(export_dir):
 			os.makedirs(export_dir)
