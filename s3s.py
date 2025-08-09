@@ -12,7 +12,7 @@ from packaging import version
 import iksm, utils
 import s3_token_extractor
 
-A_VERSION = "0.6.7"
+A_VERSION = "0.7.0"
 
 DEBUG = False
 
@@ -146,6 +146,10 @@ def gen_new_tokens(reason, force=False):
 		else:
 			print("Cannot access SplatNet 3 without having played online.")
 			sys.exit(0)
+
+	if (DISABLE_REFRESH_RC is not None):
+		print(f"Token refresh is disabled because --norefresh is active. Exiting with RC {DISABLE_REFRESH_RC}.")
+		sys.exit(DISABLE_REFRESH_RC)
 
 	if SESSION_TOKEN == "":
 		print("Please log in to your Nintendo Account to obtain your session_token.")
@@ -683,6 +687,12 @@ def prepare_battle_result(battle, ismonitoring, isblackout, overview_data=None):
 			payload["bankara_power_after"] = battle["bankaraMatch"]["bankaraPower"]["power"]
 		except: # could be null in historical data
 			pass
+
+		if not payload.get("bankara_power_after"):
+			try:
+				payload["series_weapon_power_after"] = battle["bankaraMatch"]["weaponPower"]
+			except: # could be null in historical data
+				pass
 
 		battle_id         = base64.b64decode(battle["id"]).decode('utf-8')
 		battle_id_mutated = battle_id.replace("BANKARA", "RECENT") # normalize the ID, make work with -M and -r
@@ -1804,6 +1814,7 @@ def parse_arguments():
 		help="dry run for testing (won't post to stat.ink)")
 	parser.add_argument("--getseed", required=False, action="store_true",
 		help="export JSON for gear & Shell-Out Machine seed checker")
+	parser.add_argument("--norefresh", dest="RC", required=False, nargs="?", action="store", help=argparse.SUPPRESS, const=0)
 	parser.add_argument("--skipprefetch", required=False, action="store_true", help=argparse.SUPPRESS)
 	return parser.parse_args()
 
@@ -1831,6 +1842,8 @@ def main():
 	outfile      = parser_result.o            # output to local files
 	skipprefetch = parser_result.skipprefetch # skip prefetch checks to ensure token validity
 
+	rc_value = parser_result.RC # stop application instead of trying to refresh tokens
+
 	# setup
 	#######
 	check_for_updates()
@@ -1840,7 +1853,7 @@ def main():
 
 	# i/o checks
 	############
-	if getseed and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
+	if getseed and any(re.search("^(--getseed|--skipprefetch|--norefresh|[0-9]+)$", arg) is None for arg in sys.argv[1:]):
 		print("Cannot use --getseed with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1852,7 +1865,7 @@ def main():
 		print("That doesn't make any sense! :) Exiting.")
 		sys.exit(0)
 
-	elif outfile and len(sys.argv) > 2 and "--skipprefetch" not in sys.argv:
+	elif outfile and any(re.search("^(-o|--skipprefetch|--norefresh|[0-9]+)$", arg) is None for arg in sys.argv[1:]):
 		print("Cannot use -o with other arguments. Exiting.")
 		sys.exit(0)
 
@@ -1870,6 +1883,18 @@ def main():
 			print("Minimum number of seconds in monitoring mode is 60. Exiting.")
 			sys.exit(0)
 
+	global DISABLE_REFRESH_RC
+	DISABLE_REFRESH_RC = None
+	if rc_value is not None:
+		try:
+			DISABLE_REFRESH_RC = int(rc_value)
+		except ValueError:
+			print("Number provided for --norefresh must be an integer. Exiting.")
+			sys.exit(1)
+		if DISABLE_REFRESH_RC < 0:
+			print("RC for --norefresh must be 0 or positive! Exiting.")
+			sys.exit(1)
+
 	# export results to file: -o flag
 	#################################
 	if outfile:
@@ -1885,7 +1910,7 @@ def main():
 			overview_filename = "overview.json"
 		else:
 			export_dir = os.path.join(cwd, 'exports')
-			utc_time = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
+			utc_time = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None).strftime('%Y%m%dT%H%M%SZ')
 			overview_filename = f'overview-{utc_time}.json'
 		if not os.path.exists(export_dir):
 			os.makedirs(export_dir)
