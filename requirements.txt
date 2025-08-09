@@ -3,3 +3,4 @@ msgpack_python
 packaging
 pymmh3
 requests
+mitmproxy
