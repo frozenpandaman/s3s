@@ -63,6 +63,8 @@ NOTE: Read the "Token generation" section below before proceeding. [→](#token-
 
 6. You will then be asked to navigate to a specific URL on Nintendo.com, log in, and follow simple instructions to obtain your `session_token`; this will be used to generate a `gtoken` and `bulletToken`. If you are opting against automatic token generation, enter "skip" for this step, at which point you will be asked to manually input your two tokens instead (see the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions)).
 
+NOTE: Currently, there is no known method of automatic token generation due to an update to Nintendo Switch Online by Nintendo. It is TBD whether a method will be found.
+
     These tokens (used to access your SplatNet battle results) along with your stat.ink API key & language will be saved into `config.txt` for you. You're now ready to upload battles!
 
 Have any questions, problems, or suggestions? [Create an issue](https://github.com/frozenpandaman/s3s/issues) here or contact me on [Twitter](https://twitter.com/frozenpandaman). **Please do not raise issues via Discord. It is important for discussion on the internet to be public, indexable, and searchable, able to be shared freely and benefit others – not locked behind a private platform. [Here](https://v21.io/blog/how-to-find-things-online)'s a great article about this!**
@@ -94,6 +96,14 @@ Alternatively, you can use [nsotokengen](https://github.com/clovervidia/nsotoken
 Users who decide against using automatic token generation may instead retrieve tokens manually via SplatNet 3.
 
 In this case, users must obtain tokens from their phone – or an emulator – by intercepting their device's web traffic and entering the tokens into s3s when prompted (or manually adding them to `config.txt` later). Follow the [mitmproxy instructions](https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions) to obtain your tokens. To opt for manual token entry, type "skip" when prompted to enter the "Select this account" URL.
+
+Instead of needing to copy-paste tokens, you can use s3_token_extractor.py to automatically extract tokens into config.txt. It will be automatically run through s3s.py, or you can manually run it as follows:
+
+```
+$ python s3_token_extractor.py
+```
+
+
 
 ## License & copyleft statement 🏴
 

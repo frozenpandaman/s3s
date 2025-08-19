@@ -10,6 +10,7 @@ from subprocess import call
 import requests, msgpack
 from packaging import version
 import iksm, utils
+import s3_token_extractor
 
 A_VERSION = "0.7.0"
 
@@ -165,8 +166,14 @@ def gen_new_tokens(reason, force=False):
 		manual_entry = True
 
 	if manual_entry: # no session_token ever gets stored
-		print("\nYou have opted against automatic token generation and must manually input your tokens.\n")
-		new_gtoken, new_bullettoken = iksm.enter_tokens()
+		print("mitmdump will be used to automatically generate tokens. Go to the page below to find instructions to set up your phone:")
+		print("https://github.com/frozenpandaman/s3s/wiki/mitmproxy-instructions\n")
+		input("Press Enter to continue when your phone is set up.\nYou do not need to use mitmweb, or manually copy any tokens.")
+		s3_token_extractor.main()
+		config_file = open(config_path, "r")
+		config_temp = json.load(config_file)
+		config_file.close()
+		new_gtoken, new_bullettoken = config_temp["gtoken"], config_temp["bullettoken"]
 		acc_lang = "en-US" # overwritten by user setting
 		acc_country = "US"
 		print("Using `US` for country by default. This can be changed in config.txt.")
